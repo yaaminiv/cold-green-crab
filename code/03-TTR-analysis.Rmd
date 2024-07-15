@@ -149,66 +149,135 @@ ggsave("figures/time-to-right-sex.pdf", height = 8.5, width = 11)
 
 ## Tank
 
+```{r}
+modTTR %>%
+  ggplot(., mapping = aes(x = timepoint, y = TTRavg, color = tank)) +
+  geom_jitter(alpha = 0.75) +
+  scale_x_continuous(name = "timepoint",
+                     breaks = unique(modTTR$timepoint)) +
+  scale_y_continuous(name = "Average Time-to-Right (s)",
+                     breaks = seq(0, 65, 10)) +
+  theme_classic(base_size = 15)
+ggsave("figures/time-to-right-tank.pdf", height = 8.5, width = 11)
+```
+
 ## Integument color
 
-## Missing legs
+```{r}
+modTTR %>%
+  ggplot(., mapping = aes(x = timepoint, y = TTRavg, color = integument.color)) +
+  geom_jitter(alpha = 0.8) +
+  scale_x_continuous(name = "timepoint",
+                     breaks = unique(modTTR$timepoint)) +
+  scale_y_continuous(name = "Average Time-to-Right (s)",
+                     breaks = seq(0, 65, 10)) +
+  scale_color_manual(values = c("#66C2A5","#A6D96A","#D9EF8B","#FFFF99","#FDAE61","#F46D43","#D53E4F"),
+                     name = "Integument",
+                     breaks = c("B/G", "G", "Y/G", "Y", "Y/O", "O", "R/O"),
+                     labels = c("B/G", "G", "Y/G", "Y", "Y/O", "O", "R/O")) +
+  theme_classic(base_size = 15)
+ggsave("figures/time-to-right-integument.pdf", height = 8.5, width = 11)
+```
+
+## Missing swimmer
+
+```{r}
+modTTR %>%
+  ggplot(., mapping = aes(x = timepoint, y = TTRavg, color = as.factor(missing.swimmer))) +
+  geom_jitter(alpha = 0.8) +
+  scale_x_continuous(name = "timepoint",
+                     breaks = unique(modTTR$timepoint)) +
+  scale_y_continuous(name = "Average Time-to-Right (s)",
+                     breaks = seq(0, 65, 10)) +
+  theme_classic(base_size = 15)
+ggsave("figures/time-to-right-missswim.pdf", height = 8.5, width = 11)
+```
 
 ## Weight
 
+```{r}
+modTTR %>%
+  ggplot(., mapping = aes(x = timepoint, y = TTRavg, color = weight)) +
+  geom_jitter(alpha = 0.8) +
+  scale_x_continuous(name = "timepoint",
+                     breaks = unique(modTTR$timepoint)) +
+  scale_y_continuous(name = "Average Time-to-Right (s)",
+                     breaks = seq(0, 65, 10)) +
+  theme_classic(base_size = 15)
+ggsave("figures/time-to-right-weight.pdf", height = 8.5, width = 11)
+```
+
 ## Carapace width
+
+```{r}
+modTTR %>%
+  ggplot(., mapping = aes(x = timepoint, y = TTRavg, color = carapace.width)) +
+  geom_jitter(alpha = 0.8) +
+  scale_x_continuous(name = "timepoint",
+                     breaks = unique(modTTR$timepoint)) +
+  scale_y_continuous(name = "Average Time-to-Right (s)",
+                     breaks = seq(0, 65, 10)) +
+  theme_classic(base_size = 15)
+ggsave("figures/time-to-right-carapaceWidth.pdf", height = 8.5, width = 11)
+```
+
+## Genotype
+
+```{r}
+modTTR %>%
+  filter(., is.na(final.genotype) == FALSE) %>% 
+  ggplot(., mapping = aes(x = timepoint, y = TTRavg, color = final.genotype)) +
+  geom_jitter(alpha = 0.8) +
+  scale_x_continuous(name = "timepoint",
+                     breaks = unique(modTTR$timepoint)) +
+  scale_y_continuous(name = "Average Time-to-Right (s)",
+                     breaks = seq(0, 65, 10)) +
+  theme_classic(base_size = 15)
+ggsave("figures/time-to-right-genotype.pdf", height = 8.5, width = 11)
+```
+
 
 # Assess differences by treatment
 
-I will use an ANOVA to assess treatment differences, as a linear model or ANOVA seems to be common practice in the literature (ex. [Blakeslee et al. 2021](https://doi.org/10.1098/rspb.2021.0703)).
+I will use a linear mixed effects model with individual as a random effect to analyze the data, following [this tutorial](https://jontalle.web.engr.illinois.edu/MISC/lme4/bw_LME_tutorial.pdf).
 
 ```{r}
 hist(modTTR$TTRavg)
 hist(x = log(modTTR$TTRavg)) #Log transformation helps normalize data
 ```
 
-## GLM
+```{r}
+TTRmodel <- lmer(log(TTRavg) ~ treatment + timepoint + treatment:timepoint + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID), data = modTTR, REML = FALSE) #Run model with treatment, timepoint, their interaction, sex, integument color, carapace width, weight, and missing swimmer information as fixed effects, and individual as a random effect. Change the likelihood estimator (REML = FALSE) to compare models with LRT later
+summary(TTRmodel) #Look at model output.
+#Residuals explain more random effect variation than crab ID, crab ID explains very little variation
+```
+Now that I've run the full model, I want to test the importance of treatment, timepoint, and their interaction as predictors. I'll include all other factors in the null model to account for any variation they may contribute.
 
 ```{r}
-TTRmodel <- glm(log(TTRavg) ~ treatment + timepoint + treatment*timepoint + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer), data = modTTR) #ANOVA, with log(TTRavg) as the response variable, and treatment, timepoint, the interaction between treatment and timepoint, sex, integument color (continuous), carapace width, weight, and whether or not a crab is missing legs as explanatory variables.
-summary(TTRmodel) #Various factors significant
+TTRnullTreatment <- lmer(log(TTRavg) ~ timepoint + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID), data = modTTR, REML = FALSE) #Run null model without treatment to identify significance of predictor
+anova(TTRnullTreatment, TTRmodel) #Treatment is a significant predictor
 ```
 
 ```{r}
-TTRmodelStep <- step(TTRmodel, direction = "backward") #Use step-wise backwards selection to identify the best fit model
-summary(TTRmodelStep) #Show output from step to identify the best model
+TTRnullTimepoint <- lmer(log(TTRavg) ~ treatment + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID), data = modTTR, REML = FALSE) #Run null model without timepoint to identify significance of predictor
+anova(TTRnullTreatment, TTRmodel) #Timepoint is a significant predictor
 ```
 
 ```{r}
-TTRmodelSig <- glm(log(TTRavg) ~ treatment + timepoint + integument.cont + weight + treatment:timepoint, data = modTTR) #Run the most significant model identified by step, which includes treatment, timepoint, integument color, weight, and the interaction between treatment and timepoint
-summary(TTRmodelSig) #Significant impact of treatment, timepoint, their interaction, integument color, and weight
-```
-
-```{r}
-summary(TTRmodelSig) #Most parsimonious model. Significant influence of treatment, integment color, and weight, but no effect of timepoint or size.
-```
-
-```{r}
-write.csv(broom::tidy(TTRmodelSig), "TTR-glm-output.csv", quote = FALSE, row.names = FALSE) #Save table version of GLM output
-```
-
-## Check assumptions
-
-```{r}
-hist(residuals(TTRmodelSig)) #Residuals normally distributed
-
-plot(fitted(TTRmodelSig), residuals(TTRmodelSig)) #Borderline heteroskedastic but probably okay? Lack of dispersion across x-axis is likely related to discrete variables
-abline(h = 0, lty = 2, col = "grey")
+TTRnullInteraction <- lmer(log(TTRavg) ~ treatment + timepoint + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID), data = modTTR, REML = FALSE) #Run model with interaction to identify significance of predictor. The full model constructed does not include an interaction
+anova(TTRnullInteraction, TTRmodel) #Timepoint is a significant predictor
 ```
 
 # Threshold analysis
 
-Another way to analyze this data is to count how many crabs within each treatment righted within a certain threshold. I can identify this threshold by taking the upper bound of a boxplot, then using a binomial model similar to [Coyle et al. (2019)](https://doi.org/10.1242/jeb.203521).
+In our data, trials for crabs that didn't right within 90 seconds are noted as NAs. I can examine these data in two ways:
+
+1. How many crabs didn't right within 90 seconds in the first, second, or third trial?
+2. Did a crab not right within 90 seconds in any trial?
+
+For the latter, I can use a binomial model similar to [Coyle et al. (2019)](https://doi.org/10.1242/jeb.203521).
 
 ## Define threshold
-
-```{r}
-boxplot.stats(modTTR$TTRavg)$stats[5] #Use Tukey's method to identify upper bound of outliers
-```
 
 ```{r}
 modTTR <- modTTR %>%
