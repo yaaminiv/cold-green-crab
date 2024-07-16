@@ -325,6 +325,53 @@ ggsave("figures/time-to-right-avg-boxplot.pdf", height = 8.5, width = 11)
 
 ## Threshold analysis plot
 
+```{r}
+treatment_labels <- c("0C" = "0ºC",
+                      "5C" = "5ºC") #Modify facet labels for treatment
+timepoint_labels <- c("0" = "0",
+                      "1" = "4",
+                      "2" = "22",
+                      "3" = "28",
+                      "4" = "46",
+                      "5" = "94") #Modify facet labels for timepoint
+```
+
+```{r}
+modTTR %>%
+  group_by(., treatment, timepoint) %>%
+  summarize(., total = n(), 
+            trial1No = sum(is.na(trial.1) == TRUE),
+            trial2No = sum(is.na(trial.2) == TRUE),
+            trial3No = sum(is.na(trial.3) == TRUE)) %>%
+  mutate(., trial1Yes = total - trial1No,
+         trial2Yes = total - trial2No,
+         trial3Yes = total - trial3No) %>%
+  pivot_longer(., cols = c(trial1No, trial1Yes,
+                           trial2No, trial2Yes,
+                           trial3No, trial3Yes), 
+               values_to = "count", names_to = "condition") %>%
+  mutate(., trial = case_when(condition == "trial1No" ~ 1,
+                              condition == "trial1Yes" ~ 1,
+                              condition == "trial2No" ~ 2,
+                              condition == "trial2Yes" ~ 2,
+                              condition == "trial3No" ~ 3,
+                              condition == "trial3Yes" ~ 3)) %>%
+  mutate(., condition = gsub(pattern = "trial1", replacement = "", x = condition),
+         condition = gsub(pattern = "trial2", replacement = "", x = condition),
+         condition = gsub(pattern = "trial3", replacement = "", x = condition)) %>%
+  ggplot(., aes(x = trial, y = count, fill = condition)) +
+  geom_bar(position = "fill", stat = "identity") + 
+  facet_grid(treatment~timepoint, labeller = labeller(treatment = treatment_labels,
+                                                      timepoint = timepoint_labels)) +
+  labs(x = "Trial", y = "Proportion") +
+  scale_fill_manual(name = "",
+                    values = c("grey70", "grey10")) +
+  theme_classic(base_size = 15) + theme(strip.background = element_rect(colour = "white"))
+ggsave("figures/time-to-right-noFlips.pdf", height = 8.5, width = 11)
+
+#Take TTR data and group by timepoint. Count the number of crabs that did not right within 90 seconds during each trial. Subtract that value from the total to get the number of crabs that did right within 90 seconds. Pivot the data longer. Create a trial column based on the condition column. Remove trial information from the text in the condition column. Pipe modified data into ggplot to create a stacked barplot. Facet by treatment and timepoint using facet labels. Relabel axes. Modify fill scale. Use specific base size with classic theme. For facet labels, use a white border (no border).
+```
+
 # Individual-level analysis
 
 ## Crabs tracked throught the experiment
