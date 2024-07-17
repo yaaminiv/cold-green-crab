@@ -374,9 +374,80 @@ ggsave("figures/time-to-right-noFlips.pdf", height = 8.5, width = 11)
 
 # Individual-level analysis
 
+## Q10 analysis
+
+Q10 is a metric used to quantify temperature sensitivity, generally defined as the change in a physiological response over a 10 degree temperature interval. For most organisms, Q10 is around 2 (a two-fold change in a physiological or chemical response due to a 10 degree temperature change).
+
+```{r}
+modTTRQ10 <- modTTR %>%
+  select(., timepoint, crab.ID, TTRavg, treatment) %>%
+  group_by(., crab.ID) %>%
+  # mutate(., presenceC = case_when(final.genotype == "CC" ~ "Y",
+  #                                 final.genotype == "CT" ~ "Y",
+  #                                 final.genotype == "TT" ~ "N")) %>%
+  # mutate(., presenceT = case_when(final.genotype == "CC" ~ "N",
+  #                                 final.genotype == "CT" ~ "Y",
+  #                                 final.genotype == "TT" ~ "Y")) %>%
+  pivot_wider(., names_from = timepoint, values_from = TTRavg, names_prefix = "timepoint") %>%
+  mutate_all(~ifelse(is.nan(.), 91, .)) %>%
+  filter(., is.na(timepoint0) == FALSE) %>%
+  filter(., is.na(timepoint1) == FALSE) %>%
+  filter(., is.na(timepoint2) == FALSE) %>%
+  filter(., is.na(timepoint3) == FALSE) %>%
+  filter(., is.na(timepoint4) == FALSE) %>%
+  filter(., is.na(timepoint5) == FALSE) %>%
+  mutate(temperature = case_when(treatment == "0C" ~ 0,
+                                 treatment == "5C" ~ 5)) %>%
+  
+  arrange(., temperature) %>%
+  mutate(., timepoint1_Q10 = Q10(R2 = timepoint0, 
+                                 R1 = timepoint1, 
+                                 T2 = 15, 
+                                 T1 = temperature)) %>%
+  mutate(., timepoint2_Q10 = Q10(R2 = timepoint0, 
+                                 R1 = timepoint2, 
+                                 T2 = 15, 
+                                 T1 = temperature)) %>%
+  mutate(., timepoint3_Q10 = Q10(R2 = timepoint0, 
+                                 R1 = timepoint3, 
+                                 T2 = 15, 
+                                 T1 = temperature)) %>%
+  mutate(., timepoint4_Q10 = Q10(R2 = timepoint0, 
+                                 R1 = timepoint4, 
+                                 T2 = 15, 
+                                 T1 = temperature)) %>% 
+  mutate(., timepoint5_Q10 = Q10(R2 = timepoint0, 
+                                 R1 = timepoint5, 
+                                 T2 = 15, 
+                                 T1 = temperature)) %>%
+  select(., crab.ID, treatment, 
+         timepoint1_Q10, timepoint2_Q10, timepoint3_Q10, timepoint4_Q10, timepoint5_Q10) %>%
+  pivot_longer(., cols = !c(crab.ID, treatment), names_to = "timepoint", values_to = "Q10") %>%
+  mutate(., timepoint = gsub(x = timepoint, pattern = "_Q10", replacement = "")) %>%
+  mutate(., timepoint = gsub(x = timepoint, pattern = "timepoint", replacement = "")) #Select columns of interest. Add columns for presence of C or T alleles. Pivot wider. Change NaN to 91 and remove any NA measurements. Add a column for temperature based on the treatment column, and arrange data by temperature. Use the Q10 function within the respirometry package to calculate Q10 values for timepoint 0 vs. all other timepoints. Select columns of interest and pivot longer. Use a series of gsub to modify timepoint column and convert to a character format that would be organized numerically. Use a similar approach for treatment.
+head(modTTRQ10)
+length(modTTRQ10$crab.ID %>% unique(.)) #21 crabs
+```
+
+```{r}
+modTTRQ10 %>%
+  ggplot(., mapping = aes(x = timepoint, y = Q10, color = treatment, shape = treatment, group = crab.ID)) +
+  geom_point(size = 2) + geom_line(lty = 3) +
+  facet_wrap(. ~ treatment, scales = "free_y", labeller = labeller(treatment = treatment_labels)) +
+  scale_x_discrete(name = "Exposure Time (Hours)",
+                   breaks = unique(modTTR$timepoint),
+                   labels = c(0, 4, 22, 28, 46, 94)) +
+  scale_color_manual(values = c(plotColors[1], plotColors[2]),
+                     guide = "none") +
+  scale_shape_manual(values = c(15, 17),
+                     guide = "none") +
+  theme_classic(base_size = 15) #Plot Q10 data with timepoint on the x-axis, Q10 on the y-axis, and color and shape defined by treatment. Group by crab.ID. Add points and lines connecting values for each crab. Facet by treatment, allow y-axis to vary by each facet, and include facet labels. Add x-axis label and specify x-axis tick labels. Add shape and color values for each treatment but do not include a legend.
+ggsave("figures/time-to-right-average-individuals-Q10.pdf", height = 8.5, width = 11)
+```
+
 ## Crabs tracked throught the experiment
 
-I have 27 individuals (three per tank) with TTR and respirometry data! I'm going to examine that subset to understand individual variation within each treatment, and how that may or may not change over time.
+I tracked certain individuals throughout the course of the experiment, so I want to see how their responses changed over time.
 
 ```{r}
 modTTRSubsetR <- modTTR %>%
@@ -917,73 +988,5 @@ timepoint42v2byTempPlot
 ```{r}
 timepoint7vs2byTempPlot / timepoint21vs2byTempPlot / timepoint42v2byTempPlot
 ggsave("figures/time-to-right-average-individuals-genotype-byTemp-multipanel.pdf", height = 11, width = 8.5)
-```
-
-## Q10 analysis
-
-Q10 is a metric used to quantify temperature sensitivity, generally defined as the change in a physiological response over a 10 degree temperature interval. For most organisms, Q10 is around 2 (a two-fold change in a physiological or chemical response due to a 10 degree temperature change). I will use the full dataset to calculate Q10 values between timepoint 0 and 2, timepoint 0 and 7, timepoint 0 and 21, and timepoint 0 and 42. I can then investigate how genotype influences Q10.
-
-```{r}
-modTTRQ10 <- modTTR %>%
-  select(., timepoint, crab.ID, TTRavg, treatment, final.genotype) %>%
-  mutate(., presenceC = case_when(final.genotype == "CC" ~ "Y",
-                                  final.genotype == "CT" ~ "Y",
-                                  final.genotype == "TT" ~ "N")) %>%
-  mutate(., presenceT = case_when(final.genotype == "CC" ~ "N",
-                                  final.genotype == "CT" ~ "Y",
-                                  final.genotype == "TT" ~ "Y")) %>%
-  filter(., timepoint == 0 | timepoint == 2 | timepoint == 7 | timepoint == 21 | timepoint == 42) %>%
-  filter(., treatment != "15C") %>%
-  pivot_wider(., names_from = timepoint, values_from = TTRavg, names_prefix = "timepoint") %>%
-  filter(., is.na(timepoint0) == FALSE) %>% 
-  mutate(temperature = case_when(treatment == "15C" ~ 15,
-                                 treatment == "25C" ~ 25,
-                                 treatment == "5C" ~ 5)) %>%
-  arrange(., temperature) %>%
-  mutate(., timepoint2_Q10 = Q10(R1 = timepoint0, 
-                                 R2 = timepoint2, 
-                                 T1 = 15, 
-                                 T2 = temperature)) %>%
-  mutate(., timepoint7_Q10 = Q10(R1 = timepoint0, 
-                                 R2 = timepoint7, 
-                                 T1 = 15, 
-                                 T2 = temperature)) %>%
-  mutate(., timepoint21_Q10 = Q10(R1 = timepoint0, 
-                                  R2 = timepoint21, 
-                                  T1 = 15, 
-                                  T2 = temperature)) %>%
-  mutate(., timepoint42_Q10 = Q10(R1 = timepoint0, 
-                                  R2 = timepoint42, 
-                                  T1 = 15, 
-                                  T2 = temperature)) %>% 
-  select(., crab.ID, treatment, final.genotype, presenceC, presenceT, timepoint2_Q10, timepoint7_Q10, timepoint21_Q10, timepoint42_Q10) %>%
-  pivot_longer(., cols = !c(crab.ID, treatment, final.genotype, presenceC, presenceT), names_to = "timepoint", values_to = "Q10") %>%
-  filter(., is.na(Q10) == FALSE) %>%
-  mutate(., timepoint = gsub(x = timepoint, pattern = "_Q10", replacement = "")) %>%
-  mutate(., timepoint = gsub(x = timepoint, pattern = "timepoint", replacement = "")) %>%
-  mutate(., timepoint = case_when(timepoint == "2" ~ "02",
-                                  timepoint == "7" ~ "07",
-                                  timepoint != "2" | timepoint != "7" ~ timepoint)) %>% 
-  mutate(., treatment = case_when(treatment == "5C" ~ "05C",
-                                  treatment != "5C" ~ treatment))
-#Select columns of interest. Add columns for presence of C or T alleles. Filter timepoints of interest, remove 15C crabs, and pivot wider. Remove crabs without a timepoint 0 measurement. Add a column for temperature based on the treatment column, and arrange data by temperature. Use the Q10 function within the respirometry package to calculate Q10 values for timepoint 0 vs. timepoint 2, 7, 21, and 42. Remove any rows without a timepoint 2 Q10 value. Select columns of interest and pivot longer. Remove any rows without a Q10 value. Use a series of gsub to modify timepoint column and convert to a character format that would be organized numerically. Use a similar approach for treatment.
-head(modTTRQ10)
-length(modTTRQ10$crab.ID %>% unique(.)) #18 crabs
-```
-
-```{r}
-modTTRQ10 %>%
-  ggplot(., mapping = aes(x = timepoint, y = Q10, color = treatment, shape = treatment, group = crab.ID)) +
-  geom_point(size = 2) + geom_line(lty = 3) +
-  facet_wrap(. ~ treatment, scales = "free_y", labeller = labeller(treatment = facet_labels)) +
-  scale_x_discrete(name = "timepoint",
-                   breaks = c("02", "07", "21", "42"),
-                   labels = c("2", "7", "21", "42")) +
-  scale_color_manual(values = c(plotColors[3], plotColors[1]),
-                     guide = "none") +
-  scale_shape_manual(values = c(15, 17),
-                     guide = "none") +
-  theme_classic(base_size = 15) #Plot Q10 data with timepoint on the x-axis, Q10 on the y-axis, and color and shape defined by treatment. Group by crab.ID. Add points and lines connecting values for each crab. Facet by treatment, allow y-axis to vary by each facet, and include facet labels. Add x-axis label and specify x-axis tick labels. Add shape and color values for each treatment but do not include a legend.
-ggsave("figures/time-to-right-average-individuals-Q10.pdf", height = 8.5, width = 11)
 ```
 
