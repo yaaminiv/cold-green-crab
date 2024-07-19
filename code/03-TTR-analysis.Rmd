@@ -266,6 +266,18 @@ TTRnullInteraction <- lmer(log(TTRavg) ~ treatment + timepoint + as.factor(sex) 
 anova(TTRnullInteraction, TTRmodel) #Timepoint is a significant predictor
 ```
 
+```{r}
+TTRModelComparisons<- rbind(broom::tidy(anova(TTRnullTreatment, TTRmodel)),
+                            broom::tidy(anova(TTRnullTimepoint, TTRmodel)),
+                            broom::tidy(anova(TTRnullInteraction, TTRmodel))) #Create table for model comparison output
+TTRModelComparisons
+```
+
+```{r}
+write.csv(TTRModelComparisons, "ttr-model-comparison-stat-output.csv", quote = FALSE, row.names = FALSE) #Save model output
+```
+
+
 # Threshold analysis
 
 In our data, trials for crabs that didn't right within 90 seconds are noted as NAs. I can examine these data in two ways:
@@ -372,7 +384,14 @@ ggsave("figures/time-to-right-noFlips.pdf", height = 8.5, width = 11)
 #Take TTR data and group by timepoint. Count the number of crabs that did not right within 90 seconds during each trial. Subtract that value from the total to get the number of crabs that did right within 90 seconds. Pivot the data longer. Create a trial column based on the condition column. Remove trial information from the text in the condition column. Pipe modified data into ggplot to create a stacked barplot. Facet by treatment and timepoint using facet labels. Relabel axes. Modify fill scale. Use specific base size with classic theme. For facet labels, use a white border (no border).
 ```
 
+```{r}
+head(modTTR)
+```
+
+
 # Individual-level analysis
+
+FIX HOW TO DEAL WITH NAN TTR AVERAGES.
 
 ## Q10 analysis
 
@@ -450,17 +469,23 @@ ggsave("figures/time-to-right-average-individuals-Q10.pdf", height = 8.5, width 
 I tracked certain individuals throughout the course of the experiment, so I want to see how their responses changed over time.
 
 ```{r}
-modTTRSubsetR <- modTTR %>%
-  filter(., respirometry == "Y") %>%
-  unique(.) #Subset data for crabs used in respirometry and TTR
-head(modTTRSubsetR)
-nrow(modTTRSubsetR)
+modTTRSubset <- modTTR %>%
+  select(., timepoint, crab.ID, TTRavg, treatment) %>%
+  group_by(., crab.ID) %>%
+  # mutate(., presenceC = case_when(final.genotype == "CC" ~ "Y",
+  #                                 final.genotype == "CT" ~ "Y",
+  #                                 final.genotype == "TT" ~ "N")) %>%
+  # mutate(., presenceT = case_when(final.genotype == "CC" ~ "N",
+  #                                 final.genotype == "CT" ~ "Y",
+  #                                 final.genotype == "TT" ~ "Y")) %>%
+  mutate_all(~ifelse(is.nan(.), 91, .))
+filter(., is.na(TTRavg) == FALSE) #Identify the subset of crabs tracked throughout the experiment. Select columns of interest and group by crab ID. Pivot wider. Change all NaN to 91.
+head(modTTRSubset)
+nrow(modTTRSubset)
 ```
 
-First things first: I want to understand if there are certain individuals that vary more over time! The simplest way to do this is to just plot the data.
-
 ```{r}
-modTTRSubsetR %>%
+modTTRSubset %>%
   dplyr::select(., c(crab.ID, timepoint, tank, treatment, TTRavg)) %>%
   mutate(., treatment = case_when(treatment == "5C" ~ "05C",
                                   treatment == "15C" ~ "15C",
