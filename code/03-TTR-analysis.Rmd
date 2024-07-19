@@ -262,7 +262,7 @@ anova(TTRnullTreatment, TTRmodel) #Timepoint is a significant predictor
 ```
 
 ```{r}
-TTRnullInteraction <- lmer(log(TTRavg) ~ treatment + timepoint + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID), data = (modTTR %>% filter(., is.na(TTRavg) == FALSE)), REML = FALSE) #Run model with interaction to identify significance of predictor. The full model constructed does not include an interaction
+TTRnullInteraction <- lmer(log(TTRavg) ~ treatment + timepoint + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID), data = (modTTR %>% filter(., is.na(TTRavg) == FALSE)), REML = FALSE) #Run model without interaction to identify significance of predictor. The full model constructed does not include an interaction
 anova(TTRnullInteraction, TTRmodel) #Timepoint is a significant predictor
 ```
 
@@ -304,8 +304,47 @@ TTRthreshModel <- glmer(I(TTRthresh == 1) ~ treatment + timepoint + treatment:ti
                           (1|crab.ID), 
                         family = binomial(), 
                         data = modTTR) #Create a binomial model, where 1 = success of righting wihtin the defined threshold
-summary(TTRthreshModel) #Only weight is significant
+summary(TTRthreshModel)
 ```
+
+```{r}
+TTRthreshNullTreatment <- glmer(I(TTRthresh == 1) ~ timepoint +
+                          as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
+                          (1|crab.ID), 
+                        family = binomial(), 
+                        data = modTTR) #Create null model without treatment
+anova(TTRthreshNullTreatment, TTRthreshModel) #Compare models
+```
+
+```{r}
+TTRthreshNullTimepoint <- glmer(I(TTRthresh == 1) ~ treatment +
+                          as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
+                          (1|crab.ID), 
+                        family = binomial(), 
+                        data = modTTR) #Create null model without timepoint
+anova(TTRthreshNullTimepoint, TTRthreshModel) #Compare models
+```
+
+```{r}
+TTRthreshNullInteraction <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
+                          as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
+                          (1|crab.ID), 
+                        family = binomial(), 
+                        data = modTTR) #Create null model without interaction
+anova(TTRthreshNullInteraction, TTRthreshModel) #Compare models
+```
+
+```{r}
+TTRthreshModelComparisons <- rbind(broom::tidy(anova(TTRthreshNullTreatment, TTRthreshModel)),
+                                   broom::tidy(anova(TTRthreshNullTimepoint, TTRthreshModel)),
+                                   broom::tidy(anova(TTRthreshNullInteraction, TTRthreshModel))) #Create a table of model comparison output
+TTRthreshModelComparisons
+```
+
+```{r}
+write.csv(TTRthreshModelComparisons, "ttr-binomial-model-comparison-output.csv", quote = FALSE, row.names = FALSE) #Save model comparison table
+```
+
 
 # Final plots
 
