@@ -11,7 +11,7 @@ In this document I'll examine how time-to-right (TTR) varies by temperature and 
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_knit$set(root.dir = normalizePath("../output/03-TTR-analysis/")) #Set root directory
+knitr::opts_knit$set(root.dir = normalizePath("../output/03-TTR-analysis/MA/")) #Set root directory
 ```
 
 ```{r}
