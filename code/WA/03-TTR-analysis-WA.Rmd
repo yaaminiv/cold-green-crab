@@ -1,7 +1,7 @@
 ---
 title: "03-TTR-analysis-WA"
 author: "Yaamini Venkataraman"
-date: '2024-07-12'
+date: '2024-08-20'
 output: html_document
 ---
 
@@ -11,7 +11,7 @@ In this document I'll examine how time-to-right (TTR) varies by temperature and 
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_knit$set(root.dir = normalizePath("../output/WA/03-TTR-analysis/")) #Set root directory
+knitr::opts_knit$set(root.dir = normalizePath("../../output/WA/03-TTR-analysis/")) #Set root directory
 ```
 
 ```{r}
@@ -44,12 +44,12 @@ sessionInfo()
 # Import data
 
 ```{r}
-rawTTR <- read.csv("../../data/MA/time-to-right-MA-clean.csv", header = TRUE, na.strings = c("N/A", "NA")) #Import raw data
+rawTTR <- read.csv("../../../data/WA/time-to-right-WA-clean.csv", header = TRUE, na.strings = c("N/A", "NA")) #Import raw data
 head(rawTTR) #Confirm import. Trial data is in seconds.
 ```
 
 ```{r}
-crabMetadata <- read.csv("../../data/MA/crab-metadata-MA.csv", header = TRUE) %>%
+crabMetadata <- read.csv("../../../data/WA/crab-metadata-WA.csv", header = TRUE) %>%
   dplyr::select(., c("number", "tank", "carapace.width", "carapace.length")) %>%
   dplyr::rename(crab.ID = "number") #Import metadata. Select ID, treatment, width and length columns. Rename "ID" as "crab.ID"
 head(crabMetadata) #Confirm changes
@@ -68,20 +68,22 @@ modTTR <- rawTTR %>%
   dplyr::select(., -notes) %>%
   left_join(., crabMetadata, by = c("crab.ID", "tank", "carapace.width")) %>%
   filter(., is.na(trial.1) == FALSE) %>%
-  mutate(., integument.cont = case_when(integument.color == "B/G" ~ 0.5,
+  mutate(., integument.cont = case_when(integument.color == "BG" ~ 0.5,
                                         integument.color == "G" ~ 1.0,
-                                        integument.color == "Y/G" ~ 1.5,
+                                        integument.color == "YG" ~ 1.5,
                                         integument.color == "Y" ~ 2.0,
-                                        integument.color == "Y/O" ~ 2.5,
+                                        integument.color == "YO" ~ 2.5,
                                         integument.color == "O" ~ 3,
-                                        integument.color == "R/O" ~ 3.5,
+                                        integument.color == "RO" ~ 3.5,
                                         integument.color == "R" ~ 4)) %>%
-  mutate(., treatment = case_when(tank == "T01" ~ "0C",
-                                  tank == "T02" ~ "0C",
-                                  tank == "T03" ~ "0C",
+  mutate(., treatment = case_when(tank == "T01" ~ "1.5C",
+                                  tank == "T02" ~ "1.5C",
+                                  tank == "T03" ~ "1.5C",
+                                  tank == "T04" ~ "1.5C",
                                   tank == "T05" ~ "5C",
                                   tank == "T06" ~ "5C",
-                                  tank == "T07" ~ "5C")) %>%
+                                  tank == "T07" ~ "5C",
+                                  tank == "T08" ~ "5C")) %>%
   mutate(., missing.swimmer = case_when(missing.swimmer == "Y" ~ missing.swimmer,
                                         missing.swimmer == "N" ~ missing.swimmer,
                                         missing.swimmer == "Y " ~ "Y")) %>%
@@ -90,9 +92,7 @@ modTTR <- rawTTR %>%
   mutate(., trial.3 = na_if(trial.3, 91.00)) %>%
   rowwise(.) %>% 
   mutate(., TTRavg = mean(c(trial.1, trial.2, trial.3), na.rm = TRUE)) %>%
-  # filter(., is.na(TTRavg) == FALSE) %>%
   mutate(., TTRSE = std.error(c(trial.1, trial.2, trial.3), na.rm = TRUE)) %>%
-  # filter(., is.na(TTRSE) == FALSE) %>%
   ungroup(.) #Remove sampling ID and notes columns. Use case_when to create a column of continuous integument color metrics. Change all 91 to NA, calculate average and SE using data from the three TTR trials using rowwise operations. Ungroup. Join with genotype data.
 head(modTTR) #Confirm formatting
 ```
@@ -117,11 +117,11 @@ modTTR %>%
   scale_x_continuous(name = "Timepoint",
                      breaks = unique(modTTR$timepoint)) +
   scale_y_continuous(name = "Average Time-to-Right (s)",
-                     breaks = seq(0, 65, 10)) +
+                     breaks = seq(0, 100, 10)) +
   scale_color_manual(values = c(plotColors[1], plotColors[2]), 
                      name = "Temperature (ºC)",
-                     breaks = c("0C", "5C"),
-                     labels = c("0", "5")) +
+                     breaks = c("1.5C", "5C"),
+                     labels = c("1.5", "5")) +
   theme_classic(base_size = 15) #Plot average TTR and add lm fits without SE bars. Modify x-axis to only show experimental timepoints where TTR was measured. Assign colors to each treatment. Increase base font size.
 ggsave("figures/time-to-right-raw.pdf", height = 8.5, width = 11)
 ```
@@ -137,7 +137,7 @@ modTTR %>%
   scale_x_continuous(name = "timepoint",
                      breaks = unique(modTTR$timepoint)) +
   scale_y_continuous(name = "Average Time-to-Right (s)",
-                     breaks = seq(0, 65, 10)) +
+                     breaks = seq(0, 100, 10)) +
   theme_classic(base_size = 15)
 ggsave("figures/time-to-right-sex.pdf", height = 8.5, width = 11)
 ```
@@ -151,7 +151,7 @@ modTTR %>%
   scale_x_continuous(name = "timepoint",
                      breaks = unique(modTTR$timepoint)) +
   scale_y_continuous(name = "Average Time-to-Right (s)",
-                     breaks = seq(0, 65, 10)) +
+                     breaks = seq(0, 100, 10)) +
   theme_classic(base_size = 15)
 ggsave("figures/time-to-right-tank.pdf", height = 8.5, width = 11)
 ```
@@ -165,11 +165,11 @@ modTTR %>%
   scale_x_continuous(name = "timepoint",
                      breaks = unique(modTTR$timepoint)) +
   scale_y_continuous(name = "Average Time-to-Right (s)",
-                     breaks = seq(0, 65, 10)) +
+                     breaks = seq(0, 100, 10)) +
   scale_color_manual(values = c("#66C2A5","#A6D96A","#D9EF8B","#FFFF99","#FDAE61","#F46D43","#D53E4F"),
                      name = "Integument",
-                     breaks = c("B/G", "G", "Y/G", "Y", "Y/O", "O", "R/O"),
-                     labels = c("B/G", "G", "Y/G", "Y", "Y/O", "O", "R/O")) +
+                     breaks = c("BG", "G", "YG", "Y", "YO", "O", "RO"),
+                     labels = c("BG", "G", "YG", "Y", "YO", "O", "RO")) +
   theme_classic(base_size = 15)
 ggsave("figures/time-to-right-integument.pdf", height = 8.5, width = 11)
 ```
@@ -183,7 +183,7 @@ modTTR %>%
   scale_x_continuous(name = "timepoint",
                      breaks = unique(modTTR$timepoint)) +
   scale_y_continuous(name = "Average Time-to-Right (s)",
-                     breaks = seq(0, 65, 10)) +
+                     breaks = seq(0, 100, 10)) +
   theme_classic(base_size = 15)
 ggsave("figures/time-to-right-missswim.pdf", height = 8.5, width = 11)
 ```
@@ -197,7 +197,7 @@ modTTR %>%
   scale_x_continuous(name = "timepoint",
                      breaks = unique(modTTR$timepoint)) +
   scale_y_continuous(name = "Average Time-to-Right (s)",
-                     breaks = seq(0, 65, 10)) +
+                     breaks = seq(0, 100, 10)) +
   theme_classic(base_size = 15)
 ggsave("figures/time-to-right-weight.pdf", height = 8.5, width = 11)
 ```
@@ -211,7 +211,7 @@ modTTR %>%
   scale_x_continuous(name = "timepoint",
                      breaks = unique(modTTR$timepoint)) +
   scale_y_continuous(name = "Average Time-to-Right (s)",
-                     breaks = seq(0, 65, 10)) +
+                     breaks = seq(0, 100, 10)) +
   theme_classic(base_size = 15)
 ggsave("figures/time-to-right-carapaceWidth.pdf", height = 8.5, width = 11)
 ```
@@ -226,7 +226,7 @@ modTTR %>%
   scale_x_continuous(name = "timepoint",
                      breaks = unique(modTTR$timepoint)) +
   scale_y_continuous(name = "Average Time-to-Right (s)",
-                     breaks = seq(0, 65, 10)) +
+                     breaks = seq(0, 100, 10)) +
   theme_classic(base_size = 15)
 ggsave("figures/time-to-right-genotype.pdf", height = 8.5, width = 11)
 ```
@@ -263,7 +263,7 @@ anova(TTRnullTreatment, TTRmodel) #Timepoint is a significant predictor
 
 ```{r}
 TTRnullInteraction <- lmer(log(TTRavg) ~ treatment + timepoint + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID), data = (modTTR %>% filter(., is.na(TTRavg) == FALSE)), REML = FALSE) #Run model without interaction to identify significance of predictor. The full model constructed does not include an interaction
-anova(TTRnullInteraction, TTRmodel) #Timepoint is a significant predictor
+anova(TTRnullInteraction, TTRmodel) #Interaction is a significant predictor
 ```
 
 ```{r}
@@ -309,28 +309,28 @@ summary(TTRthreshModel)
 
 ```{r}
 TTRthreshNullTreatment <- glmer(I(TTRthresh == 1) ~ timepoint +
-                          as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
-                          (1|crab.ID), 
-                        family = binomial(), 
-                        data = modTTR) #Create null model without treatment
+                                  as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
+                                  (1|crab.ID), 
+                                family = binomial(), 
+                                data = modTTR) #Create null model without treatment
 anova(TTRthreshNullTreatment, TTRthreshModel) #Compare models
 ```
 
 ```{r}
 TTRthreshNullTimepoint <- glmer(I(TTRthresh == 1) ~ treatment +
-                          as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
-                          (1|crab.ID), 
-                        family = binomial(), 
-                        data = modTTR) #Create null model without timepoint
+                                  as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
+                                  (1|crab.ID), 
+                                family = binomial(), 
+                                data = modTTR) #Create null model without timepoint
 anova(TTRthreshNullTimepoint, TTRthreshModel) #Compare models
 ```
 
 ```{r}
 TTRthreshNullInteraction <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
-                          as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
-                          (1|crab.ID), 
-                        family = binomial(), 
-                        data = modTTR) #Create null model without interaction
+                                    as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
+                                    (1|crab.ID), 
+                                  family = binomial(), 
+                                  data = modTTR) #Create null model without interaction
 anova(TTRthreshNullInteraction, TTRthreshModel) #Compare models
 ```
 
@@ -344,7 +344,6 @@ TTRthreshModelComparisons
 ```{r}
 write.csv(TTRthreshModelComparisons, "ttr-binomial-model-comparison-output.csv", quote = FALSE, row.names = FALSE) #Save model comparison table
 ```
-
 
 # Final plots
 
@@ -364,12 +363,12 @@ modTTR %>%
                    labels = c(0, 4, 22, 28, 46, 94)) +
   scale_color_manual(values = c(plotColors[1], plotColors[2]),
                      name = "Temperature (ºC)",
-                     breaks = c("0C", "5C"),
-                     labels = c("0", "5")) +
+                     breaks = c("1.5C", "5C"),
+                     labels = c("1.5", "5")) +
   scale_shape_manual(values = c(15, 19),
                      name = "Temperature (ºC)",
-                     breaks = c("0C", "5C"),
-                     labels = c("0", "5")) +
+                     breaks = c("1.5C", "5C"),
+                     labels = c("1.5", "5")) +
   theme_classic(base_size = 15) #Select unique timepoint, treatment, and TTRavg data, and remove rows where TTRavg = NA. Plot average TTR for each crab in a boxplot. Do not show outliers with the OG boxplot, but add them in with geom_jitter. Assign colors and shapes to each treatment. Increase base font size.
 ggsave("figures/time-to-right-avg-boxplot.pdf", height = 8.5, width = 11)
 ```
@@ -377,7 +376,7 @@ ggsave("figures/time-to-right-avg-boxplot.pdf", height = 8.5, width = 11)
 ## Threshold analysis plot
 
 ```{r}
-treatment_labels <- c("0C" = "0ºC",
+treatment_labels <- c("1.5C" = "1.5ºC",
                       "5C" = "5ºC") #Modify facet labels for treatment
 timepoint_labels <- c("0" = "0",
                       "1" = "4",
@@ -423,11 +422,6 @@ ggsave("figures/time-to-right-noFlips.pdf", height = 8.5, width = 11)
 #Take TTR data and group by timepoint. Count the number of crabs that did not right within 90 seconds during each trial. Subtract that value from the total to get the number of crabs that did right within 90 seconds. Pivot the data longer. Create a trial column based on the condition column. Remove trial information from the text in the condition column. Pipe modified data into ggplot to create a stacked barplot. Facet by treatment and timepoint using facet labels. Relabel axes. Modify fill scale. Use specific base size with classic theme. For facet labels, use a white border (no border).
 ```
 
-```{r}
-head(modTTR)
-```
-
-
 # Individual-level analysis
 
 FIX HOW TO DEAL WITH NAN TTR AVERAGES.
@@ -454,7 +448,7 @@ modTTRQ10 <- modTTR %>%
   filter(., is.na(timepoint3) == FALSE) %>%
   filter(., is.na(timepoint4) == FALSE) %>%
   filter(., is.na(timepoint5) == FALSE) %>%
-  mutate(temperature = case_when(treatment == "0C" ~ 0,
+  mutate(temperature = case_when(treatment == "1.5C" ~ 1.5,
                                  treatment == "5C" ~ 5)) %>%
   
   arrange(., temperature) %>%
@@ -517,8 +511,8 @@ modTTRSubset <- modTTR %>%
   # mutate(., presenceT = case_when(final.genotype == "CC" ~ "N",
   #                                 final.genotype == "CT" ~ "Y",
   #                                 final.genotype == "TT" ~ "Y")) %>%
-  mutate_all(~ifelse(is.nan(.), 91, .))
-filter(., is.na(TTRavg) == FALSE) #Identify the subset of crabs tracked throughout the experiment. Select columns of interest and group by crab ID. Pivot wider. Change all NaN to 91.
+  mutate_all(~ifelse(is.nan(.), 91, .)) %>%
+  filter(., is.na(TTRavg) == FALSE) #Identify the subset of crabs tracked throughout the experiment. Select columns of interest and group by crab ID. Pivot wider. Change all NaN to 91.
 head(modTTRSubset)
 nrow(modTTRSubset)
 ```
