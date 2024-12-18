@@ -440,9 +440,6 @@ anova(TTRthreshModelRevised, TTRthreshSource) #Compare models
 
 Well, looks like there's a significant impact of presence of the T allele and source population on whether or not a crab righted itself!
 
-## Difference in TTR
-
-
 # Plots
 
 ## Average TTR plot
@@ -462,11 +459,11 @@ modTTR %>%
   scale_color_manual(values = c(plotColors[1], plotColors[2]),
                      name = "Temperature (ºC)",
                      breaks = c("0C", "5C"),
-                     labels = c("0", "5")) +
+                     labels = c("1.5", "5")) +
   scale_shape_manual(values = c(15, 19),
                      name = "Temperature (ºC)",
                      breaks = c("0C", "5C"),
-                     labels = c("0", "5")) +
+                     labels = c("1.5", "5")) +
   theme_classic(base_size = 15) #Select unique timepoint, treatment, and TTRavg data, and remove rows where TTRavg = NA. Plot average TTR for each crab in a boxplot. Do not show outliers with the OG boxplot, but add them in with geom_jitter. Assign colors and shapes to each treatment. Increase base font size.
 ggsave("figures/time-to-right-avg-boxplot.pdf", height = 8.5, width = 11)
 ```
@@ -474,7 +471,7 @@ ggsave("figures/time-to-right-avg-boxplot.pdf", height = 8.5, width = 11)
 ## Threshold analysis plot
 
 ```{r}
-treatment_labels <- c("0C" = "0ºC",
+treatment_labels <- c("0C" = "1.5ºC",
                       "5C" = "5ºC") #Modify facet labels for treatment
 timepoint_labels <- c("0" = "0",
                       "1" = "4",
@@ -630,18 +627,42 @@ modTTR %>%
   pivot_longer(., cols = c(Yes, No), 
                values_to = "count", names_to = "condition") %>%
   ggplot(., aes(x = timepoint, y = count, fill = presenceT)) +
-  geom_bar(stat = "identity") + 
-  labs(y = "Number of Crabs") +
+  geom_bar(position = "fill", stat = "identity") + 
+  labs(y = "Proportion") +
   scale_x_continuous(name = "Hours",
                      breaks = c(0:5),
                      labels = c(0, 4, 22, 28, 46, 94)) +
-  scale_y_continuous(name = "Number of Crabs",
-                     limits = c(0,20)) +
   scale_fill_manual(name = "Genotype",
                     values = c("grey70", "grey10"),
                     labels = c("CC", "CT or TT")) +
   theme_classic(base_size = 15)
 ggsave("figures/time-to-right-noFlips-timeT.pdf", height = 8.5, width = 11)
+#Take TTR data and group by timepoint. Count the number of crabs that did not right within 90 seconds during each trial. Subtract that value from the total to get the number of crabs that did right within 90 seconds. Pivot the data longer. Create a trial column based on the condition column. Remove trial information from the text in the condition column. Pipe modified data into ggplot to create a stacked barplot. Facet by treatment and timepoint using facet labels. Relabel axes. Modify fill scale. Use specific base size with classic theme. For facet labels, use a white border (no border).
+```
+
+```{r}
+modTTR %>%
+  filter(., is.na(trial.1) == TRUE | is.na(trial.2) == TRUE | is.na(trial.3) == TRUE) %>%
+  group_by(., timepoint, presenceT, source) %>%
+  summarize(., total = n(), 
+            No = sum(is.na(trial.1) == TRUE | is.na(trial.2) == TRUE | is.na(trial.3) == TRUE),
+            Yes = sum(!(is.na(trial.1) == TRUE | is.na(trial.2) == TRUE | is.na(trial.3) == TRUE))) %>%
+  pivot_longer(., cols = c(Yes, No), 
+               values_to = "count", names_to = "condition") %>%
+  unite(., "source_T", source, presenceT) %>%
+  ggplot(., aes(x = timepoint, y = count, fill = source_T)) +
+  geom_bar(position = "fill", stat = "identity") + 
+  labs(y = "Proportion") +
+  scale_x_continuous(name = "Hours",
+                     breaks = c(0:5),
+                     labels = c(0, 4, 22, 28, 46, 94)) +
+  scale_fill_manual(name = "Population and Genotype",
+                    values = c("grey90", "grey45", "grey5"),
+                    labels = c("Eel Pond CT",
+                               "New Bedford CC",
+                               "New Bedford CT or TT")) +
+  theme_classic(base_size = 15)
+ggsave("figures/time-to-right-noFlips-timeSourceT.pdf", height = 8.5, width = 11)
 #Take TTR data and group by timepoint. Count the number of crabs that did not right within 90 seconds during each trial. Subtract that value from the total to get the number of crabs that did right within 90 seconds. Pivot the data longer. Create a trial column based on the condition column. Remove trial information from the text in the condition column. Pipe modified data into ggplot to create a stacked barplot. Facet by treatment and timepoint using facet labels. Relabel axes. Modify fill scale. Use specific base size with classic theme. For facet labels, use a white border (no border).
 ```
 
@@ -655,14 +676,8 @@ Q10 is a metric used to quantify temperature sensitivity, generally defined as t
 
 ```{r}
 modTTRQ10 <- modTTR %>%
-  select(., timepoint, crab.ID, TTRavg, treatment) %>%
+  select(., timepoint, crab.ID, TTRavg, treatment, presenceT) %>%
   group_by(., crab.ID) %>%
-  # mutate(., presenceC = case_when(final.genotype == "CC" ~ "Y",
-  #                                 final.genotype == "CT" ~ "Y",
-  #                                 final.genotype == "TT" ~ "N")) %>%
-  # mutate(., presenceT = case_when(final.genotype == "CC" ~ "N",
-  #                                 final.genotype == "CT" ~ "Y",
-  #                                 final.genotype == "TT" ~ "Y")) %>%
   pivot_wider(., names_from = timepoint, values_from = TTRavg, names_prefix = "timepoint") %>%
   mutate_all(~ifelse(is.nan(.), 91, .)) %>%
   filter(., is.na(timepoint0) == FALSE) %>%
@@ -671,7 +686,7 @@ modTTRQ10 <- modTTR %>%
   filter(., is.na(timepoint3) == FALSE) %>%
   filter(., is.na(timepoint4) == FALSE) %>%
   filter(., is.na(timepoint5) == FALSE) %>%
-  mutate(temperature = case_when(treatment == "0C" ~ 0,
+  mutate(temperature = case_when(treatment == "0C" ~ 1.5,
                                  treatment == "5C" ~ 5)) %>%
   
   arrange(., temperature) %>%
@@ -695,9 +710,9 @@ modTTRQ10 <- modTTR %>%
                                  R1 = timepoint5, 
                                  T2 = 15, 
                                  T1 = temperature)) %>%
-  select(., crab.ID, treatment, 
+  select(., crab.ID, treatment, presenceT,
          timepoint1_Q10, timepoint2_Q10, timepoint3_Q10, timepoint4_Q10, timepoint5_Q10) %>%
-  pivot_longer(., cols = !c(crab.ID, treatment), names_to = "timepoint", values_to = "Q10") %>%
+  pivot_longer(., cols = !c(crab.ID, treatment, presenceT), names_to = "timepoint", values_to = "Q10") %>%
   mutate(., timepoint = gsub(x = timepoint, pattern = "_Q10", replacement = "")) %>%
   mutate(., timepoint = gsub(x = timepoint, pattern = "timepoint", replacement = "")) #Select columns of interest. Add columns for presence of C or T alleles. Pivot wider. Change NaN to 91 and remove any NA measurements. Add a column for temperature based on the treatment column, and arrange data by temperature. Use the Q10 function within the respirometry package to calculate Q10 values for timepoint 0 vs. all other timepoints. Select columns of interest and pivot longer. Use a series of gsub to modify timepoint column and convert to a character format that would be organized numerically. Use a similar approach for treatment.
 head(modTTRQ10)
@@ -708,7 +723,8 @@ length(modTTRQ10$crab.ID %>% unique(.)) #21 crabs
 modTTRQ10 %>%
   ggplot(., mapping = aes(x = timepoint, y = Q10, color = treatment, shape = treatment, group = crab.ID)) +
   geom_point(size = 2) + geom_line(lty = 3) +
-  facet_wrap(. ~ treatment, scales = "free_y", labeller = labeller(treatment = treatment_labels)) +
+  facet_wrap(. ~ treatment, labeller = labeller(treatment = treatment_labels)) +
+  scale_y_continuous(breaks = seq(0, 1, 0.25)) +
   scale_x_discrete(name = "Exposure Time (Hours)",
                    breaks = unique(modTTR$timepoint),
                    labels = c(0, 4, 22, 28, 46, 94)) +
@@ -716,13 +732,40 @@ modTTRQ10 %>%
                      guide = "none") +
   scale_shape_manual(values = c(15, 17),
                      guide = "none") +
-  theme_classic(base_size = 15) #Plot Q10 data with timepoint on the x-axis, Q10 on the y-axis, and color and shape defined by treatment. Group by crab.ID. Add points and lines connecting values for each crab. Facet by treatment, allow y-axis to vary by each facet, and include facet labels. Add x-axis label and specify x-axis tick labels. Add shape and color values for each treatment but do not include a legend.
+  theme_classic(base_size = 15) + theme(strip.background = element_rect(colour = "white")) #Plot Q10 data with timepoint on the x-axis, Q10 on the y-axis, and color and shape defined by treatment. Group by crab.ID. Add points and lines connecting values for each crab. Facet by treatment, allow y-axis to vary by each facet, and include facet labels. Add x-axis label and specify x-axis tick labels. Add shape and color values for each treatment but do not include a legend.
 ggsave("figures/time-to-right-average-individuals-Q10.pdf", height = 8.5, width = 11)
+```
+
+```{r}
+modTTRQ10 %>%
+  ggplot(., mapping = aes(x = timepoint, y = Q10, color = treatment, shape = treatment, group = crab.ID)) +
+  geom_point(size = 2) + geom_line(lty = 3) +
+  facet_grid(presenceT ~ treatment, labeller = labeller(treatment = treatment_labels,
+                                                                           presenceT = presenceT_labels)) +
+  scale_y_continuous(breaks = seq(0, 1, 0.25)) +
+  scale_x_discrete(name = "Exposure Time (Hours)",
+                   breaks = unique(modTTR$timepoint),
+                   labels = c(0, 4, 22, 28, 46, 94)) +
+  scale_color_manual(values = c(plotColors[1], plotColors[2]),
+                     guide = "none") +
+  scale_shape_manual(values = c(15, 17),
+                     guide = "none") +
+  theme_classic(base_size = 15) + theme(strip.background = element_rect(colour = "white")) #Plot Q10 data with timepoint on the x-axis, Q10 on the y-axis, and color and shape defined by treatment. Group by crab.ID. Add points and lines connecting values for each crab. Facet by treatment, allow y-axis to vary by each facet, and include facet labels. Add x-axis label and specify x-axis tick labels. Add shape and color values for each treatment but do not include a legend.
+ggsave("figures/time-to-right-average-individuals-Q10-genotype.pdf", height = 8.5, width = 11)
 ```
 
 ## Crabs tracked throught the experiment
 
 I tracked certain individuals throughout the course of the experiment, so I want to see how their responses changed over time.
+
+- need to figure out how to document changes from flip to not-flip
+- within crabs that flip no matter what, changes in TTR
+
+need to pivot so that TTRthresh has a value for each day...group by crab ID?
+
+```{r}
+modTTR %>% head(.)
+```
 
 ```{r}
 modTTRSubset <- modTTR %>%
