@@ -56,9 +56,17 @@ head(crabMetadata) #Confirm changes
 ```
 
 ```{r}
-# genotypeData <- read.csv("../../data/genotype/2023-crab-genotype.csv", header = TRUE, na.strings = "") %>%
-#   select(., crab.ID, treatment, final.genotype) #Import genotype data. Remove rows without final genotypes
-# head(genotypeData) #Confirm genotype dataframe creation
+genotypeData <- read.csv("../../../data/WA/2024-crab-genotype-WA.csv", header = TRUE, na.strings = "") %>%
+  select(., -c(timepoint:gel.date, notes)) %>%
+  rename(., crab.ID = "number") %>%
+  filter(., is.na(genotype) == FALSE) %>%
+  mutate(., presenceC = case_when(genotype == "CC" ~ "Y",
+                                  genotype == "CT" ~ "Y",
+                                  genotype == "TT" ~ "N")) %>%
+  mutate(., presenceT = case_when(genotype == "CC" ~ "N",
+                                  genotype == "CT" ~ "Y",
+                                  genotype == "TT" ~ "Y")) #Import genotype data. Remove unnecessary columns. Create a crab.ID column to match with other data and ensure it is numeric. Add columns for precense of C and T
+head(genotypeData) #Confirm genotype dataframe creation
 ```
 
 # Format data
