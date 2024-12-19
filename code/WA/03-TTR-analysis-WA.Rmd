@@ -716,631 +716,110 @@ modTTRQ10 %>%
 ggsave("figures/time-to-right-average-individuals-Q10-genotype.pdf", height = 8.5, width = 11)
 ```
 
-# CODE IN PROGRESS
-
-# Individual-level analysis
-
-FIX HOW TO DEAL WITH NAN TTR AVERAGES.
-
-## Q10 analysis
-
-Q10 is a metric used to quantify temperature sensitivity, generally defined as the change in a physiological response over a 10 degree temperature interval. For most organisms, Q10 is around 2 (a two-fold change in a physiological or chemical response due to a 10 degree temperature change).
-
-```{r}
-modTTRQ10 <- modTTR %>%
-  select(., timepoint, crab.ID, TTRavg, treatment) %>%
-  group_by(., crab.ID) %>%
-  # mutate(., presenceC = case_when(final.genotype == "CC" ~ "Y",
-  #                                 final.genotype == "CT" ~ "Y",
-  #                                 final.genotype == "TT" ~ "N")) %>%
-  # mutate(., presenceT = case_when(final.genotype == "CC" ~ "N",
-  #                                 final.genotype == "CT" ~ "Y",
-  #                                 final.genotype == "TT" ~ "Y")) %>%
-  pivot_wider(., names_from = timepoint, values_from = TTRavg, names_prefix = "timepoint") %>%
-  mutate_all(~ifelse(is.nan(.), 91, .)) %>%
-  filter(., is.na(timepoint0) == FALSE) %>%
-  filter(., is.na(timepoint1) == FALSE) %>%
-  filter(., is.na(timepoint2) == FALSE) %>%
-  filter(., is.na(timepoint3) == FALSE) %>%
-  filter(., is.na(timepoint4) == FALSE) %>%
-  filter(., is.na(timepoint5) == FALSE) %>%
-  mutate(temperature = case_when(treatment == "1.5C" ~ 1.5,
-                                 treatment == "5C" ~ 5)) %>%
-  
-  arrange(., temperature) %>%
-  mutate(., timepoint1_Q10 = Q10(R2 = timepoint0, 
-                                 R1 = timepoint1, 
-                                 T2 = 15, 
-                                 T1 = temperature)) %>%
-  mutate(., timepoint2_Q10 = Q10(R2 = timepoint0, 
-                                 R1 = timepoint2, 
-                                 T2 = 15, 
-                                 T1 = temperature)) %>%
-  mutate(., timepoint3_Q10 = Q10(R2 = timepoint0, 
-                                 R1 = timepoint3, 
-                                 T2 = 15, 
-                                 T1 = temperature)) %>%
-  mutate(., timepoint4_Q10 = Q10(R2 = timepoint0, 
-                                 R1 = timepoint4, 
-                                 T2 = 15, 
-                                 T1 = temperature)) %>% 
-  mutate(., timepoint5_Q10 = Q10(R2 = timepoint0, 
-                                 R1 = timepoint5, 
-                                 T2 = 15, 
-                                 T1 = temperature)) %>%
-  select(., crab.ID, treatment, 
-         timepoint1_Q10, timepoint2_Q10, timepoint3_Q10, timepoint4_Q10, timepoint5_Q10) %>%
-  pivot_longer(., cols = !c(crab.ID, treatment), names_to = "timepoint", values_to = "Q10") %>%
-  mutate(., timepoint = gsub(x = timepoint, pattern = "_Q10", replacement = "")) %>%
-  mutate(., timepoint = gsub(x = timepoint, pattern = "timepoint", replacement = "")) #Select columns of interest. Add columns for presence of C or T alleles. Pivot wider. Change NaN to 91 and remove any NA measurements. Add a column for temperature based on the treatment column, and arrange data by temperature. Use the Q10 function within the respirometry package to calculate Q10 values for timepoint 0 vs. all other timepoints. Select columns of interest and pivot longer. Use a series of gsub to modify timepoint column and convert to a character format that would be organized numerically. Use a similar approach for treatment.
-head(modTTRQ10)
-length(modTTRQ10$crab.ID %>% unique(.)) #21 crabs
-```
-
-```{r}
-modTTRQ10 %>%
-  ggplot(., mapping = aes(x = timepoint, y = Q10, color = treatment, shape = treatment, group = crab.ID)) +
-  geom_point(size = 2) + geom_line(lty = 3) +
-  facet_wrap(. ~ treatment, scales = "free_y", labeller = labeller(treatment = treatment_labels)) +
-  scale_x_discrete(name = "Exposure Time (Hours)",
-                   breaks = unique(modTTR$timepoint),
-                   labels = c(0, 4, 22, 28, 46, 94)) +
-  scale_color_manual(values = c(plotColors[1], plotColors[2]),
-                     guide = "none") +
-  scale_shape_manual(values = c(15, 17),
-                     guide = "none") +
-  theme_classic(base_size = 15) #Plot Q10 data with timepoint on the x-axis, Q10 on the y-axis, and color and shape defined by treatment. Group by crab.ID. Add points and lines connecting values for each crab. Facet by treatment, allow y-axis to vary by each facet, and include facet labels. Add x-axis label and specify x-axis tick labels. Add shape and color values for each treatment but do not include a legend.
-ggsave("figures/time-to-right-average-individuals-Q10.pdf", height = 8.5, width = 11)
-```
-
 ## Crabs tracked throught the experiment
 
 I tracked certain individuals throughout the course of the experiment, so I want to see how their responses changed over time.
 
 ```{r}
-modTTRSubset <- modTTR %>%
-  select(., timepoint, crab.ID, TTRavg, treatment) %>%
+left_join(modTTRQ10, modTTR, by = c("crab.ID", "treatment", "genotype", "timepoint")) %>%
+  select(., -c(date:trial.3, sex:presenceT)) %>%
+  filter(., treatment != "5C") %>%
+  ggplot(., mapping = aes(x = timepoint, y = TTRthresh, color = genotype, group = crab.ID)) +
+  geom_point(size = 2) + geom_line(lty = 3) +
+  facet_wrap(~crab.ID) +
+  scale_x_continuous(name = "Exposure Time (Hours)",
+                   breaks = 1:5,
+                   labels = c(4, 22, 28, 46, 94)) +
+  scale_y_continuous(name = "Right?",
+                     breaks = c(0, 1),
+                     labels = c("No", "Yes")) +
+  scale_colour_manual(name = "Genotype",
+                    values = c("grey70", "grey10"),
+                    labels = c("CT", "TT")) +
+  scale_shape_manual(name = "Genotype",
+                    values = c(15, 19),
+                    labels = c("CT", "TT")) +
+  theme_classic(base_size = 15) + theme(strip.background = element_rect(colour = "white")) #Join TTR data with Q10 data to get individuals that were tracked throughout time. Remove superfluous columns and entries at 5ºC. Create point and line graph and wrap by crab ID.
+ggsave("figures/time-to-right-noFlips-individuals-Q10.pdf", height = 8.5, width = 11)
+```
+
+```{r}
+left_join(modTTRQ10, modTTR, by = c("crab.ID", "treatment", "genotype", "timepoint")) %>%
+  select(., -c(Q10:trial.3, sex:presenceT)) %>%
+  filter(., treatment != "5C") %>%
+  pivot_wider(., names_from = "timepoint", names_prefix = "timepoint", values_from = "TTRthresh") %>%
+  mutate(., pattern = case_when(timepoint2 == 0 & timepoint3 == 0 & timepoint4 == 0 & timepoint5 == 0 ~ "4",
+                                timepoint2 == 1 & timepoint3 == 1 & timepoint4 == 1 & timepoint5 == 1 ~ "1",
+                                (timepoint2 == 0 | timepoint3 == 0 | timepoint4 == 0) & timepoint5 == 1 ~ "2",
+                                (timepoint3 == 1 | timepoint4 == 1) & timepoint5 == 0 ~ "3")) %>%
+  group_by(., genotype, pattern) %>%
+  summarize(., count = n()) %>%
+  ggplot(., mapping = aes(x = genotype, y = count, fill = pattern)) +
+  geom_bar(position = "fill", stat = "identity") +
+  labs(y = "Proportion") +
+  scale_x_discrete(name = "Genotype",
+                 labels = c("CT", "TT")) +
+  scale_fill_manual(name = "Pattern",
+                    labels = c("Always", "Recovered", "Failed", "Never"),
+                    values = c("grey90", "grey60", "grey30", "grey0")) +
+  theme_classic(base_size = 15) #Take data and pivot timepoint and threshold information. Assign patterns where 1 = always righting, 2 = recovered, 3 = failure to recover, and 4 = never righting. Group data by genotype and pattern and generate counts. Create stacked barplot.
+ggsave("figures/time-to-right-average-individuals-Q10-genotype-patterns.pdf", height = 8.5, width = 11)
+```
+
+
+```{r}
+modTTR %>%
+  filter(., is.na(genotype) == FALSE) %>%
+  dplyr::select(., crab.ID, treatment, genotype, timepoint, TTRthresh) %>%
+  filter(., timepoint != 0) %>%
+  filter(., treatment == "1.5C") %>%
   group_by(., crab.ID) %>%
-  # mutate(., presenceC = case_when(final.genotype == "CC" ~ "Y",
-  #                                 final.genotype == "CT" ~ "Y",
-  #                                 final.genotype == "TT" ~ "N")) %>%
-  # mutate(., presenceT = case_when(final.genotype == "CC" ~ "N",
-  #                                 final.genotype == "CT" ~ "Y",
-  #                                 final.genotype == "TT" ~ "Y")) %>%
-  mutate_all(~ifelse(is.nan(.), 91, .)) %>%
-  filter(., is.na(TTRavg) == FALSE) #Identify the subset of crabs tracked throughout the experiment. Select columns of interest and group by crab ID. Pivot wider. Change all NaN to 91.
-head(modTTRSubset)
-nrow(modTTRSubset)
+  arrange(., crab.ID) %>%
+  filter(n() > 3) %>%
+  ggplot(., mapping = aes(x = timepoint, y = TTRthresh, color = genotype, shape = genotype, group = crab.ID)) +
+  geom_point(size = 2) + geom_line(lty = 3) +
+  facet_wrap(~crab.ID) +
+  scale_x_continuous(name = "Exposure Time (Hours)",
+                   breaks = 1:5,
+                   labels = c(4, 22, 28, 46, 94)) +
+  scale_y_continuous(name = "Right?",
+                     breaks = c(0, 1),
+                     labels = c("No", "Yes")) +
+  scale_colour_manual(name = "Genotype",
+                    values = c("grey70", "grey10"),
+                    labels = c("CT", "TT")) +
+  scale_shape_manual(name = "Genotype",
+                    values = c(15, 19),
+                    labels = c("CT", "TT")) +
+  theme_classic(base_size = 15) + theme(strip.background = element_rect(colour = "white"))
+ggsave("figures/time-to-right-noFlips-individuals.pdf", height = 8.5, width = 11)
 ```
 
 ```{r}
-modTTRSubset %>%
-  dplyr::select(., c(crab.ID, timepoint, tank, treatment, TTRavg)) %>%
-  mutate(., treatment = case_when(treatment == "5C" ~ "05C",
-                                  treatment == "15C" ~ "15C",
-                                  treatment == "25C" ~ "25C")) %>%
-  ggplot(., mapping = aes(x = timepoint, y = TTRavg, group = crab.ID, color = treatment, shape = treatment)) +
-  geom_point(size = 1, alpha = 0.75) + geom_line(linetype = 3) +
-  facet_wrap(vars(treatment, tank), ncol = 3) +
-  scale_x_continuous(name = "timepoint",
-                     breaks = c(seq(0, 42, 14), 49),
-                     limits = c(0, 49)) +
-  scale_y_continuous(name = "Individual Time-to-Right (s)",
-                     breaks = c(0, seq(1, 5, 2), seq(5, 15, 5))) +
-  # scale_y_continuous(name = "Average Time-to-Right (s)") +
-  scale_color_manual(values = c(plotColors[3], plotColors[2], plotColors[1]), 
-                     name = "Temperature (ºC)",
-                     breaks = c("05C", "15C", "25C"),
-                     labels = c("5", "15", "25")) +
-  scale_shape_manual(values = c(15, 19, 17),
-                     name = "Temperature (ºC)",
-                     breaks = c("05C", "15C", "25C"),
-                     labels = c("5", "15", "25")) +
-  theme_classic(base_size = 15) + theme(strip.text.x = element_blank(),
-                                        strip.background = element_blank()) #Plot TTR for each individual crab that was tracked over the entire experiment. Facet by tank and treatment so it's easier to visualize. Assign colors to each treatment.
-ggsave("figures/time-to-right-avg-individuals.pdf", height = 8.5, width = 11)
-```
-
-Alright, this plot tells us what we already know: that there's more variation in the 5ºC than the other two.
-
-I also want to look at difference in TTR over time by looking at the difference in TTR from the average...
-
-```{r}
-modTTRSubsetR %>%
-  dplyr::select(., c(crab.ID, timepoint, tank, treatment, TTRavg, TTRavgFull)) %>%
-  mutate(., treatment = case_when(treatment == "5C" ~ "05C",
-                                  treatment == "15C" ~ "15C",
-                                  treatment == "25C" ~ "25C")) %>%
-  ggplot(., mapping = aes(x = timepoint, y = TTRavg - TTRavgFull, group = crab.ID, color = treatment, shape = treatment)) +
-  geom_point(size = 1, alpha = 0.75) + geom_line(linetype = 3) +
-  facet_wrap(vars(treatment, tank), ncol = 3) +
-  scale_x_continuous(name = "timepoint",
-                     breaks = c(seq(0, 42, 14), 49),
-                     limits = c(0, 49)) +
-  scale_y_continuous(name = "Difference in Time-to-Right (s)",
-                     breaks = seq(-5, 10, 5)) +
-  scale_color_manual(values = c(plotColors[3], plotColors[2], plotColors[1]), 
-                     name = "Temperature (ºC)",
-                     breaks = c("05C", "15C", "25C"),
-                     labels = c("5", "15", "25")) +
-  scale_shape_manual(values = c(15, 19, 17),
-                     name = "Temperature (ºC)",
-                     breaks = c("05C", "15C", "25C"),
-                     labels = c("5", "15", "25")) +
-  theme_classic(base_size = 15) + theme(strip.text.x = element_blank(),
-                                        strip.background = element_blank()) #Plot difference in individual TTR from average TTR for each individual crab that was tracked over the entire experiment. Facet by tank and treatment so it's easier to visualize. Assign colors to each treatment.
-ggsave("figures/time-to-right-avg-individuals-diff.pdf", height = 8.5, width = 11)
-```
-
-```{r}
-modTTRSubsetR %>%
-  dplyr::select(., c(crab.ID, timepoint, tank, treatment, TTRavg, TTRavgFull, final.genotype)) %>%
-  mutate(., treatment = case_when(treatment == "5C" ~ "05C",
-                                  treatment == "15C" ~ "15C",
-                                  treatment == "25C" ~ "25C")) %>%
-  ggplot(., mapping = aes(x = timepoint, y = TTRavg - TTRavgFull, group = crab.ID, color = treatment, shape = final.genotype)) +
-  geom_point(size = 1, alpha = 0.75) + geom_line(linetype = 3) +
-  facet_wrap(vars(treatment, tank), ncol = 3) +
-  scale_x_continuous(name = "timepoint",
-                     breaks = c(seq(0, 42, 14), 49),
-                     limits = c(0, 49)) +
-  scale_y_continuous(name = "Difference in Time-to-Right (s)",
-                     breaks = seq(-5, 10, 5)) +
-  scale_color_manual(values = c(plotColors[3], plotColors[2], plotColors[1]), 
-                     name = "Temperature (ºC)",
-                     breaks = c("05C", "15C", "25C"),
-                     labels = c("5", "15", "25")) +
-  scale_shape_manual(values = c(3, 4, 1),
-                     name = "Genotype",
-                     breaks = c("CC", "CT", "TT"),
-                     labels = c("CC", "CT", "TT")) +
-  theme_classic(base_size = 15) + theme(strip.text.x = element_blank(),
-                                        strip.background = element_blank()) #Plot difference in individual TTR from average TTR for each individual crab that was tracked over the entire experiment. Facet by tank and treatment so it's easier to visualize. Assign colors to each treatment.
-ggsave("figures/time-to-right-avg-individuals-diff-genotype.pdf", height = 8.5, width = 11)
-```
-
-...and percent change from the average.
-
-```{r}
-modTTRSubsetR %>%
-  dplyr::select(., c(crab.ID, timepoint, tank, treatment, TTRavg, TTRavgFull)) %>%
-  mutate(., treatment = case_when(treatment == "5C" ~ "05C",
-                                  treatment == "15C" ~ "15C",
-                                  treatment == "25C" ~ "25C")) %>%
-  ggplot(., mapping = aes(x = timepoint, y = ((TTRavg - TTRavgFull)/TTRavgFull)*100, group = crab.ID, color = treatment, shape = treatment)) +
-  geom_point(size = 1, alpha = 0.75) + geom_line(linetype = 3) +
-  facet_wrap(vars(treatment, tank), ncol = 3, scale = "free_y") +
-  scale_x_continuous(name = "timepoint",
-                     breaks = c(seq(0, 42, 14), 49),
-                     limits = c(0, 49)) +
-  scale_y_continuous(name = "Percent Change in Time-to-Right") +
-  scale_color_manual(values = c(plotColors[3], plotColors[2], plotColors[1]), 
-                     name = "Temperature (ºC)",
-                     breaks = c("05C", "15C", "25C"),
-                     labels = c("5", "15", "25")) +
-  scale_shape_manual(values = c(15, 19, 17),
-                     name = "Temperature (ºC)",
-                     breaks = c("05C", "15C", "25C"),
-                     labels = c("5", "15", "25")) +
-  theme_classic(base_size = 15) + theme(strip.text.x = element_blank(),
-                                        strip.background = element_blank()) #Plot difference in individual TTR from average TTR for each individual crab that was tracked over the entire experiment. Facet by tank and treatment so it's easier to visualize. Assign colors to each treatment.
-ggsave("figures/time-to-right-avg-individuals-percChange.pdf", height = 8.5, width = 11)
-```
-
-## Genotype analysis
-
-I'm going to examine the effect of genotype on TTR in a few ways. 
-
-### Average TTR
-
-I'm going to start by looking the influnce of genotype variables on overall TTR:
-
-1. Genotype
-2. Presence of "C" (warm-adapted allele) (the inverse )
-
-```{r}
-modTTRGenotype <- modTTR %>%
-  mutate(., presenceC = case_when(final.genotype == "CC" ~ "Y",
-                                  final.genotype == "CT" ~ "Y",
-                                  final.genotype == "TT" ~ "N")) %>%
-  mutate(., presenceT = case_when(final.genotype == "CC" ~ "N",
-                                  final.genotype == "CT" ~ "Y",
-                                  final.genotype == "TT" ~ "Y")) #Subset data with genotype information. Add two columns for presence of C or T allele
-head(modTTRGenotype)
-```
-
-```{r}
-TTRmodelSubset <- glm(log(TTRavg) ~ treatment + timepoint + treatment*timepoint + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + as.factor(final.genotype), data = modTTRGenotype) #ANOVA, with log(TTRavg) as the response variable, and treatment, timepoint, the interaction between treatment and timepoint, sex, integument color (continuous), carapace width, weight, whether or not a crab is missing legs, and genotype as explanatory variables. Cannot add presence of C or T allele into the model since they are colinear with genotype
-summary(TTRmodelSubset) #Various factors significant
-```
-
-```{r}
-step(TTRmodelSubset, direction = "backward")
-```
-
-```{r}
-TTRmodelSubset2 <- glm(log(TTRavg) ~ treatment + timepoint + treatment*timepoint + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + as.factor(presenceC) + as.factor(presenceT), data = modTTRGenotype) #ANOVA, with log(TTRavg) as the response variable, and treatment, timepoint, the interaction between treatment and timepoint, sex, integument color (continuous), carapace width, weight, whether or not a crab is missing legs, and presence of C or T allele
-summary(TTRmodelSubset2) #Various factors significant
-```
-
-```{r}
-step(TTRmodelSubset2, direction = "backward")
-```
-
-No genotype variable has a significant influence on average TTR. Can we see if any of our outliers in our average TTR boxplots are associated with a particular genotype?
-
-```{r}
-facet_labels <- c("05C" = "5ºC",
-                  "15C" = "15ºC",
-                  "25C" = "25ºC") #Assign labels for facets
-```
-
-```{r}
-modTTRGenotype %>%
-  dplyr::select(., c(timepoint, treatment, TTRavg, final.genotype)) %>%
-  distinct(.) %>%
-  filter(., treatment != "15C") %>%
-  mutate(., timepoint = case_when(timepoint == 1 ~ "01",
-                                  timepoint == 2 ~ "02",
-                                  timepoint == 7 ~ "07",
-                                  timepoint != 1 | 2 | 7 ~ as.character(timepoint))) %>%
-  mutate(., treatment = case_when(treatment == "5C" ~ "05C",
-                                  treatment != "5C" ~ treatment)) %>%
-  ggplot(mapping = aes(x = timepoint, y = TTRavg, color = treatment)) +
-  geom_boxplot(outlier.shape = NA) + geom_point(aes(shape = final.genotype), size = 2) +
-  facet_wrap(. ~ treatment, nrow = 3, scales = "free_y", labeller = labeller(treatment = facet_labels)) +
-  ylab("Average Time-to-Right (s)") +
-  scale_x_discrete(name = "timepoint",
-                   breaks = c("0", "01", "02", "07", "12", "14", "19", "21", "26", "28", "42", "49"),
-                   labels = c("0", "1", "2", "7", "12", "14", "19", "21", "26", "28", "42", "49")) +
-  scale_color_manual(values = c(plotColors[3], plotColors[2], plotColors[1]),
-                     name = "Temperature (ºC)",
-                     breaks = c("05C", "15C", "25C"),
-                     labels = c("5", "15", "25")) +
-  scale_shape_manual(values = c(3, 4, 1),
-                     name = "Genotype",
-                     breaks = c("CC", "CT", "TT"),
-                     labels = c("CC", "CT", "TT")) +
-  theme_classic(base_size = 15) #Select unique timepoint, treatment, and TTRavg data. Replace numbers with characters to facilitate better ordering. Plot average TTR for each crab in a boxplot. Do not show outliers with the OG boxplot, but add them in with geom_jitter. Add horizontal line for boxplot outlier threshold. Assign colors to each treatment. Increase base font size.
-ggsave("figures/time-to-right-avg-boxplot-genotype.pdf", height = 8.5, width = 11)
-```
-
-### Difference in TTR
-
-I'm going to do a similar analysis, but this time look at the effects of genotype on the difference in TTR between timepoints 2 and 7, timepoints 2 and 21, and timepoints 2 and 42. Although the 5ºC treatment was run for 49 timepoints, since we know time has a significant influence on TTR I'm going to use the same time point for all variables. Looking at differences with timepoint 7 can represent short-term differences, while timepoints 21 and 42 would be longer-term differences. timepoint 21 is also a nice parallel to the three-week experiment run in 2022. I also have timepoint 0 data for some of the crabs.
-
-```{r}
-modTTRSubsetDiff <- modTTRGenotype %>%
-  select(., timepoint, crab.ID, TTRavg, treatment, final.genotype, presenceC, presenceT) %>%
-  filter(., timepoint == 0 | timepoint == 2 | timepoint == 7 | timepoint == 21 | timepoint == 42) %>%
-  pivot_wider(., names_from = timepoint, values_from = TTRavg, names_prefix = "timepoint") %>%
-  mutate(., timepoint2v0 = timepoint2 - timepoint0) %>%
-  mutate(., timepoint7v0 = timepoint7 - timepoint0) %>%
-  mutate(., timepoint21v0 = timepoint21 - timepoint0) %>%
-  mutate(., timepoint42v0 = timepoint42 - timepoint0) %>%
-  mutate(., timepoint7v2 = timepoint7 - timepoint2) %>%
-  mutate(., timepoint21v2 = timepoint21 - timepoint2) %>%
-  mutate(., timepoint42v2 = timepoint42 - timepoint2) #For subset of the crabs, select timepoint, crab ID, average TTR, treatmet, and genotype information. Filter timepoints of interest and pivot wider, using timepoints as columns and values from TTRavg. Add "timepoint" as a prefix to all columns. Get the difference in TTR for comparisons of interest.
-head(modTTRSubsetDiff)
-```
-
-#### Statistical comparison
-
-```{r}
-modTTRSubsetDiffStats <- modTTRSubsetDiff %>%
-  filter(., is.na(timepoint0) == FALSE & is.na(timepoint2) == FALSE & is.na(timepoint7) == FALSE) %>%
-  select(., -c(timepoint0, timepoint2, timepoint7, timepoint21, timepoint42, timepoint7v2, timepoint21v2, timepoint42v2)) %>%
-  pivot_longer(., cols = c(timepoint2v0, timepoint7v0, timepoint21v0, timepoint42v0), names_to = "timepoint", values_to = "TTRdiff") %>%
-  mutate(., timepoint = gsub(pattern = "timepoint", replacement = "", x = timepoint)) %>%
-  mutate(., timepoint = gsub(pattern = "v0", replacement = "", x = timepoint)) %>%
-  mutate(., timepoint = as.numeric(timepoint))
-#Take difference in TTR information and subset crabs with data for timepoints 0, 2, and 7. Remove extraneous columns. Pivot data longer with values in TTRdiff and timepoint in a new column. Remove extra characters from timepoint values and convert into a numeric column
-head(modTTRSubsetDiffStats) #Confirm dataframe creation
-```
-
-```{r}
-TTRdiffGLM <- glm(log(TTRdiff + 1) ~ final.genotype + treatment*timepoint, data = modTTRSubsetDiffStats) #Run GLM to examine if difference in TTR from timepoint 0 is impacted by genotype, treatment, or timepoint
-summary(TTRdiffGLM) #No effect of genotype
-```
-
-```{r}
-step(TTRdiffGLM, direction = "backward") #Genotype not included in most parsimonious model
-```
-
-```{r}
-TTRdiffGLM2 <- glm(log(TTRdiff + 1) ~ presenceC + presenceT + treatment*timepoint, data = modTTRSubsetDiffStats) #Run GLM to examine if difference in TTR from timepoint 0 is impacted by binary genotype, treatment, or timepoint
-summary(TTRdiffGLM2) #No effect of genotype
-```
-
-```{r}
-step(TTRdiffGLM2, direction = "backward") #Genotype not included in most parsimonious model
-```
-
-#### Plot
-
-##### Facet by genotype
-
-```{r}
-modTTRSubsetDiff %>%
-  mutate(., treatment = case_when(treatment == "5C" ~ "05C",
-                                  treatment != "5C" ~ treatment)) %>%
-  ggplot(mapping = aes(x = treatment, y = timepoint7v2, color = treatment)) +
-  geom_boxplot(outlier.shape = NA) + geom_point(aes(shape = treatment), size = 2) +
-  facet_wrap(. ~ final.genotype) + 
-  labs(x = "Temperature (ºC)", y = "Difference in Individual TTR (s)", title = "timepoint 7 vs. timepoint 2") +
-  scale_x_discrete(breaks = c("05C", "15C", "25C"),
-                   labels = c("5", "15", "25")) +
-  scale_color_manual(values = c(plotColors[3], plotColors[2], plotColors[1]),
-                     name = "Temperature (ºC)",
-                     breaks = c("05C", "15C", "25C"),
-                     labels = c("5", "15", "25")) +
-  scale_shape_manual(values = c(15, 19, 17),
-                     name = "Temperature (ºC)",
-                     breaks = c("05C", "15C", "25C"),
-                     labels = c("5", "15", "25")) +
-  theme_classic(base_size = 15) + theme(legend.position = "none")
-ggsave("figures/time-to-right-average-individuals-genotype-timepoint7v2.pdf", height = 8.5, width = 11)
-```
-
-```{r}
-modTTRSubsetDiff %>%
-  mutate(., treatment = case_when(treatment == "5C" ~ "05C",
-                                  treatment != "5C" ~ treatment)) %>%
-  ggplot(mapping = aes(x = treatment, y = timepoint21v2, color = treatment)) +
-  geom_boxplot(outlier.shape = NA) + geom_point(aes(shape = treatment), size = 2) +
-  facet_wrap(. ~ final.genotype) + 
-  labs(x = "Temperature (ºC)", y = "Difference in Individual TTR (s)", title = "timepoint 21 vs. timepoint 2") +
-  scale_x_discrete(breaks = c("05C", "15C", "25C"),
-                   labels = c("5", "15", "25")) +
-  scale_color_manual(values = c(plotColors[3], plotColors[2], plotColors[1]),
-                     name = "Temperature (ºC)",
-                     breaks = c("05C", "15C", "25C"),
-                     labels = c("5", "15", "25")) +
-  scale_shape_manual(values = c(15, 19, 17),
-                     name = "Temperature (ºC)",
-                     breaks = c("05C", "15C", "25C"),
-                     labels = c("5", "15", "25")) +
-  theme_classic(base_size = 15) + theme(legend.position = "none")
-ggsave("figures/time-to-right-average-individuals-genotype-timepoint21v2.pdf", height = 8.5, width = 11)
-```
-
-```{r}
-modTTRSubsetDiff %>%
-  mutate(., treatment = case_when(treatment == "5C" ~ "05C",
-                                  treatment != "5C" ~ treatment)) %>%
-  ggplot(mapping = aes(x = treatment, y = timepoint42v2, color = treatment)) +
-  geom_boxplot(outlier.shape = NA) + geom_point(aes(shape = treatment), size = 2) +
-  facet_wrap(. ~ final.genotype) + 
-  labs(x = "Temperature (ºC)", y = "Difference in Individual TTR (s)", title = "timepoint 42 vs. timepoint 2") +
-  scale_x_discrete(breaks = c("05C", "15C", "25C"),
-                   labels = c("5", "15", "25")) +
-  scale_color_manual(values = c(plotColors[3], plotColors[2], plotColors[1]),
-                     name = "Temperature (ºC)",
-                     breaks = c("05C", "15C", "25C"),
-                     labels = c("5", "15", "25")) +
-  scale_shape_manual(values = c(15, 19, 17),
-                     name = "Temperature (ºC)",
-                     breaks = c("05C", "15C", "25C"),
-                     labels = c("5", "15", "25")) +
-  theme_classic(base_size = 15) + theme(legend.position = "none")
-ggsave("figures/time-to-right-average-individuals-genotype-timepoint42v2.pdf", height = 8.5, width = 11)
-```
-
-```{r}
-timepoint7vs2Plot <- modTTRSubsetDiff %>%
-  mutate(., treatment = case_when(treatment == "5C" ~ "05C",
-                                  treatment != "5C" ~ treatment)) %>%
-  ggplot(mapping = aes(x = treatment, y = timepoint7v2, color = treatment)) +
-  geom_boxplot(outlier.shape = NA) + geom_point(aes(shape = treatment), size = 2) +
-  facet_wrap(. ~ final.genotype) + 
-  labs(x = "", y = "", title = "A. timepoint 7 vs. timepoint 2") +
-  scale_y_continuous(breaks = seq(-5, 15, 5),
-                     limits = c(-5,15)) +
-  scale_x_discrete(breaks = c("05C", "15C", "25C"),
-                   labels = c("5", "15", "25")) +
-  scale_color_manual(values = c(plotColors[3], plotColors[2], plotColors[1]),
-                     name = "Temperature (ºC)",
-                     breaks = c("05C", "15C", "25C"),
-                     labels = c("5", "15", "25")) +
-  scale_shape_manual(values = c(15, 19, 17),
-                     name = "Temperature (ºC)",
-                     breaks = c("05C", "15C", "25C"),
-                     labels = c("5", "15", "25")) +
-  theme_classic(base_size = 15) + theme(legend.position = "none",
-                                        axis.ticks.x = element_blank(),
-                                        axis.text.x = element_blank())
-timepoint7vs2Plot
-```
-
-```{r}
-timepoint21vs2Plot <- modTTRSubsetDiff %>%
-  mutate(., treatment = case_when(treatment == "5C" ~ "05C",
-                                  treatment != "5C" ~ treatment)) %>%
-  ggplot(mapping = aes(x = treatment, y = timepoint21v2, color = treatment)) +
-  geom_boxplot(outlier.shape = NA) + geom_point(aes(shape = treatment), size = 2) +
-  facet_wrap(. ~ final.genotype) + 
-  labs(x = "", y = "Difference in Individual TTR (s)", title = "B. timepoint 21 vs. timepoint 2") +
-  scale_y_continuous(breaks = seq(-1,5,1),
-                     limits = c(-1,5)) +
-  scale_x_discrete(breaks = c("05C", "15C", "25C"),
-                   labels = c("5", "15", "25")) +
-  scale_color_manual(values = c(plotColors[3], plotColors[2], plotColors[1]),
-                     name = "Temperature (ºC)",
-                     breaks = c("05C", "15C", "25C"),
-                     labels = c("5", "15", "25")) +
-  scale_shape_manual(values = c(15, 19, 17),
-                     name = "Temperature (ºC)",
-                     breaks = c("05C", "15C", "25C"),
-                     labels = c("5", "15", "25")) +
-  theme_classic(base_size = 15) + theme(legend.position = "none",
-                                        axis.ticks.x = element_blank(),
-                                        axis.text.x = element_blank())
-timepoint21vs2Plot
-```
-
-```{r}
-timepoint42v2Plot <- modTTRSubsetDiff %>%
-  mutate(., treatment = case_when(treatment == "5C" ~ "05C",
-                                  treatment != "5C" ~ treatment)) %>%
-  ggplot(mapping = aes(x = treatment, y = timepoint42v2, color = treatment)) +
-  geom_boxplot(outlier.shape = NA) + geom_point(aes(shape = treatment), size = 2) +
-  facet_wrap(. ~ final.genotype) + 
-  labs(x = "Temperature (ºC)", y = "", title = "C. timepoint 42 vs. timepoint 2") +
-  scale_y_continuous(breaks = seq(-1,6,1),
-                     limits = c(-1,6)) +
-  scale_x_discrete(breaks = c("05C", "15C", "25C"),
-                   labels = c("5", "15", "25")) +
-  scale_color_manual(values = c(plotColors[3], plotColors[2], plotColors[1]),
-                     name = "Temperature (ºC)",
-                     breaks = c("05C", "15C", "25C"),
-                     labels = c("5", "15", "25")) +
-  scale_shape_manual(values = c(15, 19, 17),
-                     name = "Temperature (ºC)",
-                     breaks = c("05C", "15C", "25C"),
-                     labels = c("5", "15", "25")) +
-  theme_classic(base_size = 15) + theme(legend.position = "none")
-timepoint42v2Plot
-```
-
-```{r}
-timepoint7vs2Plot / timepoint21vs2Plot / timepoint42v2Plot
-ggsave("figures/time-to-right-average-individuals-genotype-multipanel.pdf", height = 11, width = 8.5)
-```
-
-##### Facet by temperature
-
-```{r}
-modTTRSubsetDiff %>%
-  mutate(., treatment = case_when(treatment == "5C" ~ "05C",
-                                  treatment != "5C" ~ treatment)) %>%
-  ggplot(mapping = aes(x = final.genotype, y = timepoint7v2, color = treatment)) +
-  geom_boxplot(outlier.shape = NA) + geom_point(aes(shape = final.genotype), size = 2) +
-  facet_wrap(. ~ treatment, scales = "free_y", labeller = labeller(treatment = facet_labels)) +
-  labs(x = "Genotype", y = "Difference in Individual TTR (s)", title = "timepoint 7 vs. timepoint 2") +
-  scale_x_discrete(breaks = c("CC", "CT", "TT")) +
-  scale_color_manual(values = c(plotColors[3], plotColors[2], plotColors[1]),
-                     name = "Temperature (ºC)",
-                     breaks = c("05C", "15C", "25C"),
-                     labels = c("5", "15", "25")) +
-  scale_shape_manual(values = c(3, 4, 1),
-                     name = "Genotype",
-                     breaks = c("CC", "CT", "TT"),
-                     labels = c("CC", "CT", "TT")) +
-  theme_classic(base_size = 15) + theme(legend.position = "none")
-ggsave("figures/time-to-right-average-individuals-genotype-bytemp-timepoint7v2.pdf", height = 8.5, width = 11)
-```
-
-```{r}
-modTTRSubsetDiff %>%
-  mutate(., treatment = case_when(treatment == "5C" ~ "05C",
-                                  treatment != "5C" ~ treatment)) %>%
-  ggplot(mapping = aes(x = final.genotype, y = timepoint21v2, color = treatment)) +
-  geom_boxplot(outlier.shape = NA) + geom_point(aes(shape = final.genotype), size = 2) +
-  facet_wrap(. ~ treatment, scales = "free_y", labeller = labeller(treatment = facet_labels)) +
-  labs(x = "Genotype", y = "Difference in Individual TTR (s)", title = "timepoint 21 vs. timepoint 2") +
-  scale_x_discrete(breaks = c("CC", "CT", "TT")) +
-  scale_color_manual(values = c(plotColors[3], plotColors[2], plotColors[1]),
-                     name = "Temperature (ºC)",
-                     breaks = c("05C", "15C", "25C"),
-                     labels = c("5", "15", "25")) +
-  scale_shape_manual(values = c(3, 4, 1),
-                     name = "Genotype",
-                     breaks = c("CC", "CT", "TT"),
-                     labels = c("CC", "CT", "TT")) +
-  theme_classic(base_size = 15) + theme(legend.position = "none")
-ggsave("figures/time-to-right-average-individuals-genotype-bytemp-timepoint21v2.pdf", height = 8.5, width = 11)
-```
-
-```{r}
-modTTRSubsetDiff %>%
-  mutate(., treatment = case_when(treatment == "5C" ~ "05C",
-                                  treatment != "5C" ~ treatment)) %>%
-  ggplot(mapping = aes(x = final.genotype, y = timepoint42v2, color = treatment)) +
-  geom_boxplot(outlier.shape = NA) + geom_point(aes(shape = final.genotype), size = 2) +
-  facet_wrap(. ~ treatment, scales = "free_y", labeller = labeller(treatment = facet_labels)) +
-  labs(x = "Genotype", y = "Difference in Individual TTR (s)", title = "timepoint 42 vs. timepoint 2") +
-  scale_x_discrete(breaks = c("CC", "CT", "TT")) +
-  scale_color_manual(values = c(plotColors[3], plotColors[2], plotColors[1]),
-                     name = "Temperature (ºC)",
-                     breaks = c("05C", "15C", "25C"),
-                     labels = c("5", "15", "25")) +
-  scale_shape_manual(values = c(3, 4, 1),
-                     name = "Genotype",
-                     breaks = c("CC", "CT", "TT"),
-                     labels = c("CC", "CT", "TT")) +
-  theme_classic(base_size = 15) + theme(legend.position = "none")
-ggsave("figures/time-to-right-average-individuals-genotype-bytemp-timepoint42v2.pdf", height = 8.5, width = 11)
-```
-
-```{r}
-timepoint7vs2byTempPlot <- modTTRSubsetDiff %>%
-  mutate(., treatment = case_when(treatment == "5C" ~ "05C",
-                                  treatment != "5C" ~ treatment)) %>%
-  ggplot(mapping = aes(x = final.genotype, y = timepoint7v2, color = treatment)) +
-  geom_boxplot(outlier.shape = NA) + geom_point(aes(shape = final.genotype), size = 2) +
-  facet_wrap(. ~ treatment, scales = "free_y", labeller = labeller(treatment = facet_labels)) + 
-  labs(x = "", y = "", title = "A. timepoint 7 vs. timepoint 2") +
-  scale_x_discrete(breaks = c("CC", "CT", "TT")) +
-  scale_color_manual(values = c(plotColors[3], plotColors[2], plotColors[1]),
-                     name = "Temperature (ºC)",
-                     breaks = c("05C", "15C", "25C"),
-                     labels = c("5", "15", "25")) +
-  scale_shape_manual(values = c(3, 4, 1),
-                     name = "Genotype",
-                     breaks = c("CC", "CT", "TT"),
-                     labels = c("CC", "CT", "TT")) +
-  theme_classic(base_size = 15) + theme(legend.position = "none",
-                                        axis.ticks.x = element_blank(),
-                                        axis.text.x = element_blank())
-timepoint7vs2byTempPlot
-```
-
-```{r}
-timepoint21vs2byTempPlot <- modTTRSubsetDiff %>%
-  mutate(., treatment = case_when(treatment == "5C" ~ "05C",
-                                  treatment != "5C" ~ treatment)) %>%
-  ggplot(mapping = aes(x = final.genotype, y = timepoint21v2, color = treatment)) +
-  geom_boxplot(outlier.shape = NA) + geom_point(aes(shape = final.genotype), size = 2) +
-  facet_wrap(. ~ treatment, scales = "free_y", labeller = labeller(treatment = facet_labels)) + 
-  labs(x = "", y = "Difference in Individual TTR (s)", title = "B. timepoint 21 vs. timepoint 2") +
-  scale_x_discrete(breaks = c("CC", "CT", "TT")) +
-  scale_color_manual(values = c(plotColors[3], plotColors[2], plotColors[1]),
-                     name = "Temperature (ºC)",
-                     breaks = c("05C", "15C", "25C"),
-                     labels = c("5", "15", "25")) +
-  scale_shape_manual(values = c(3, 4, 1),
-                     name = "Genotype",
-                     breaks = c("CC", "CT", "TT"),
-                     labels = c("CC", "CT", "TT")) +
-  theme_classic(base_size = 15) + theme(legend.position = "none",
-                                        axis.ticks.x = element_blank(),
-                                        axis.text.x = element_blank())
-timepoint21vs2byTempPlot
-```
-
-```{r}
-timepoint42v2byTempPlot <- modTTRSubsetDiff %>%
-  mutate(., treatment = case_when(treatment == "5C" ~ "05C",
-                                  treatment != "5C" ~ treatment)) %>%
-  ggplot(mapping = aes(x = final.genotype, y = timepoint42v2, color = treatment)) +
-  geom_boxplot(outlier.shape = NA) + geom_point(aes(shape = final.genotype), size = 2) +
-  facet_wrap(. ~ treatment, scales = "free_y", labeller = labeller(treatment = facet_labels)) + 
-  labs(x = "Genotype", y = "", title = "C. timepoint 42 vs. timepoint 2") +
-  scale_x_discrete(breaks = c("CC", "CT", "TT")) +
-  scale_color_manual(values = c(plotColors[3], plotColors[2], plotColors[1]),
-                     name = "Temperature (ºC)",
-                     breaks = c("05C", "15C", "25C"),
-                     labels = c("5", "15", "25")) +
-  scale_shape_manual(values = c(3, 4, 1),
-                     name = "Genotype",
-                     breaks = c("CC", "CT", "TT"),
-                     labels = c("CC", "CT", "TT")) +
-  theme_classic(base_size = 15) + theme(legend.position = "none")
-timepoint42v2byTempPlot
-```
-
-```{r}
-timepoint7vs2byTempPlot / timepoint21vs2byTempPlot / timepoint42v2byTempPlot
-ggsave("figures/time-to-right-average-individuals-genotype-byTemp-multipanel.pdf", height = 11, width = 8.5)
+modTTR %>%
+  dplyr::select(., crab.ID, treatment, genotype, timepoint, TTRthresh) %>%
+  filter(., timepoint != 0) %>%
+  filter(., treatment == "1.5C") %>%
+  group_by(., crab.ID) %>%
+  arrange(., crab.ID) %>%
+  filter(n() > 3) %>%
+  pivot_wider(., names_from = "timepoint", names_prefix = "timepoint", values_from = "TTRthresh") %>%
+  mutate(., pattern = case_when(timepoint2 == 0 & timepoint3 == 0 & timepoint4 == 0 & timepoint5 == 0 ~ "4",
+                                timepoint2 == 1 & timepoint3 == 1 & timepoint4 == 1 & timepoint5 == 1 ~ "1",
+                                (timepoint2 == 0 | timepoint3 == 0 | timepoint4 == 0) & timepoint5 == 1 ~ "2",
+                                (timepoint3 == 1 | timepoint4 == 1) & timepoint5 == 0 ~ "3")) %>%
+  filter(., is.na(pattern) == FALSE) %>%
+  group_by(., genotype, pattern) %>%
+  summarize(., count = n()) %>%
+  ggplot(., mapping = aes(x = genotype, y = count, fill = pattern)) +
+  geom_bar(position = "fill", stat = "identity") +
+  labs(y = "Proportion") +
+  scale_x_discrete(name = "Genotype",
+                 labels = c("CC", "CT")) +
+  scale_fill_manual(name = "Pattern",
+                    labels = c("Always", "Recovered", "Failed", "Never"),
+                    values = c("grey90", "grey60", "grey30", "grey0")) +
+  theme_classic(base_size = 15) #Take data and pivot timepoint and threshold information. Assign patterns where 1 = always righting, 2 = recovered, 3 = failure to recover, and 4 = never righting. Group data by genotype and pattern and generate counts. Create stacked barplot.
+ggsave("figures/time-to-right-average-individuals-genotype-patterns.pdf", height = 8.5, width = 11)
 ```
 
