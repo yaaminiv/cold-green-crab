@@ -349,7 +349,7 @@ TTRthreshModel <- glmer(I(TTRthresh == 1) ~ treatment + timepoint + treatment:ti
                           as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                           (1|crab.ID), 
                         family = binomial(), 
-                        data = modTTR) #Create a binomial model, where 1 = success of righting wihtin the defined threshold
+                        data = (modTTR %>% filter(., is.na(genotype) == FALSE))) #Create a binomial model, where 1 = success of righting wihtin the defined threshold
 summary(TTRthreshModel)
 ```
 
@@ -358,7 +358,7 @@ TTRthreshNullTreatment <- glmer(I(TTRthresh == 1) ~ timepoint +
                                   as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                                   (1|crab.ID), 
                                 family = binomial(), 
-                                data = modTTR) #Create null model without treatment
+                                data = (modTTR %>% filter(., is.na(genotype) == FALSE))) #Create null model without treatment
 anova(TTRthreshNullTreatment, TTRthreshModel) #Compare models
 ```
 
@@ -367,7 +367,7 @@ TTRthreshNullTimepoint <- glmer(I(TTRthresh == 1) ~ treatment +
                                   as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                                   (1|crab.ID), 
                                 family = binomial(), 
-                                data = modTTR) #Create null model without timepoint
+                                data = (modTTR %>% filter(., is.na(genotype) == FALSE))) #Create null model without timepoint
 anova(TTRthreshNullTimepoint, TTRthreshModel) #Compare models
 ```
 
@@ -376,7 +376,7 @@ TTRthreshNullInteraction <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
                                     as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                                     (1|crab.ID), 
                                   family = binomial(), 
-                                  data = modTTR) #Create null model without interaction
+                                  data = (modTTR %>% filter(., is.na(genotype) == FALSE))) #Create null model without interaction
 anova(TTRthreshNullInteraction, TTRthreshModel) #Compare models
 ```
 
@@ -391,14 +391,14 @@ TTRthreshModelComparisons
 write.csv(TTRthreshModelComparisons, "ttr-binomial-model-comparison-output.csv", quote = FALSE, row.names = FALSE) #Save model comparison table
 ```
 
-Alright, there are significant impacts of treatment and time on righting, but no impact of their interaction. Now I want to test the impact of genotype and population source on binary righting response. 
+Alright, there are significant impacts of treatment and time on righting, but no impact of their interaction. So far everything is similar to the MA population. Now I want to test the impact of genotype on binary righting response. 
 
 ```{r}
 TTRthreshModelRevised <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
                                  as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                                  (1|crab.ID), 
                                family = binomial(), 
-                               data = modTTR) #Create a binomial model, where 1 = success of righting wihtin the defined threshold
+                               data = (modTTR %>% filter(., is.na(genotype) == FALSE))) #Create a binomial model, where 1 = success of righting wihtin the defined threshold
 summary(TTRthreshModelRevised)
 ```
 
@@ -408,7 +408,7 @@ TTRthreshGenotype <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
                              as.factor(genotype) +
                              (1|crab.ID), 
                            family = binomial(), 
-                           data = modTTR) #Create null model without interaction
+                           data = (modTTR %>% filter(., is.na(genotype) == FALSE))) #Create null model without interaction
 anova(TTRthreshModelRevised, TTRthreshGenotype) #Compare models
 ```
 
@@ -418,7 +418,7 @@ TTRthreshpresenceC <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
                               as.factor(presenceC) +
                               (1|crab.ID), 
                             family = binomial(), 
-                            data = modTTR) #Create null model without interaction
+                            data = (modTTR %>% filter(., is.na(genotype) == FALSE))) #Create null model without interaction
 anova(TTRthreshModelRevised, TTRthreshpresenceC) #Compare models
 ```
 
@@ -428,22 +428,11 @@ TTRthreshpresenceT <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
                               as.factor(presenceT) +
                               (1|crab.ID), 
                             family = binomial(), 
-                            data = modTTR) #Create null model without interaction
+                            data = (modTTR %>% filter(., is.na(genotype) == FALSE))) #Create null model without interaction
 anova(TTRthreshModelRevised, TTRthreshpresenceT) #Compare models
 ```
 
-```{r}
-TTRthreshSource <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
-                           as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
-                           as.factor(source) +
-                           (1|crab.ID), 
-                         family = binomial(), 
-                         data = modTTR) #Create null model without interaction
-anova(TTRthreshModelRevised, TTRthreshSource) #Compare models
-```
-
-Well, looks like there's a significant impact of presence of the T allele and source population on whether or not a crab righted itself!
-
+No siginificant impact of genotype on whether or not a crab righted, but I suspect that's because I don't have all of the genotype data yet!
 
 
 
