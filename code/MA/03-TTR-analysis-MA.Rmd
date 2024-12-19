@@ -668,8 +668,6 @@ ggsave("figures/time-to-right-noFlips-timeSourceT.pdf", height = 8.5, width = 11
 
 # Individual-level analysis
 
-FIX HOW TO DEAL WITH NAN TTR AVERAGES.
-
 ## Q10 analysis
 
 Q10 is a metric used to quantify temperature sensitivity, generally defined as the change in a physiological response over a 10 degree temperature interval. For most organisms, Q10 is around 2 (a two-fold change in a physiological or chemical response due to a 10 degree temperature change).
@@ -777,15 +775,6 @@ ggsave("figures/time-to-right-average-individuals-Q10-genotype.pdf", height = 8.
 
 I tracked certain individuals throughout the course of the experiment, so I want to see how their responses changed over time.
 
-- need to figure out how to document changes from flip to not-flip
-- within crabs that flip no matter what, changes in TTR
-
-need to pivot so that TTRthresh has a value for each day...group by crab ID?
-
-```{r}
-modTTR
-```
-
 ```{r}
 left_join(modTTRQ10, modTTR, by = c("crab.ID", "treatment", "presenceT", "timepoint")) %>%
   select(., -c(date:trial.3, sex:TTRSE, genotype:presenceC)) %>%
@@ -802,18 +791,31 @@ left_join(modTTRQ10, modTTR, by = c("crab.ID", "treatment", "presenceT", "timepo
   scale_colour_manual(name = "Genotype",
                     values = c("grey70", "grey10"),
                     labels = c("CC", "CT")) +
-  theme_classic(base_size = 15) + theme(strip.background = element_rect(colour = "white"))
+  theme_classic(base_size = 15) + theme(strip.background = element_rect(colour = "white")) #Join TTR data with Q10 data to get individuals that were tracked throughout time. Remove superfluous columns and entries at 5ºC. Create point and line graph and wrap by crab ID.
 ggsave("figures/time-to-right-noFlips-individuals-Q10.pdf", height = 8.5, width = 11)
 ```
 
 ```{r}
-modTTR %>%
-  dplyr::select(., crab.ID, treatment, presenceT, timepoint, source, TTRthresh) %>%
-  filter(., timepoint != 0) %>%
-  filter(., treatment == "0C") %>%
-  group_by(., crab.ID) %>%
-  arrange(., crab.ID) %>%
-  filter(n() > 1)
+left_join(modTTRQ10, modTTR, by = c("crab.ID", "treatment", "presenceT", "timepoint")) %>%
+  select(., -c(Q10:trial.3, sex:TTRSE, genotype:presenceC)) %>%
+  filter(., treatment != "5C") %>%
+  pivot_wider(., names_from = "timepoint", names_prefix = "timepoint", values_from = "TTRthresh") %>%
+  mutate(., pattern = case_when(timepoint2 == 0 & timepoint3 == 0 & timepoint4 == 0 & timepoint5 == 0 ~ "4",
+                                timepoint2 == 1 & timepoint3 == 1 & timepoint4 == 1 & timepoint5 == 1 ~ "1",
+                                (timepoint2 == 0 | timepoint3 == 0) & timepoint5 == 1 ~ "2",
+                                (timepoint3 == 1 | timepoint4 == 1) & timepoint5 == 0 ~ "3")) %>%
+  group_by(., presenceT, pattern) %>%
+  summarize(., count = n()) %>%
+  ggplot(., mapping = aes(x = presenceT, y = count, fill = pattern)) +
+  geom_bar(position = "fill", stat = "identity") +
+  labs(y = "Proportion") +
+  scale_x_discrete(name = "Genotype",
+                 labels = c("CC", "CT")) +
+  scale_fill_manual(name = "Pattern",
+                    labels = c("Always", "Recovered", "Failed", "Never"),
+                    values = c("grey90", "grey60", "grey30", "grey0")) +
+  theme_classic(base_size = 15) #Take data and pivot timepoint and threshold information. Assign patterns where 1 = always righting, 2 = recovered, 3 = failure to recover, and 4 = never righting. Group data by genotype and pattern and generate counts. Create stacked barplot.
+ggsave("figures/time-to-right-average-individuals-Q10-genotype-patterns.pdf", height = 8.5, width = 11)
 ```
 
 
@@ -824,8 +826,8 @@ modTTR %>%
   filter(., treatment == "0C") %>%
   group_by(., crab.ID) %>%
   arrange(., crab.ID) %>%
-  filter(n() > 1) %>%
-  ggplot(., mapping = aes(x = timepoint, y = TTRthresh, color = presenceT, group = crab.ID)) +
+  filter(n() > 2) %>%
+  ggplot(., mapping = aes(x = timepoint, y = TTRthresh, color = presenceT, shape = source, group = crab.ID)) +
   geom_point(size = 2) + geom_line(lty = 3) +
   facet_wrap(~crab.ID) +
   scale_x_continuous(name = "Exposure Time (Hours)",
@@ -837,16 +839,37 @@ modTTR %>%
   scale_colour_manual(name = "Genotype",
                     values = c("grey70", "grey10"),
                     labels = c("CC", "CT")) +
+  scale_shape_manual(name = "Population",
+                     values = c(15, 19),
+                     labels = c("Eel Pond, MA", "New Bedford, MA")) +
   theme_classic(base_size = 15) + theme(strip.background = element_rect(colour = "white"))
 ggsave("figures/time-to-right-noFlips-individuals.pdf", height = 8.5, width = 11)
 ```
 
-- rm crabs with only one observation
-- try rm crabs with only two observations
-- stacked bargraph of the following categories:
-  - always flipped
-  - didn't flip
-  - recovered
-  - failed recovery
-
-
+```{r}
+modTTR %>%
+  dplyr::select(., crab.ID, treatment, presenceT, timepoint, source, TTRthresh) %>%
+  filter(., timepoint != 0) %>%
+  filter(., treatment == "0C") %>%
+  group_by(., crab.ID) %>%
+  arrange(., crab.ID) %>%
+  filter(n() > 2) %>%
+  pivot_wider(., names_from = "timepoint", names_prefix = "timepoint", values_from = "TTRthresh") %>%
+  mutate(., pattern = case_when(timepoint2 == 0 & timepoint3 == 0 & (timepoint4 == 0 | timepoint5 == 0) ~ "4",
+                                timepoint2 == 1 & timepoint3 == 1 & timepoint4 == 1 & timepoint5 == 1 ~ "1",
+                                (timepoint2 == 0 | timepoint3 == 0) & timepoint5 == 1 ~ "2",
+                                (timepoint3 == 1 | timepoint4 == 1) & timepoint5 == 0 ~ "3")) %>%
+  filter(., is.na(pattern) == FALSE) %>%
+  group_by(., presenceT, pattern) %>%
+  summarize(., count = n()) %>%
+  ggplot(., mapping = aes(x = presenceT, y = count, fill = pattern)) +
+  geom_bar(position = "fill", stat = "identity") +
+  labs(y = "Proportion") +
+  scale_x_discrete(name = "Genotype",
+                 labels = c("CC", "CT")) +
+  scale_fill_manual(name = "Pattern",
+                    labels = c("Always", "Recovered", "Failed", "Never"),
+                    values = c("grey90", "grey60", "grey30", "grey0")) +
+  theme_classic(base_size = 15) #Take data and pivot timepoint and threshold information. Assign patterns where 1 = always righting, 2 = recovered, 3 = failure to recover, and 4 = never righting. Group data by genotype and pattern and generate counts. Create stacked barplot.
+ggsave("figures/time-to-right-average-individuals-genotype-patterns.pdf", height = 8.5, width = 11)
+```
