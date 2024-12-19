@@ -228,19 +228,17 @@ ggsave("figures/time-to-right-carapaceWidth.pdf", height = 8.5, width = 11)
 
 ```{r}
 modTTR %>%
-  filter(., is.na(final.genotype) == FALSE) %>% 
-  ggplot(., mapping = aes(x = timepoint, y = TTRavg, color = final.genotype)) +
+  ggplot(., mapping = aes(x = timepoint, y = TTRavg, color = genotype)) +
   geom_jitter(alpha = 0.8) +
   scale_x_continuous(name = "timepoint",
                      breaks = unique(modTTR$timepoint)) +
   scale_y_continuous(name = "Average Time-to-Right (s)",
-                     breaks = seq(0, 100, 10)) +
+                     breaks = seq(0, 95, 10)) +
   theme_classic(base_size = 15)
 ggsave("figures/time-to-right-genotype.pdf", height = 8.5, width = 11)
 ```
 
-
-# Assess differences by treatment
+# Assess differences in TTR based on treatment and time
 
 I will use a linear mixed effects model with individual as a random effect to analyze the data, following [this tutorial](https://jontalle.web.engr.illinois.edu/MISC/lme4/bw_LME_tutorial.pdf).
 
@@ -257,6 +255,7 @@ TTRmodel <- lmer(log(TTRavg) ~ treatment + timepoint + treatment:timepoint +
 summary(TTRmodel) #Look at model output.
 #Residuals explain more random effect variation than crab ID, crab ID explains very little variation
 ```
+
 Now that I've run the full model, I want to test the importance of treatment, timepoint, and their interaction as predictors. I'll include all other factors in the null model to account for any variation they may contribute.
 
 ```{r}
@@ -285,17 +284,52 @@ TTRModelComparisons
 write.csv(TTRModelComparisons, "ttr-model-comparison-stat-output.csv", quote = FALSE, row.names = FALSE) #Save model output
 ```
 
+# Effect of genotype
 
-# Threshold analysis
+## Impact on average TTR
 
-In our data, trials for crabs that didn't right within 90 seconds are noted as NAs. I can examine these data in two ways:
+Now that I know treatment, time, and their interaction significantly impact TTR, I want to add in genotype and sourcing information.
 
-1. How many crabs didn't right within 90 seconds in the first, second, or third trial?
-2. Did a crab not right within 90 seconds in any trial?
+```{r}
+TTRfullGenotype <- lmer(log(TTRavg) ~ treatment + timepoint + treatment:timepoint + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + as.factor(genotype) + (1|crab.ID), data = (modTTR %>% filter(., is.na(TTRavg) == FALSE)), REML = FALSE) #Run model with genotype to identify significance of predictor
+anova(TTRmodel, TTRfullGenotype) #No significant impact of genotype
+```
 
-The first would be easily answered in a plot. For the second, I can use a binomial model similar to [Coyle et al. (2019)](https://doi.org/10.1242/jeb.203521).
+```{r}
+TTRpresenceC <- lmer(log(TTRavg) ~ treatment + timepoint + treatment:timepoint + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + as.factor(presenceC) + (1|crab.ID), data = (modTTR %>% filter(., is.na(TTRavg) == FALSE)), REML = FALSE) #Run model with genotype to identify significance of predictor
+anova(TTRmodel, TTRpresenceC) #No significant impact of C allele
+```
 
-## Define threshold
+```{r}
+TTRpresenceT <- lmer(log(TTRavg) ~ treatment + timepoint + treatment:timepoint + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + as.factor(presenceT) + (1|crab.ID), data = (modTTR %>% filter(., is.na(TTRavg) == FALSE)), REML = FALSE) #Run model with genotype to identify significance of predictor
+anova(TTRmodel, TTRpresenceT) #No significant impact of T allele
+```
+
+```{r}
+TTRsource <- lmer(log(TTRavg) ~ treatment + timepoint + treatment:timepoint + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + as.factor(source) + (1|crab.ID), data = (modTTR %>% filter(., is.na(TTRavg) == FALSE)), REML = FALSE) #Run model with genotype to identify significance of predictor
+anova(TTRmodel, TTRsource) #No significant impact of source on TTR
+```
+
+```{r}
+TTRModelComparisons<- rbind(broom::tidy(anova(TTRnullTreatment, TTRmodel)),
+                            broom::tidy(anova(TTRnullTimepoint, TTRmodel)),
+                            broom::tidy(anova(TTRnullInteraction, TTRmodel)),
+                            broom::tidy(anova(TTRmodel, TTRfullGenotype)),
+                            broom::tidy(anova(TTRmodel, TTRpresenceC)),
+                            broom::tidy(anova(TTRmodel, TTRpresenceT)),
+                            broom::tidy(anova(TTRmodel, TTRsource))) #Create table for model comparison output
+TTRModelComparisons
+```
+
+```{r}
+write.csv(TTRModelComparisons, "ttr-model-comparison-stat-output.csv", quote = FALSE, row.names = FALSE) #Save model output
+```
+
+There is no significant impact of genotype on average TTR. There are some additional factors I want to understand: how genotype impacts whether or not a crab flipped, and how genotype impacted a difference in TTR.
+
+## Threshold analysis
+
+### Define threshold
 
 ```{r}
 modTTR <- modTTR %>%
@@ -304,7 +338,7 @@ modTTR <- modTTR %>%
 head(modTTR) #Confirm modifications
 ```
 
-## Binomial model
+### Binomial model
 
 ```{r}
 TTRthreshModel <- glmer(I(TTRthresh == 1) ~ treatment + timepoint + treatment:timepoint +
@@ -353,6 +387,69 @@ TTRthreshModelComparisons
 write.csv(TTRthreshModelComparisons, "ttr-binomial-model-comparison-output.csv", quote = FALSE, row.names = FALSE) #Save model comparison table
 ```
 
+Alright, there are significant impacts of treatment and time on righting, but no impact of their interaction. Now I want to test the impact of genotype and population source on binary righting response. 
+
+```{r}
+TTRthreshModelRevised <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
+                                 as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
+                                 (1|crab.ID), 
+                               family = binomial(), 
+                               data = modTTR) #Create a binomial model, where 1 = success of righting wihtin the defined threshold
+summary(TTRthreshModelRevised)
+```
+
+```{r}
+TTRthreshGenotype <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
+                             as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
+                             as.factor(genotype) +
+                             (1|crab.ID), 
+                           family = binomial(), 
+                           data = modTTR) #Create null model without interaction
+anova(TTRthreshModelRevised, TTRthreshGenotype) #Compare models
+```
+
+```{r}
+TTRthreshpresenceC <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
+                              as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
+                              as.factor(presenceC) +
+                              (1|crab.ID), 
+                            family = binomial(), 
+                            data = modTTR) #Create null model without interaction
+anova(TTRthreshModelRevised, TTRthreshpresenceC) #Compare models
+```
+
+```{r}
+TTRthreshpresenceT <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
+                              as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
+                              as.factor(presenceT) +
+                              (1|crab.ID), 
+                            family = binomial(), 
+                            data = modTTR) #Create null model without interaction
+anova(TTRthreshModelRevised, TTRthreshpresenceT) #Compare models
+```
+
+```{r}
+TTRthreshSource <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
+                           as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
+                           as.factor(source) +
+                           (1|crab.ID), 
+                         family = binomial(), 
+                         data = modTTR) #Create null model without interaction
+anova(TTRthreshModelRevised, TTRthreshSource) #Compare models
+```
+
+Well, looks like there's a significant impact of presence of the T allele and source population on whether or not a crab righted itself!
+
+
+
+
+
+
+
+
+
+
+# CODE IN PROGRESS
 # Final plots
 
 ## Average TTR plot
