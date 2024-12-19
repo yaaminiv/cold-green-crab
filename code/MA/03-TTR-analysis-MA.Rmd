@@ -239,7 +239,6 @@ ggsave("figures/time-to-right-genotype.pdf", height = 8.5, width = 11)
 
 # Assess differences in TTR based on treatment and time
 
-
 I will use a linear mixed effects model with individual as a random effect to analyze the data, following [this tutorial](https://jontalle.web.engr.illinois.edu/MISC/lme4/bw_LME_tutorial.pdf).
 
 ```{r}
