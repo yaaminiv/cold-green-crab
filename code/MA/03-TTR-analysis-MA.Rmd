@@ -237,6 +237,60 @@ modTTR %>%
 ggsave("figures/time-to-right-genotype.pdf", height = 8.5, width = 11)
 ```
 
+```{r}
+genotypeData %>%
+  group_by(., genotype) %>%
+  summarize(., count = n()) %>%
+  ggplot(mapping = aes(x = "", y = count, fill = genotype)) +
+  geom_col(color = "black") +
+  coord_polar(theta = "y") +
+  scale_fill_manual(name = "Genotype",
+                    values = c("grey90", "grey45", "grey0")) +
+  theme_void(base_size = 15) #Group data by genotype and summarize. Plot counts as a pie chart.
+ggsave("figures/genotype-pie-chart.jpg", height = 8.5, width = 11)
+```
+
+```{r}
+genByPop <- genotypeData %>%
+  group_by(., source, genotype) %>%
+  summarize(., count = n()) #Take genotype data and group by population and genotype. 
+genByPop #Confirm formatting
+```
+
+```{r}
+genByPop %>%
+  filter(., source == "EP") %>%
+  ggplot(mapping = aes(x = "", y = count, fill = genotype)) +
+  geom_col(color = "black") +
+  coord_polar(theta = "y") +
+  scale_fill_manual(name = "Genotype",
+                    values = c("grey45", "grey0")) +
+  theme_void(base_size = 15) #Group data by genotype and summarize. Plot counts as a pie chart.
+ggsave("figures/genotype-pie-chart-EP.jpg", height = 8.5, width = 11)
+```
+
+```{r}
+genByPop %>%
+  filter(., source == "NB") %>%
+  ggplot(mapping = aes(x = "", y = count, fill = genotype)) +
+  geom_col(color = "black") +
+  coord_polar(theta = "y") +
+  scale_fill_manual(name = "Genotype",
+                    values = c("grey90", "grey45", "grey0")) +
+  theme_void(base_size = 15) #Group data by genotype and summarize. Plot counts as a pie chart.
+ggsave("figures/genotype-pie-chart-NB.jpg", height = 8.5, width = 11)
+```
+
+### Hardy-Weinberg equilibrium
+
+Since I have the genotype data, I want to see if my population is in Hardy-Weinbergy equilibrium. I will need to do this for the full MA population, as well as for the individual New Bedford and Eel Pond populations. I used [this calculator](https://www.cog-genomics.org/software/stats) to obtain p-values.
+
+Full population p-value: 0.0000071191801649826
+New Bedford p-value: 0.02291149613108
+Eel Pond p-value: 6.6098836727653e-7
+
+No subset of this MA population is in Hardy-Weinberg equilibrium!
+
 # Assess differences in TTR based on treatment and time
 
 I will use a linear mixed effects model with individual as a random effect to analyze the data, following [this tutorial](https://jontalle.web.engr.illinois.edu/MISC/lme4/bw_LME_tutorial.pdf).
