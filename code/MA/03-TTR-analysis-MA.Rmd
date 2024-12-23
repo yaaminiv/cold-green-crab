@@ -623,16 +623,18 @@ modTTR %>%
             Yes = sum(!(is.na(trial.1) == TRUE | is.na(trial.2) == TRUE | is.na(trial.3) == TRUE))) %>%
   pivot_longer(., cols = c(Yes, No), 
                values_to = "count", names_to = "condition") %>%
+  mutate(., condition = case_when(condition == "No" ~ "2N",
+                                  condition == "Yes" ~ "1Y")) %>%
   ggplot(., aes(x = timepoint, y = count, fill = condition)) +
-  geom_bar(stat = "identity") + 
+  geom_bar(position = "fill", stat = "identity") + 
   facet_grid(~presenceT, labeller = labeller(presenceT = presenceT_labels)) +
   scale_x_continuous(name = "Hours",
                      breaks = c(0:5),
                      labels = c(0, 4, 22, 28, 46, 94)) +
-  scale_y_continuous(name = "Number of Crabs",
-                     limits = c(0,60)) +
+  scale_y_continuous(name = "Proportion") +
   scale_fill_manual(name = "",
-                    values = c("grey70", "grey10")) +
+                    values = c("grey70", "grey10"),
+                    labels = c("Yes", "No")) +
   theme_classic(base_size = 15) + theme(strip.background = element_rect(colour = "white"))
 ggsave("figures/time-to-right-noFlips-timepointT.pdf", height = 8.5, width = 11)
 ```
@@ -836,14 +838,14 @@ left_join(modTTRQ10, modTTR, by = c("crab.ID", "treatment", "presenceT", "timepo
   geom_point(size = 2) + geom_line(lty = 3) +
   facet_wrap(~crab.ID) +
   scale_x_continuous(name = "Exposure Time (Hours)",
-                   breaks = 1:5,
-                   labels = c(4, 22, 28, 46, 94)) +
+                     breaks = 1:5,
+                     labels = c(4, 22, 28, 46, 94)) +
   scale_y_continuous(name = "Right?",
                      breaks = c(0, 1),
                      labels = c("No", "Yes")) +
   scale_colour_manual(name = "Genotype",
-                    values = c("grey70", "grey10"),
-                    labels = c("CC", "CT")) +
+                      values = c("grey70", "grey10"),
+                      labels = c("CC", "CT")) +
   theme_classic(base_size = 15) + theme(strip.background = element_rect(colour = "white")) #Join TTR data with Q10 data to get individuals that were tracked throughout time. Remove superfluous columns and entries at 5ºC. Create point and line graph and wrap by crab ID.
 ggsave("figures/time-to-right-noFlips-individuals-Q10.pdf", height = 8.5, width = 11)
 ```
@@ -863,7 +865,7 @@ left_join(modTTRQ10, modTTR, by = c("crab.ID", "treatment", "presenceT", "timepo
   geom_bar(position = "fill", stat = "identity") +
   labs(y = "Proportion") +
   scale_x_discrete(name = "Genotype",
-                 labels = c("CC", "CT")) +
+                   labels = c("CC", "CT")) +
   scale_fill_manual(name = "Pattern",
                     labels = c("Always", "Recovered", "Failed", "Never"),
                     values = c("grey90", "grey60", "grey30", "grey0")) +
@@ -884,14 +886,14 @@ modTTR %>%
   geom_point(size = 2) + geom_line(lty = 3) +
   facet_wrap(~crab.ID) +
   scale_x_continuous(name = "Exposure Time (Hours)",
-                   breaks = 1:5,
-                   labels = c(4, 22, 28, 46, 94)) +
+                     breaks = 1:5,
+                     labels = c(4, 22, 28, 46, 94)) +
   scale_y_continuous(name = "Right?",
                      breaks = c(0, 1),
                      labels = c("No", "Yes")) +
   scale_colour_manual(name = "Genotype",
-                    values = c("grey70", "grey10"),
-                    labels = c("CC", "CT")) +
+                      values = c("grey70", "grey10"),
+                      labels = c("CC", "CT")) +
   scale_shape_manual(name = "Population",
                      values = c(15, 19),
                      labels = c("Eel Pond, MA", "New Bedford, MA")) +
@@ -919,7 +921,7 @@ modTTR %>%
   geom_bar(position = "fill", stat = "identity") +
   labs(y = "Proportion") +
   scale_x_discrete(name = "Genotype",
-                 labels = c("CC", "CT")) +
+                   labels = c("CC", "CT")) +
   scale_fill_manual(name = "Pattern",
                     labels = c("Always", "Recovered", "Failed", "Never"),
                     values = c("grey90", "grey60", "grey30", "grey0")) +
