@@ -474,7 +474,8 @@ modTTR %>%
   ggplot(mapping = aes(x = as.character(timepoint), y = TTRavg, color = treatment, shape = treatment)) +
   geom_boxplot(outlier.shape = NA) + 
   geom_jitter(position = position_dodge(width = 0.75)) +
-  ylab("Average Time-to-Right (s)") +
+  scale_y_continuous(name = "Average Time-to-Right (s)",
+                     breaks = c(seq(0, 20, 5), seq(20, 100, 20))) +
   scale_x_discrete(name = "Exposure Time (Hours)",
                    breaks = unique(modTTR$timepoint),
                    labels = c(0, 4, 22, 28, 46, 94)) +
