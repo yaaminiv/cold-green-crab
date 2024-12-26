@@ -318,7 +318,7 @@ anova(TTRnullTreatment, TTRmodel) #Treatment is a significant predictor
 
 ```{r}
 TTRnullTimepoint <- lmer(log(TTRavg) ~ treatment + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID), data = (modTTR %>% filter(., is.na(TTRavg) == FALSE)), REML = FALSE) #Run null model without timepoint to identify significance of predictor
-anova(TTRnullTreatment, TTRmodel) #Timepoint is a significant predictor
+anova(TTRnullTimepoint, TTRmodel) #Timepoint is a significant predictor
 ```
 
 ```{r}
@@ -489,6 +489,21 @@ TTRthreshSource <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
                          family = binomial(), 
                          data = modTTR) #Create null model without interaction
 anova(TTRthreshModelRevised, TTRthreshSource) #Compare models
+```
+
+```{r}
+TTRthreshModelComparisons <- rbind(broom::tidy(anova(TTRthreshNullTreatment, TTRthreshModel)),
+                                   broom::tidy(anova(TTRthreshNullTimepoint, TTRthreshModel)),
+                                   broom::tidy(anova(TTRthreshNullInteraction, TTRthreshModel)),
+                                   broom::tidy(anova(TTRthreshModelRevised, TTRthreshGenotype)),
+                                   broom::tidy(anova(TTRthreshModelRevised, TTRthreshpresenceC)),
+                                   broom::tidy(anova(TTRthreshModelRevised, TTRthreshpresenceT)),
+                                   broom::tidy(anova(TTRthreshModelRevised, TTRthreshSource))) #Create a table of model comparison output
+TTRthreshModelComparisons
+```
+
+```{r}
+write.csv(TTRthreshModelComparisons, "ttr-binomial-model-comparison-output.csv", quote = FALSE, row.names = FALSE) #Save model comparison table
 ```
 
 Well, looks like there's a significant impact of presence of the T allele and source population on whether or not a crab righted itself!
