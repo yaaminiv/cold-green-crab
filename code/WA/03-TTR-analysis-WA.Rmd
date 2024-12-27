@@ -460,6 +460,21 @@ TTRthreshpresenceT <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
 anova(TTRthreshModelRevised, TTRthreshpresenceT) #Compare models
 ```
 
+```{r}
+TTRthreshModelComparisons <- rbind(broom::tidy(anova(TTRthreshNullTreatment, TTRthreshModel)),
+                                   broom::tidy(anova(TTRthreshNullTimepoint, TTRthreshModel)),
+                                   broom::tidy(anova(TTRthreshNullInteraction, TTRthreshModel)),
+                                   broom::tidy(anova(TTRthreshModelRevised, TTRthreshGenotype)),
+                                   broom::tidy(anova(TTRthreshModelRevised, TTRthreshpresenceC)),
+                                   broom::tidy(anova(TTRthreshModelRevised, TTRthreshpresenceT))) #Create a table of model comparison output
+TTRthreshModelComparisons
+```
+
+```{r}
+write.csv(TTRthreshModelComparisons, "ttr-binomial-model-comparison-output.csv", quote = FALSE, row.names = FALSE) #Save model comparison table
+```
+
+
 No significant impact of genotype on whether or not a crab righted, but I suspect that's because I don't have all of the genotype data yet!
 
 # Plots
