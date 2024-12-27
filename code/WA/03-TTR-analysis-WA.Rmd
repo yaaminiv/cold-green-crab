@@ -541,6 +541,31 @@ ggsave("figures/time-to-right-noFlips.pdf", height = 8.5, width = 11)
 ```
 
 ```{r}
+modTTR %>%
+  group_by(., timepoint, treatment) %>%
+  summarize(., total = n(), 
+            No = sum(is.na(trial.1) == TRUE | is.na(trial.2) == TRUE | is.na(trial.3) == TRUE),
+            Yes = sum(!(is.na(trial.1) == TRUE | is.na(trial.2) == TRUE | is.na(trial.3) == TRUE))) %>%
+  pivot_longer(., cols = c(Yes, No), 
+               values_to = "count", names_to = "condition") %>%
+  mutate(., condition = case_when(condition == "No" ~ "2N",
+                                  condition == "Yes" ~ "1Y")) %>%
+  ggplot(., aes(x = timepoint, y = count, fill = condition)) +
+  geom_bar(position = "fill", stat = "identity") + 
+  facet_wrap(~treatment, labeller = labeller(treatment = treatment_labels)) +
+  scale_x_continuous(name = "Exposure Time (Hours)",
+                     breaks = c(0:5),
+                     labels = c(0, 4, 22, 28, 46, 94)) +
+  scale_y_continuous(name = "Proportion") +
+  scale_fill_manual(name = "",
+                    values = c("grey70", plotColors[1]),
+                    labels = c("Yes", "No")) +
+  theme_classic(base_size = 15) + theme(strip.background = element_rect(colour = "white"))
+ggsave("figures/time-to-right-noFlips-timepoint.pdf", height = 8.5, width = 11)
+```
+
+
+```{r}
 presenceT_labels <- c("N" = "CC",
                       "Y" = "CT or TT") #Modify facet labels for precense of the T allele
 ```
@@ -598,7 +623,7 @@ modTTR %>%
                      labels = c(0, 4, 22, 28, 46, 94)) +
   scale_y_continuous(name = "Proportion") +
   scale_fill_manual(name = "",
-                    values = c("grey70", "grey10"),
+                    values = c("grey70", plotColors[1]),
                     labels = c("Yes", "No")) +
   theme_classic(base_size = 15) + theme(strip.background = element_rect(colour = "white"))
 ggsave("figures/time-to-right-noFlips-timepointT.pdf", height = 8.5, width = 11)
