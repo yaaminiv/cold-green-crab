@@ -1,0 +1,322 @@
+---
+title: "01-temp-conditions"
+author: "Yaamini Venkataraman"
+date: "12/29/2024"
+output: html_document
+---
+
+# Set up R Markdown document
+
+```{bash}
+mkdir ../../output/WA/01-temp-conditions #Make output directory
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = normalizePath("../../output/WA/01-temp-conditions")) #Set root directory
+```
+
+```{r}
+getwd()
+```
+
+#Install packages
+
+```{r}
+#install.packages("tidyverse")
+#install.packages("qpcR")
+#install.packages("RColorBrewer")
+require(tidyverse)
+require(qpcR)
+require(RColorBrewer)
+```
+
+```{r}
+sessionInfo()
+```
+
+# Import and format data
+
+Outliers from when HOBO loggers recorded data while outside of the tank were removed manually.
+
+```{r}
+read.csv("../../../data/WA/HOBO/T8B-2.csv", skip = 1, header = TRUE) %>% dplyr::select(., 2:3)
+```
+
+
+```{r}
+#Import CSV output from HOBO loggers. Skip first line of CSV and specify header. Retain second and third columns, rename columns, and format dateTime column correctly
+
+tank1a <- read.csv("../../../data/WA/HOBO/T1A.csv", skip = 1, header = TRUE) %>% dplyr::select(., 2:3) %>% rename(dateTime = Date.Time..GMT.04.00, temp1a = Temp...C..LGR.S.N..21435405..SEN.S.N..21435405.)  %>% mutate(dateTime = as.POSIXct(dateTime, format = "%m/%d/%y%t%H:%M"))
+tank1b <- read.csv("../../../data/WA/HOBO/T1B-2.csv", skip = 1, header = TRUE) %>% dplyr::select(., 2:3) %>% rename(dateTime = Date.Time..GMT.04.00, temp1b = Temp...C..LGR.S.N..20239627..SEN.S.N..20239627.) %>% mutate(dateTime = as.POSIXct(dateTime, format = "%m/%d/%y%t%H:%M"))
+
+tank2a <- read.csv("../../../data/WA/HOBO/T2A-2.csv", skip = 1, header = TRUE) %>% dplyr::select(., 2:3) %>% rename(dateTime = Date.Time..GMT.04.00, temp2a = Temp...C..LGR.S.N..21435415..SEN.S.N..21435415.) %>% mutate(dateTime = as.POSIXct(dateTime, format = "%m/%d/%y%t%H:%M"))
+tank2b <- read.csv("../../../data/WA/HOBO/T2B.csv", skip = 1, header = TRUE) %>% dplyr::select(., 2:3) %>% rename(dateTime = Date.Time..GMT.04.00, temp2b = Temp...C..LGR.S.N..20548773..SEN.S.N..20548773..LBL..T2B.) %>% mutate(dateTime = as.POSIXct(dateTime, format = "%m/%d/%y%t%H:%M"))
+
+tank3a <- read.csv("../../../data/WA/HOBO/T3A.csv", skip = 1, header = TRUE) %>% dplyr::select(., 2:3) %>% rename(dateTime = Date.Time..GMT.04.00, temp3a = Temp...C..LGR.S.N..21435198..SEN.S.N..21435198..LBL..T3A.) %>% mutate(dateTime = as.POSIXct(dateTime, format = "%m/%d/%y%t%H:%M"))
+tank3b <- read.csv("../../../data/WA/HOBO/T3B.csv", skip = 1, header = TRUE) %>% dplyr::select(., 2:3) %>% rename(dateTime = Date.Time..GMT.04.00, temp3b = Temp...C..LGR.S.N..21435416..SEN.S.N..21435416.) %>% mutate(dateTime = as.POSIXct(dateTime, format = "%m/%d/%y%t%H:%M"))
+
+tank4a <- read.csv("../../../data/WA/HOBO/T4A.csv", skip = 1, header = TRUE) %>% dplyr::select(., 2:3) %>% rename(dateTime = Date.Time..GMT.04.00, temp4a = Temp...C..LGR.S.N..21435413..SEN.S.N..21435413.) %>% mutate(dateTime = as.POSIXct(dateTime, format = "%m/%d/%y%t%H:%M"))
+tank4b <- read.csv("../../../data/WA/HOBO/T4B.csv", skip = 1, header = TRUE) %>% dplyr::select(., 2:3) %>% rename(dateTime = Date.Time..GMT.04.00, temp4b = Temp...C..LGR.S.N..21435199..SEN.S.N..21435199.) %>% mutate(dateTime = as.POSIXct(dateTime, format = "%m/%d/%y%t%H:%M"))
+
+tank5a <- read.csv("../../../data/WA/HOBO/T5A-2.csv", skip = 1,  header = TRUE) %>% dplyr::select(., 2:3) %>% rename(dateTime = Date.Time..GMT.04.00, temp5a = Temp...C..LGR.S.N..21435407..SEN.S.N..21435407.) %>% mutate(dateTime = as.POSIXct(dateTime, format = "%m/%d/%y%t%H:%M"))
+tank5b <- read.csv("../../../data/WA/HOBO/T5B-2.csv", skip = 1, header = TRUE) %>% dplyr::select(., 2:3) %>% rename(dateTime = Date.Time..GMT.04.00, temp5b = Temp...C..LGR.S.N..20548770..SEN.S.N..20548770.) %>% mutate(dateTime = as.POSIXct(dateTime, format = "%m/%d/%y%t%H:%M"))
+
+tank6a <- read.csv("../../../data/WA/HOBO/T6A.csv", skip = 1, header = TRUE) %>% dplyr::select(., 2:3) %>% rename(dateTime = Date.Time..GMT.04.00, temp6a = Temp...C..LGR.S.N..21435414..SEN.S.N..21435414.) %>% mutate(dateTime = as.POSIXct(dateTime, format = "%m/%d/%y%t%H:%M"))
+tank6b <- read.csv("../../../data/WA/HOBO/T6B.csv", skip = 1, header = TRUE) %>% dplyr::select(., 2:3) %>% rename(dateTime = Date.Time..GMT.04.00, temp6b = Temp...C..LGR.S.N..21435417..SEN.S.N..21435417..LBL..T6B.) %>% mutate(dateTime = as.POSIXct(dateTime, format = "%m/%d/%y%t%H:%M"))
+
+tank7a <- read.csv("../../../data/WA/HOBO/T7A.csv", skip = 1, header = TRUE) %>% dplyr::select(., 2:3) %>% rename(dateTime = Date.Time..GMT.04.00, temp7a = Temp...C..LGR.S.N..20548776..SEN.S.N..20548776..LBL..T7A.) %>% mutate(dateTime = as.POSIXct(dateTime, format = "%m/%d/%y%t%H:%M"))
+tank7b <- read.csv("../../../data/WA/HOBO/T7B.csv", skip = 1, header = TRUE) %>% dplyr::select(., 2:3) %>% rename(dateTime = Date.Time..GMT.04.00, temp7b = Temp...C..LGR.S.N..20548774..SEN.S.N..20548774..LBL..T7B.) %>% mutate(dateTime = as.POSIXct(dateTime, format = "%m/%d/%y%t%H:%M"))
+
+tank8a <- read.csv("../../../data/WA/HOBO/T8A.csv", skip = 1, header = TRUE) %>% dplyr::select(., 2:3) %>% rename(dateTime = Date.Time..GMT.04.00, temp8a = Temp...C..LGR.S.N..21435410..SEN.S.N..21435410.) %>% mutate(dateTime = as.POSIXct(dateTime, format = "%m/%d/%y%t%H:%M"))
+tank8b <- read.csv("../../../data/WA/HOBO/T8B-2.csv", skip = 1, header = TRUE) %>% dplyr::select(., 2:3) %>% rename(dateTime = Date.Time..GMT.04.00, temp8b = Temp...C..LGR.S.N..21435200..SEN.S.N..21435200.) %>% mutate(dateTime = as.POSIXct(dateTime, format = "%m/%d/%y%t%H:%M"))
+```
+
+```{r}
+#Add columns for tank ID and treatment
+#Retain only rows with data before the experiment ended
+
+tank1a <- tank1a %>% 
+  mutate(., tank = 1,
+         treatment = "colder") %>%
+  slice(., 10:422)
+tank1b <- tank1b %>% 
+  mutate(., tank = 1,
+         treatment = "colder") %>%
+  slice(., 1:186)
+
+tank2a <- tank2a %>% 
+  mutate(., tank = 2,
+         treatment = "colder") %>%
+  slice(., 1:186)
+tank2b <- tank2b %>% 
+  mutate(., tank = 2,
+         treatment = "colder") %>%
+  slice(., 10:421)
+
+tank3a <- tank3a %>% 
+  mutate(., tank = 3,
+         treatment = "colder") %>%
+  slice(., 10:420)
+tank3b <- tank3b %>% 
+  mutate(., tank = 3,
+         treatment = "colder") %>%
+  slice(., 10:422)
+
+tank4a <- tank4a %>% 
+  mutate(., tank = 3,
+         treatment = "colder") %>%
+  slice(., 10:422)
+tank4b <- tank4b %>% 
+  mutate(., tank = 3,
+         treatment = "colder") %>%
+  slice(., 10:423)
+
+tank5a <- tank5a %>% 
+  mutate(., tank = 5,
+         treatment = "cold") %>%
+  slice(., 1:258)
+tank5b <- tank5b %>% 
+  mutate(., tank = 5,
+         treatment = "cold") %>%
+  slice(., 1:70)
+
+tank6a <- tank6a %>% 
+  mutate(., tank = 6,
+         treatment = "cold") %>%
+  slice(., 10:422)
+tank6b <- tank6b %>% 
+  mutate(., tank = 6,
+         treatment = "cold") %>%
+  slice(., 10:422)
+
+tank7a <- tank7a %>% 
+  mutate(., tank = 7,
+         treatment = "cold") %>%
+  slice(., 10:421)
+tank7b <- tank7b %>% 
+  mutate(., tank = 7,
+         treatment = "cold") %>%
+  slice(., 10:421)
+
+tank8a <- tank8a %>% 
+  mutate(., tank = 7,
+         treatment = "cold") %>%
+  slice(., 10:421)
+tank8b <- tank8b %>% 
+  mutate(., tank = 7,
+         treatment = "cold") %>%
+  slice(., 1:260)
+```
+
+# Calculate treatment conditions after ramp down
+
+## Calculate treatment mean and SE
+
+```{r}
+hobos <- list(tank1a, tank2a, tank3a, tank5a, tank6a, tank7a,
+              tank1b, tank2b, tank3b, tank5b, tank6b, tank7b) #Create a list of filenames to cycle through
+hobos
+```
+
+### For each tank
+
+```{r}
+treatmentTempStats <- data.frame("tank" = c(1:3, 5:7),
+                                 "meanTemp" = rep(0, times = 6),
+                                 "sdTemp" = rep(0, times = 6)) #Create an empty dataframe
+treatmentTempStats
+```
+
+```{r}
+for (i in 1:(length(hobos)/2)) {
+  treatmentTempStats[i,2] <-
+    mean(rbind(hobos[[i]][,2][88:length(hobos[[i]][,2])],
+               hobos[[i+6]][,2][88:length(hobos[[i+6]][,2])]), na.rm = TRUE)
+  treatmentTempStats[i,3] <-
+    sd(rbind(hobos[[i]][,2][88:length(hobos[[i]][,2])],
+             hobos[[i+6]][,2][88:length(hobos[[i+6]][,2])]), na.rm = TRUE)
+} #For each tank, combine the treatment temperature data from both HOBO loggers,either find the average or SD, and save in treatmentTempStats
+head(treatmentTempStats) #Confirm calculations
+```
+
+```{r}
+write.csv(treatmentTempStats, "temp-mean-sd.csv", quote = FALSE)
+```
+
+### For each treatment
+
+```{r}
+#Colder: Mean = 1.66, SD = 0.3231426
+colderMean <- mean(rbind(hobos[[1]][,2][88:length(hobos[[1]][,2])],
+                         hobos[[2]][,2][88:length(hobos[[2]][,2])],
+                         hobos[[3]][,2][88:length(hobos[[3]][,2])],
+                         hobos[[7]][,2][88:length(hobos[[7]][,2])],
+                         hobos[[8]][,2][88:length(hobos[[8]][,2])],
+                         hobos[[9]][,2][88:length(hobos[[9]][,2])]),
+                   na.rm = TRUE)
+colderSD <- sd(rbind(hobos[[1]][,2][88:length(hobos[[1]][,2])],
+                     hobos[[2]][,2][88:length(hobos[[2]][,2])],
+                     hobos[[3]][,2][88:length(hobos[[3]][,2])],
+                     hobos[[7]][,2][88:length(hobos[[7]][,2])],
+                     hobos[[8]][,2][88:length(hobos[[8]][,2])],
+                     hobos[[9]][,2][88:length(hobos[[9]][,2])]),
+               na.rm = TRUE)
+colderMean
+colderSD
+```
+
+```{r}
+#Colder: Mean = 5.385082, SD = 0.3004675
+coldMean <- mean(rbind(hobos[[4]][,2][88:length(hobos[[4]][,2])],
+                       hobos[[5]][,2][88:length(hobos[[5]][,2])],
+                       hobos[[6]][,2][88:length(hobos[[6]][,2])],
+                       hobos[[10]][,2][88:length(hobos[[10]][,2])],
+                       hobos[[11]][,2][88:length(hobos[[11]][,2])],
+                       hobos[[12]][,2][88:length(hobos[[12]][,2])]),
+                 na.rm = TRUE)
+coldSD <- sd(rbind(hobos[[4]][,2][88:length(hobos[[4]][,2])],
+                   hobos[[5]][,2][88:length(hobos[[5]][,2])],
+                   hobos[[6]][,2][88:length(hobos[[6]][,2])],
+                   hobos[[10]][,2][88:length(hobos[[10]][,2])],
+                   hobos[[11]][,2][88:length(hobos[[11]][,2])],
+                   hobos[[12]][,2][88:length(hobos[[12]][,2])]),
+             na.rm = TRUE)
+coldMean
+coldSD
+```
+
+# Statistical test
+
+I will conduct a one-way ANOVA to confirm there are significant differences between treatments.
+
+```{r}
+rbind(tank1a, tank1b)
+```
+```{r}
+
+```
+
+
+```{r}
+tempDataLong <- rbind(tank1a %>%
+                        dplyr::rename(temp = "temp1a"), 
+                      tank1b %>%
+                        dplyr::rename(temp = "temp1b"),
+                      tank2a %>%
+                        dplyr::rename(temp = "temp2a"), 
+                      tank2b %>%
+                        dplyr::rename(temp = "temp2b"),
+                      tank3a %>%
+                        dplyr::rename(temp = "temp3a"), 
+                      tank3b %>%
+                        dplyr::rename(temp = "temp3b"),
+                      tank5a %>%
+                        dplyr::rename(temp = "temp5a"), 
+                      tank5b %>%
+                        dplyr::rename(temp = "temp5b"),
+                      tank6a %>%
+                        dplyr::rename(temp = "temp6a"), 
+                      tank6b %>%
+                        dplyr::rename(temp = "temp6b"),
+                      tank7a %>%
+                        dplyr::rename(temp = "temp7a"), 
+                      tank7b %>%
+                        dplyr::rename(temp = "temp7b")) %>% 
+  drop_na() #Create long dataframe for ANOVA and remove rows with NAs
+tail(tempDataLong) #Confirm dataframe creation
+```
+
+```{r}
+tempANOVA <- aov(temp ~ treatment, data = tempDataLong) #One-way ANOVA by treatment
+summary(tempANOVA)[[1]][4][[1]][1] # F = 1028.818
+summary(tempANOVA)[[1]][5][[1]][1] # P-value = 2.797163e-205
+```
+
+# Plot full temperature conditions (including ramp down)
+
+```{bash}
+mkdir figures
+```
+
+```{r}
+plotColors <- c(brewer.pal(9, "Blues")[9],
+                brewer.pal(9, "Blues")[7]) #Create color scheme
+```
+
+```{r}
+cbind(tank1a, tank1b,
+      tank2a, tank2b,
+      tank3a, tank3b,
+      tank5a, tank5b,
+      tank6a, tank6b,
+      tank7a, tank7b) %>%
+  dplyr::select(., c(1, 4, 
+                     2, 6, 
+                     10, 14, 
+                     18, 22,
+                     26, 30,
+                     34, 38,
+                     42, 46)) %>%
+  rowwise() %>%
+  mutate(., colderTemp = mean(c(temp1a, temp1b,
+                                temp2a, temp2b,
+                                temp3a, temp3b)),
+         coldTemp = mean(c(temp5a, temp5b,
+                           temp6a, temp6b,
+                           temp7a, temp7b))) %>%
+  ggplot(., aes(x = dateTime, y = colderTemp)) +
+  geom_line(color = plotColors[1]) +
+  geom_ribbon(aes(x = dateTime, y = coldMean, ymin = coldMean - coldSD, ymax = coldMean + coldSD), fill = plotColors[2], alpha = 0.15) +
+  geom_hline(yintercept = coldMean, colour = plotColors[2], linetype = 3) +
+  geom_line(aes(x = dateTime, y = coldTemp), color = plotColors[2]) +
+  geom_ribbon(aes(x = dateTime, y = colderMean, ymin = colderMean - colderSD, ymax = colderMean + colderSD), fill = plotColors[1], alpha = 0.15) +
+  geom_hline(yintercept = colderMean, colour = plotColors[1], linetype = 3) +
+  scale_x_datetime(name = "") +
+  scale_y_continuous(name = "Temperature (ºC)",
+                     breaks = c(seq(0,5,1), seq(5,15,5))) +
+  theme_classic(base_size = 15)
+#Combine data from all dataframes and select columns of interest. Use rowwise operations to calculate average temperature for each treatment at each timepoint. Plot colder temepratures for each timepoint. Add a ribbon with the overall average colder temperature and SD. Add a line for the overall average colder temperature. Repeat with the cold temperature. Modify x-axis label. Modify y-axis.
+ggsave("figures/exp-temp.pdf", height = 8.5, width = 11)
+```
+
