@@ -242,6 +242,21 @@ ggsave("figures/time-to-right-genotype.pdf", height = 8.5, width = 11)
 ```{r}
 genotypeData %>%
   filter(., is.na(genotype) == FALSE) %>%
+  group_by(., presenceT) %>%
+  summarize(., count = n()) %>%
+  ggplot(mapping = aes(x = "", y = count, fill = presenceT)) +
+  geom_col(color = "black") +
+  coord_polar(theta = "y") +
+  scale_fill_manual(name = "Genotype",
+                    values = c("orange", "blue")) +
+  theme_void(base_size = 15) #Group data by genotype and summarize. Plot counts as a pie chart.
+ggsave("../../../../Desktop/mockdata.jpg", height = 8.5, width = 11)
+```
+
+
+```{r}
+genotypeData %>%
+  filter(., is.na(genotype) == FALSE) %>%
   group_by(., genotype) %>%
   summarize(., count = n()) %>%
   ggplot(mapping = aes(x = "", y = count, fill = genotype)) +
