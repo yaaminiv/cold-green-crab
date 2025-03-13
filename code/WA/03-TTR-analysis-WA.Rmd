@@ -476,8 +476,7 @@ TTRthreshModelComparisons
 write.csv(TTRthreshModelComparisons, "ttr-binomial-model-comparison-output.csv", quote = FALSE, row.names = FALSE) #Save model comparison table
 ```
 
-
-No significant impact of genotype on whether or not a crab righted, but I suspect that's because I don't have all of the genotype data yet!
+No significant impact of genotype on whether or not a crab righted!
 
 # Plots
 
