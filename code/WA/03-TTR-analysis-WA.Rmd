@@ -588,7 +588,6 @@ presenceT_labels <- c("N" = "CC",
 
 ```{r}
 modTTR %>%
-  filter(., is.na(genotype) == FALSE) %>%
   group_by(., treatment, genotype) %>%
   summarize(., total = n(), 
             trial1No = sum(is.na(trial.1) == TRUE),
@@ -702,7 +701,6 @@ modTTR %>%
 ggsave("figures/time-to-right-noFlips-timeT.pdf", height = 8.5, width = 11)
 #Take TTR data and group by timepoint. Count the number of crabs that did not right within 90 seconds during each trial. Subtract that value from the total to get the number of crabs that did right within 90 seconds. Pivot the data longer. Create a trial column based on the condition column. Remove trial information from the text in the condition column. Pipe modified data into ggplot to create a stacked barplot. Facet by treatment and timepoint using facet labels. Relabel axes. Modify fill scale. Use specific base size with classic theme. For facet labels, use a white border (no border).
 ```
-
 
 # Individual-level analysis
 
@@ -858,11 +856,11 @@ modTTR %>%
                      breaks = c(0, 1),
                      labels = c("No", "Yes")) +
   scale_colour_manual(name = "Genotype",
-                    values = c("grey70", "grey10"),
-                    labels = c("CT", "TT")) +
+                    values = c("grey90", "grey70", "grey10"),
+                    labels = c("CC", "CT", "TT")) +
   scale_shape_manual(name = "Genotype",
-                    values = c(15, 19),
-                    labels = c("CT", "TT")) +
+                    values = c(17, 15, 19),
+                    labels = c("CC", "CT", "TT")) +
   theme_classic(base_size = 15) + theme(strip.background = element_rect(colour = "white"))
 ggsave("figures/time-to-right-noFlips-individuals.pdf", height = 8.5, width = 11)
 ```
@@ -887,7 +885,7 @@ modTTR %>%
   geom_bar(position = "fill", stat = "identity") +
   labs(y = "Proportion") +
   scale_x_discrete(name = "Genotype",
-                 labels = c("CC", "CT")) +
+                 labels = c("CT", "TT")) +
   scale_fill_manual(name = "Pattern",
                     labels = c("Always", "Recovered", "Failed", "Never"),
                     values = c("grey90", "grey60", "grey30", "grey0")) +
