@@ -242,21 +242,6 @@ ggsave("figures/time-to-right-genotype.pdf", height = 8.5, width = 11)
 ```{r}
 genotypeData %>%
   filter(., is.na(genotype) == FALSE) %>%
-  group_by(., presenceT) %>%
-  summarize(., count = n()) %>%
-  ggplot(mapping = aes(x = "", y = count, fill = presenceT)) +
-  geom_col(color = "black") +
-  coord_polar(theta = "y") +
-  scale_fill_manual(name = "Genotype",
-                    values = c("orange", "blue")) +
-  theme_void(base_size = 15) #Group data by genotype and summarize. Plot counts as a pie chart.
-ggsave("../../../../Desktop/mockdata.jpg", height = 8.5, width = 11)
-```
-
-
-```{r}
-genotypeData %>%
-  filter(., is.na(genotype) == FALSE) %>%
   group_by(., genotype) %>%
   summarize(., count = n()) %>%
   ggplot(mapping = aes(x = "", y = count, fill = genotype)) +
@@ -270,7 +255,7 @@ ggsave("figures/genotype-pie-chart.jpg", height = 8.5, width = 11)
 
 ### Hardy-Weinberg equilibrium
 
-Since I have the genotype data, I want to see if my population is in Hardy-Weinbergy equilibrium. I will need to do this for the full MA population, as well as for the individual New Bedford and Eel Pond populations. I used [this calculator](https://www.cog-genomics.org/software/stats) to obtain p-values.
+Since I have the genotype data, I want to see if my population is in Hardy-Weinbergy equilibrium. I used [this calculator](https://www.cog-genomics.org/software/stats) to obtain p-values.
 
 ```{r}
 genSummarized <- genotypeData %>%
@@ -280,7 +265,9 @@ genSummarized <- genotypeData %>%
 genSummarized
 ```
 
-Full population p-value: 0.00169236548011
+Full population p-value: 0.000036240950966106
+
+This significant p-value means that the population is not in HW equilibrium! That means there are external forces acting upon the genotype distribution in this population.
 
 # Assess differences in TTR based on treatment and time
 
