@@ -10,7 +10,7 @@ In this document I'll examine how time-to-right (TTR) varies by temperature, tim
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_knit$set(root.dir = normalizePath("../output/03-TTR-analysis-julia/")) #Set root directory
+knitr::opts_knit$set(root.dir = normalizePath("../../output/repeat-heat/03-TTR-analysis/")) #Set root directory
 ```
 
 ```{r}
@@ -27,6 +27,7 @@ getwd()
 #install.packages("ggpubr")
 #install.packages("patchwork")
 #install.packages("ggrain")
+#install.packages("cowplot")
 require(tidyverse)
 require(plotrix)
 require(RColorBrewer)
@@ -34,6 +35,7 @@ require(lme4)
 require(ggpubr)
 require(patchwork)
 require(ggrain)
+require(cowplot)
 ```
 
 ```{r}
@@ -43,7 +45,7 @@ sessionInfo()
 # Import data
 
 ```{r}
-rawTTR <- read.csv("../../data/time-to-right-genotype-julia.csv", header = TRUE) #Import raw data
+rawTTR <- read.csv("../../../data/repeat-heat/time-to-right-genotype-julia.csv", header = TRUE) #Import raw data
 head(rawTTR) #Confirm import. Trial data is in seconds.
 ```
 
@@ -54,7 +56,7 @@ modTTR <- rawTTR %>%
   dplyr::select(., -c(notes, probe.number)) %>%
   mutate(., day = case_when(date == "7/31/23" ~ 1,
                             date == "8/1/23" ~ 2,
-                            date == "8/2/23" ~ 3,
+                            date == "8/2/23" ~ 2,
                             date == "8/4/23" ~ 5)) %>%
   mutate(., treatment = case_when (tank == "10" | tank == "12" ~ "No Pulse",
                                    tank == "11" | tank == "13" ~ "Pulse")) %>%
@@ -83,7 +85,7 @@ modTTR <- rawTTR %>%
   mutate(., TTRSEFull = std.error(TTRavg)) %>%
   mutate(., TTRavgFullLow = TTRavgFull - TTRSEFull) %>%
   mutate(., TTRavgFullHigh = TTRavgFull + TTRSEFull) %>%
-  ungroup(.) #Remove sampling ID and notes columns. Add new column with day information. Create a a new column that with an index for width/length. Create new column as a binary for whether or not crabs are missing legs. Use case_when to create a column of continuous integument color metrics. Change all 91 to NA, calculate average and SE using data from the three TTR trials using rowwise operations, and remove rows where TTRavg | TTRSE = NA. Calculate average and SE for all samples in a treatment for each day. Add/subtract TTRSEFull to/from TTRavgFull to get bounds. Ungroup.a.
+  ungroup(.) #Remove sampling ID and notes columns. Add new column with day information, combining 8/1 and 8/2 into the same day4. Create a a new column that with an index for width/length. Create new column as a binary for whether or not crabs are missing legs. Use case_when to create a column of continuous integument color metrics. Change all 91 to NA, calculate average and SE using data from the three TTR trials using rowwise operations, and remove rows where TTRavg | TTRSE = NA. Calculate average and SE for all samples in a treatment for each day. Add/subtract TTRSEFull to/from TTRavgFull to get bounds. Ungroup.a.
 head(modTTR) #Confirm formatting
 ```
 
@@ -100,7 +102,7 @@ modTTR %>%
   coord_polar(theta = "y") +
   scale_fill_manual(name = "Genotype",
                     values = c("grey90", "grey45", "grey0")) +
-  theme_void(base_size = 15) #Group data by genotype and summarize. Plot counts as a pie chart.
+  theme_void(base_size = 15) #Group data by genotype and summarize. Plot counts as a pie chart.4444
 ggsave("figures/genotype-pie-chart.jpg", height = 8.5, width = 11)
 ```
 
@@ -122,8 +124,6 @@ This population is in Hardy-Weinberg equilibrium!
 
 ## Mixed effects model
 
-I will use an ANOVA to assess treatment differences, as a linear model or ANOVA seems to be common practice in the literature (ex. [Blakeslee et al. 2021](https://doi.org/10.1098/rspb.2021.0703)).
-
 ```{r}
 hist(modTTR$TTRavg)
 hist(x = log(modTTR$TTRavg)) #Log transformation helps normalize data
@@ -137,6 +137,7 @@ TTRmodel <- lmer(log(TTRavg) ~ as.factor(treatment) + day + as.factor(treatment)
 summary(TTRmodel) #Look at model output.
 #Residuals explain more random effect variation than crab ID, crab ID explains very little variation
 ```
+
 Now that I've run the full model, I want to test the importance of treatment, day, and their interaction as predictors. I'll include all other factors in the null model to account for any variation they may contribute.
 
 ```{r}
@@ -165,12 +166,21 @@ TTRModelComparisons
 write.csv(TTRModelComparisons, "ttr-model-comparison-stat-output.csv", quote = FALSE, row.names = FALSE) #Save model output
 ```
 
+### Calculate average TTR
+
+```{r}
+modTTR %>%
+  group_by(., treatment, day) %>%
+  summarize(., mean = mean(TTRavg), sd = sd(TTRavg)) %>%
+  write.csv("average-TTR-calculations.csv", quote = FALSE, row.names = FALSE) #Take TTR data and group by treatment and day. Calculate mean and standard deviation. Save as a csv file.
+```
+
 ## Check assumptions
 
 ```{r}
 hist(residuals(TTRmodel)) #Residuals normally distributed
 
-plot(fitted(TTRmodel), residuals(TTRmodel)) #Borderline heteroskedastic but probably okay? Lack of dispersion across x-axis is likely related to discrete variables
+plot(fitted(TTRmodel), residuals(TTRmodel)) #Borderline heteroskedastic but probably okay? Dispersion across x-axis is likely related to discrete variables
 abline(h = 0, lty = 2, col = "grey")
 ```
 
@@ -179,7 +189,7 @@ abline(h = 0, lty = 2, col = "grey")
 Now that I know treatment, time, and their interaction significantly impact TTR, I want to add in genotype and sourcing information.
 
 ```{r}
-TTRfullGenotype <- lmer(log(TTRavg) ~ as.factor(treatment) + day + as.factor(treatment):day + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + as.factor(genotype) + (1|crab.ID), data = modTTR, REML = FALSE) #Run model with genotype to identify significance of predictor
+TTRfullGenotype <- lmer(log(TTRavg) ~ as.factor(treatment) + day + as.factor(treatment):day + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + as.factor(genotype) + (1|crab.ID), data = modTTR, REML = FALSE) #Run model with genotype to identify4 significance of predictor
 anova(TTRmodel, TTRfullGenotype) #No significant impact of genotype
 ```
 
@@ -207,7 +217,26 @@ TTRModelComparisons
 write.csv(TTRModelComparisons, "ttr-model-comparison-stat-output.csv", quote = FALSE, row.names = FALSE) #Save model output
 ```
 
-There is a marginally significant impact of the T allele on average TTR. My next step is to understand how the difference in TTR is impacted by treatment, time, and genotype.
+There is a marginally significant impact of the T allele on average TTR. 
+
+### Calculate average TTR
+
+```{r}
+modTTR %>%
+  group_by(., treatment, day, presenceT) %>%
+  summarize(., mean = mean(TTRavg), sd = sd(TTRavg)) %>%
+  write.csv("average-TTR-calculations-genotype.csv", quote = FALSE, row.names = FALSE) #Take TTR data and group by treatment and day. Calculate mean and standard deviation. Save as a csv file.
+```
+
+```{r}
+modTTR %>%
+  group_by(., treatment, day, presenceT) %>%
+  summarize(., mean = mean(TTRavg), sd = sd(TTRavg)) %>%
+  filter(., day == 5)
+```
+
+
+My next step is to understand how the difference in TTR is impacted by treatment, time, and genotype.
 
 # Assess impacts on differences in TTR
 
@@ -231,7 +260,6 @@ modTTRWide #Confirm changes
 hist(modTTRWide$TTRdiff)
 hist(modTTRWide$TTRdiff %>% log(.))
 ```
-
 
 ## Linear model
 
@@ -291,6 +319,11 @@ No significant effect of any genotype variable on differences in TTR! Also inter
 mkdir figures
 ```
 
+```{r}
+plotColors <- c(brewer.pal(9, "Reds")[7],
+                brewer.pal(9, "Greys")[7]) #Create color scheme
+```
+
 ## Average TTR plot
 
 ```{r}
@@ -330,6 +363,59 @@ ggsave("figures/average-TTR-raincloud.pdf", height = 8.5, width = 11)
 ```
 
 ```{r}
+mainPlot <- modTTR %>%
+  dplyr::select(., c(day, treatment, TTRavg, presenceT)) %>%
+  filter(., is.na(TTRavg) == FALSE) %>%
+  distinct(.) %>%
+  ggplot(mapping = aes(x = as.character(day), y = TTRavg, color = treatment, shape = treatment)) +
+  geom_boxplot(outlier.shape = NA) + 
+  geom_jitter(position = position_dodge(width = 0.75)) +
+  scale_x_discrete(name = "Day",
+                   labels = c("0", "1", "4")) +
+  scale_y_continuous(name = "Average Time-to-Right (s)",
+                     breaks = c(0:5, 10, 15)) +
+  scale_color_manual(name = "",
+                     values = c(plotColors[2], plotColors[1]),
+                     labels = c("Control", "Treatment")) +
+  scale_shape_manual(values = c(15, 19),
+                     name = "",
+                     labels = c("Control", "Treatment")) +
+  theme_classic(base_size = 15) #Select unique day, treatment, and TTRavg data, and remove rows where TTRavg = NA. Plot average TTR for each crab in a boxplot. Do not show outliers with the OG boxplot, but add them in with geom_jitter. Assign colors and shapes to each treatment. Increase base font size.
+
+insetPlot <-  modTTR %>%
+  dplyr::select(., c(day, treatment, TTRavg, presenceT)) %>%
+  filter(., is.na(TTRavg) == FALSE) %>%
+  distinct(.) %>%
+  ggplot(mapping = aes(x = as.character(day), y = TTRavg, color = treatment, shape = treatment)) +
+  geom_boxplot(outlier.shape = NA) + 
+  geom_jitter(position = position_dodge(width = 0.75)) +
+  ylab("") +
+  scale_x_discrete(name = "Day",
+                   labels = c("0", "1", "4")) +
+  scale_color_manual(name = "",
+                     values = c(plotColors[2], plotColors[1]),
+                     labels = c("Control", "Treatment")) +
+  scale_y_continuous(limits = c(0,4)) +
+  scale_shape_manual(values = c(15, 19),
+                     name = "",
+                     labels = c("Control", "Treatment")) +
+  theme_classic() + theme(legend.position = "none",
+                          axis.line.x.bottom = element_line(linewidth = 0),
+                          axis.line.y.left = element_line(linewidth = 0),
+                          panel.border = element_rect(colour = "black", fill = NA, size = 1)) #Create an inset plot for 0 < TTR < 4
+
+plotWithInset <- ggdraw() +
+  draw_plot(mainPlot) +
+  draw_plot(insetPlot, x = 0.1, y = 0.73, width = 0.52, height = 0.25) #Add inset to the plot
+
+plotWithInset #Plot the full plot with inset
+
+ggsave("figures/time-to-right-avg-boxplot-wInset.pdf", height = 8.5, width = 11) #Save!
+```
+
+## Genotype-specific plots
+
+```{r}
 presenceT_labels <- c("N" = "CC",
                       "Y" = "CT or TT") #Modify facet labels for precense of the T allele
 ```
@@ -345,7 +431,7 @@ modTTR %>%
                    labels = c("Before", "After")) +
   scale_y_continuous(name = "Average TTR (s)") +
   scale_color_manual(guide = "none",
-                    values = c('#9699eb', '#eb8d88')) +
+                     values = c('#9699eb', '#eb8d88')) +
   scale_shape_manual(guide = "none",
                      values = c(17, 19)) +
   theme_classic(base_size = 15) + theme(strip.background = element_rect(color = "white"))
@@ -364,7 +450,7 @@ modTTRWide %>%
                    labels = c("No Pulse", "Pulse")) +
   scale_y_continuous(name = "Difference in TTR (s)") +
   scale_color_manual(guide = "none",
-                    values = c('#9699eb', '#eb8d88')) +
+                     values = c('#9699eb', '#eb8d88')) +
   scale_shape_manual(guide = "none",
                      values = c(17, 19)) +
   theme_classic(base_size = 15) + theme(strip.background = element_rect(color = "white"))
@@ -381,7 +467,7 @@ modTTRWide %>%
                    labels = c("No Pulse", "Pulse")) +
   scale_y_continuous(name = "Difference in TTR (s)") +
   scale_color_manual(guide = "none",
-                    values = c('#9699eb', '#eb8d88')) +
+                     values = c('#9699eb', '#eb8d88')) +
   scale_size(name = "Carapace Width", range = c(1,8)) +
   scale_alpha(guide = "none") +
   theme_classic(base_size = 15) + theme(strip.background = element_rect(color = "white"))
@@ -398,7 +484,7 @@ modTTRWide %>%
                    labels = c("No Pulse", "Pulse")) +
   scale_y_continuous(name = "Difference in TTR (s)") +
   scale_color_manual(guide = "none",
-                    values = c('#9699eb', '#eb8d88')) +
+                     values = c('#9699eb', '#eb8d88')) +
   scale_size(name = "Weight", range = c(1,10)) +
   scale_alpha(guide = "none") +
   theme_classic(base_size = 15) + theme(strip.background = element_rect(color = "white"))
@@ -415,7 +501,7 @@ modTTRWide %>%
                    labels = c("No Pulse", "Pulse")) +
   scale_y_continuous(name = "Difference in TTR (s)") +
   scale_color_manual(guide = "none",
-                    values = c('#9699eb', '#eb8d88')) +
+                     values = c('#9699eb', '#eb8d88')) +
   scale_shape(name = "Missing Swimmer?",
               labels = c("No", "Yes")) +
   scale_alpha(guide = "none") +
