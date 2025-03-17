@@ -25,7 +25,6 @@ getwd()
 #install.packages("RColorBrewer")
 #install.packages(lme4)
 #install.packages("ggpubr")
-#install.packages("patchwork")
 #install.packages("ggrain")
 #install.packages("cowplot")
 require(tidyverse)
@@ -33,7 +32,6 @@ require(plotrix)
 require(RColorBrewer)
 require(lme4)
 require(ggpubr)
-require(patchwork)
 require(ggrain)
 require(cowplot)
 ```
@@ -422,9 +420,9 @@ presenceT_labels <- c("N" = "CC",
 
 ```{r}
 modTTR %>%
-  ggplot(mapping = aes(x = as.factor(day), y = TTRavg, color = treatment)) +
+  ggplot(mapping = aes(x = as.factor(day), y = TTRavg, color = treatment), shape = treatment) +
   geom_boxplot(outlier.shape = NA) + 
-  geom_jitter(aes(shape = presenceT), position = position_dodge(width = 0.1)) +
+  geom_jitter(aes(shape = treatment), position = position_dodge(width = 0.1)) +
   facet_grid(treatment~presenceT, scale = "free_y", labeller = labeller(presenceT = presenceT_labels)) +
   scale_x_discrete(name = "Day",
                    labels = c(0, 1, 4)) +
@@ -509,6 +507,87 @@ modTTRWide %>%
   scale_alpha(guide = "none") +
   theme_classic(base_size = 15) + theme(strip.background = element_rect(color = "white"))
 ggsave("figures/difference-TTR-boxplot-treatTswimmer.pdf", height = 8.5, width = 11)
+```
+
+## Multipanel plot
+
+### Modify plots for multipanel
+
+```{r}
+mainPlotMultipanel <- modTTR %>%
+  dplyr::select(., c(day, treatment, TTRavg, presenceT)) %>%
+  filter(., is.na(TTRavg) == FALSE) %>%
+  distinct(.) %>%
+  ggplot(mapping = aes(x = as.character(day), y = TTRavg, color = treatment, shape = treatment)) +
+  geom_boxplot(outlier.shape = NA) + 
+  geom_jitter(position = position_dodge(width = 0.75)) +
+  scale_x_discrete(name = "",
+                   labels = c("0", "1", "4")) +
+  scale_y_continuous(name = "Average Time-to-Right (s)",
+                     breaks = c(0:5, 10, 15)) +
+  scale_color_manual(name = "",
+                     values = c(plotColors[2], plotColors[1]),
+                     labels = c("Control", "Treatment")) +
+  scale_shape_manual(name = "",
+                     values = c(15, 19),
+                     labels = c("Control", "Treatment")) +
+  ggtitle("A.") +
+  theme_classic(base_size = 15) + theme(legend.position = "none") #Select unique day, treatment, and TTRavg data, and remove rows where TTRavg = NA. Plot average TTR for each crab in a boxplot. Do not show outliers with the OG boxplot, but add them in with geom_jitter. Assign colors and shapes to each treatment. Increase base font size.
+
+insetPlotMultipanel <-  modTTR %>%
+  dplyr::select(., c(day, treatment, TTRavg, presenceT)) %>%
+  filter(., is.na(TTRavg) == FALSE) %>%
+  distinct(.) %>%
+  ggplot(mapping = aes(x = as.character(day), y = TTRavg, color = treatment, shape = treatment)) +
+  geom_boxplot(outlier.shape = NA) + 
+  geom_jitter(position = position_dodge(width = 0.75)) +
+  ylab("") +
+  scale_x_discrete(name = "Day",
+                   labels = c("0", "1", "4")) +
+  scale_color_manual(name = "",
+                     values = c(plotColors[2], plotColors[1]),
+                     labels = c("Control", "Treatment")) +
+  scale_y_continuous(limits = c(0,4)) +
+  scale_shape_manual(name = "",
+                     values = c(15, 19),
+                     labels = c("Control", "Treatment")) +
+  theme_classic() + theme(legend.position = "none",
+                          axis.line.x.bottom = element_line(linewidth = 0),
+                          axis.line.y.left = element_line(linewidth = 0),
+                          panel.border = element_rect(colour = "black", fill = NA, size = 1)) #Create an inset plot for 0 < TTR < 4
+
+plotWithInsetMultipanel <- ggdraw() +
+  draw_plot(mainPlotMultipanel) +
+  draw_plot(insetPlotMultipanel, x = 0.1, y = 0.73, width = 0.52, height = 0.25) #Add inset to the plot
+
+plotWithInsetMultipanel #Plot the full plot with inset
+```
+
+```{r}
+genotypeMultipanel <- modTTR %>%
+  ggplot(mapping = aes(x = as.factor(day), y = TTRavg, color = treatment)) +
+  geom_boxplot(outlier.shape = NA) + 
+  geom_jitter(aes(shape = treatment), position = position_dodge(width = 0.1)) +
+  facet_grid(treatment~presenceT, scale = "free_y", labeller = labeller(presenceT = presenceT_labels)) +
+  scale_x_discrete(name = "Day",
+                   labels = c(0, 1, 4)) +
+  scale_y_continuous(name = "Average Time-to-Right (s)") +
+  scale_color_manual(name = "",
+                     values = c(plotColors[2], plotColors[1]),
+                     labels = c("Control", "Treatment")) +
+  scale_shape_manual(name = "",
+                     values = c(15, 19),
+                     labels = c("Control", "Treatment")) +
+  ggtitle("B.") +
+  theme_classic(base_size = 15) + theme(strip.background = element_rect(color = "white"),
+                                        strip.text.y = element_blank(),
+                                        legend.position = "bottom")
+```
+
+
+```{r}
+plot_grid(plotWithInsetMultipanel, genotypeMultipanel, ncol = 1) #Use plot_grid from cowplot, not patchwork, to create a multipanel due to the inset being a cowplot object. Align vertically by using 1 column
+ggsave("figures/multipanel-TTR-plot.pdf", height = 11, width = 8.5) #Save multipanel plot
 ```
 
 
