@@ -337,6 +337,15 @@ TTRModelComparisons
 write.csv(TTRModelComparisons, "ttr-model-comparison-stat-output.csv", quote = FALSE, row.names = FALSE) #Save model output
 ```
 
+### Calculate average values
+
+```{r}
+modTTR %>%
+  group_by(., treatment, timepoint) %>%
+  summarize(mean = mean(TTRavg, na.rm = TRUE), sd = sd(TTRavg, na.rm = TRUE)) %>%
+  write.csv("average-TTR-calculations.csv", quote = FALSE, row.names = FALSE)
+```
+
 # Effect of genotype and population source.
 
 ## Impact on average TTR
@@ -508,6 +517,21 @@ write.csv(TTRthreshModelComparisons, "ttr-binomial-model-comparison-output.csv",
 
 Well, looks like there's a significant impact of presence of the T allele and source population on whether or not a crab righted itself!
 
+### Calculate proportions for righting
+
+```{r}
+modTTR %>%
+  group_by(., treatment, timepoint, TTRthresh) %>%
+  summarize(., count = n())
+```
+
+```{r}
+modTTR %>%
+  group_by(., treatment, timepoint, presenceT, TTRthresh) %>%
+  filter(., TTRthresh == 0) %>%
+  summarize(., count = n())
+```
+
 # Plots
 
 ## Average TTR plot
@@ -561,7 +585,6 @@ modTTR %>%
                      labels = c("1.5", "5")) +
   theme_classic(base_size = 15) #Select unique timepoint, treatment, and TTRavg data, and remove rows where TTRavg = NA. Plot average TTR for each crab in a boxplot. Do not show outliers with the OG boxplot, but add them in with geom_jitter. Assign colors and shapes to each treatment. Increase base font size.
 ```
-
 
 ## Threshold analysis plot
 
