@@ -40,11 +40,6 @@ sessionInfo()
 Outliers from when HOBO loggers recorded data while outside of the tank were removed manually.
 
 ```{r}
-read.csv("../../../data/WA/HOBO/T8B-2.csv", skip = 1, header = TRUE) %>% dplyr::select(., 2:3)
-```
-
-
-```{r}
 #Import CSV output from HOBO loggers. Skip first line of CSV and specify header. Retain second and third columns, rename columns, and format dateTime column correctly
 
 tank1a <- read.csv("../../../data/WA/HOBO/T1A.csv", skip = 1, header = TRUE) %>% dplyr::select(., 2:3) %>% rename(dateTime = Date.Time..GMT.04.00, temp1a = Temp...C..LGR.S.N..21435405..SEN.S.N..21435405.)  %>% mutate(dateTime = as.POSIXct(dateTime, format = "%m/%d/%y%t%H:%M"))
@@ -149,39 +144,69 @@ tank8b <- tank8b %>%
   slice(., 1:260)
 ```
 
-
-# CODE IN PROGRESS
-
-
 # Calculate treatment conditions after ramp down
 
 ## Calculate treatment mean and SE
 
 ```{r}
-hobos <- list(tank1a, tank2a, tank3a, tank5a, tank6a, tank7a,
-              tank1b, tank2b, tank3b, tank5b, tank6b, tank7b) #Create a list of filenames to cycle through
+hobos <- list(tank1a, tank2a, tank3a, tank4a, tank5a, tank6a, tank7a, tank8a,
+              tank1b, tank2b, tank3b, tank4b, tank5b, tank6b, tank7b, tank8b) #Create a list of filenames to cycle through
 hobos
 ```
 
 ### For each tank
 
 ```{r}
-treatmentTempStats <- data.frame("tank" = c(1:3, 5:7),
-                                 "meanTemp" = rep(0, times = 6),
-                                 "sdTemp" = rep(0, times = 6)) #Create an empty dataframe
+treatmentTempStats <- data.frame("tank" = c(1:8),
+                                 "meanTemp" = rep(0, times = 8),
+                                 "sdTemp" = rep(0, times = 8)) #Create an empty dataframe
 treatmentTempStats
 ```
 
 ```{r}
 for (i in 1:(length(hobos)/2)) {
   treatmentTempStats[i,2] <-
-    mean(rbind(hobos[[i]][,2][88:length(hobos[[i]][,2])],
-               hobos[[i+6]][,2][88:length(hobos[[i+6]][,2])]), na.rm = TRUE)
+    mean(rbind(hobos[[i]][,2][115:length(hobos[[i]][,2])],
+               hobos[[i+8]][,2][115:length(hobos[[i+8]][,2])]), na.rm = TRUE)
   treatmentTempStats[i,3] <-
-    sd(rbind(hobos[[i]][,2][88:length(hobos[[i]][,2])],
-             hobos[[i+6]][,2][88:length(hobos[[i+6]][,2])]), na.rm = TRUE)
-} #For each tank, combine the treatment temperature data from both HOBO loggers,either find the average or SD, and save in treatmentTempStats
+    sd(rbind(hobos[[i]][,2][115:length(hobos[[i]][,2])],
+             hobos[[i+8]][,2][115:length(hobos[[i+8]][,2])]), na.rm = TRUE)
+} #For each tank, combine the treatment temperature data from both HOBO loggers, either find the average or SD, and save in treatmentTempStats
 head(treatmentTempStats) #Confirm calculations
+```
+
+I made these calculations starting at the 115th row (after 7 a.m. on 2024-07-23). However, some of the HOBO loggers were put in after that point since the original logger batteries died! I'll need to replace values for certain tanks. 
+
+Loggers that started after 7 a.m. on 2024-07-23:
+
+- tank 1b
+- tank 2a
+- tank 5a
+- tank 5b
+- tank 8b
+
+```{r}
+treatmentTempStats$meanTemp[1] <- mean(rbind(hobos[[1]][,2][115:length(hobos[[1]][,2])],
+           hobos[[1+8]][,2][1:length(hobos[[1+8]][,2])]), na.rm = TRUE) #Tank 1 revised mean
+treatmentTempStats$sdTemp[1] <- sd(rbind(hobos[[1]][,2][115:length(hobos[[1]][,2])],
+           hobos[[1+8]][,2][1:length(hobos[[1+8]][,2])]), na.rm = TRUE) #Tank 1 revised SD
+
+treatmentTempStats$meanTemp[2] <- mean(rbind(hobos[[2]][,2][1:length(hobos[[2]][,2])],
+           hobos[[2+8]][,2][115:length(hobos[[2+8]][,2])]), na.rm = TRUE) #Tank 2 revised mean
+treatmentTempStats$sdTemp[2] <- sd(rbind(hobos[[2]][,2][1:length(hobos[[2]][,2])],
+           hobos[[2+8]][,2][115:length(hobos[[2+8]][,2])]), na.rm = TRUE) #Tank 2 revised SD
+
+treatmentTempStats$meanTemp[5] <- mean(rbind(hobos[[5]][,2][1:length(hobos[[5]][,2])],
+           hobos[[5+8]][,2][1:length(hobos[[5+8]][,2])]), na.rm = TRUE) #Tank 5 revised mean
+treatmentTempStats$sdTemp[5] <- sd(rbind(hobos[[5]][,2][1:length(hobos[[5]][,2])],
+           hobos[[5+8]][,2][1:length(hobos[[5+8]][,2])]), na.rm = TRUE) #Tank 5 revised SD
+
+treatmentTempStats$meanTemp[8] <- mean(rbind(hobos[[8]][,2][115:length(hobos[[8]][,2])],
+           hobos[[8+8]][,2][1:length(hobos[[8+8]][,2])]), na.rm = TRUE) #Tank 8 revised mean
+treatmentTempStats$sdTemp[8] <- sd(rbind(hobos[[8]][,2][115:length(hobos[[8]][,2])],
+           hobos[[8+8]][,2][1:length(hobos[[8+8]][,2])]), na.rm = TRUE) #Tank 8 revised SD
+
+treatmentTempStats #Confirm changes
 ```
 
 ```{r}
@@ -191,40 +216,48 @@ write.csv(treatmentTempStats, "temp-mean-sd.csv", quote = FALSE)
 ### For each treatment
 
 ```{r}
-#Colder: Mean = 1.66, SD = 0.3231426
-colderMean <- mean(rbind(hobos[[1]][,2][88:length(hobos[[1]][,2])],
-                         hobos[[2]][,2][88:length(hobos[[2]][,2])],
-                         hobos[[3]][,2][88:length(hobos[[3]][,2])],
-                         hobos[[7]][,2][88:length(hobos[[7]][,2])],
-                         hobos[[8]][,2][88:length(hobos[[8]][,2])],
-                         hobos[[9]][,2][88:length(hobos[[9]][,2])]),
+#Colder: Mean = 2.137014, SD = 0.3486562
+colderMean <- mean(rbind(hobos[[1]][,2][115:length(hobos[[1]][,2])],
+                         hobos[[2]][,2][1:length(hobos[[2]][,2])],
+                         hobos[[3]][,2][115:length(hobos[[3]][,2])],
+                         hobos[[4]][,2][115:length(hobos[[4]][,2])],
+                         hobos[[9]][,2][1:length(hobos[[9]][,2])],
+                         hobos[[10]][,2][115:length(hobos[[10]][,2])],
+                         hobos[[11]][,2][115:length(hobos[[11]][,2])],
+                         hobos[[12]][,2][115:length(hobos[[11]][,2])]),
                    na.rm = TRUE)
-colderSD <- sd(rbind(hobos[[1]][,2][88:length(hobos[[1]][,2])],
-                     hobos[[2]][,2][88:length(hobos[[2]][,2])],
-                     hobos[[3]][,2][88:length(hobos[[3]][,2])],
-                     hobos[[7]][,2][88:length(hobos[[7]][,2])],
-                     hobos[[8]][,2][88:length(hobos[[8]][,2])],
-                     hobos[[9]][,2][88:length(hobos[[9]][,2])]),
+colderSD <- sd(rbind(hobos[[1]][,2][115:length(hobos[[1]][,2])],
+                     hobos[[2]][,2][1:length(hobos[[2]][,2])],
+                     hobos[[3]][,2][115:length(hobos[[3]][,2])],
+                     hobos[[4]][,2][115:length(hobos[[4]][,2])],
+                     hobos[[9]][,2][1:length(hobos[[9]][,2])],
+                     hobos[[10]][,2][115:length(hobos[[10]][,2])],
+                     hobos[[11]][,2][115:length(hobos[[11]][,2])],
+                     hobos[[12]][,2][115:length(hobos[[11]][,2])]),
                na.rm = TRUE)
 colderMean
 colderSD
 ```
 
 ```{r}
-#Colder: Mean = 5.385082, SD = 0.3004675
-coldMean <- mean(rbind(hobos[[4]][,2][88:length(hobos[[4]][,2])],
-                       hobos[[5]][,2][88:length(hobos[[5]][,2])],
-                       hobos[[6]][,2][88:length(hobos[[6]][,2])],
-                       hobos[[10]][,2][88:length(hobos[[10]][,2])],
-                       hobos[[11]][,2][88:length(hobos[[11]][,2])],
-                       hobos[[12]][,2][88:length(hobos[[12]][,2])]),
+#Cold: Mean = 5.199698, SD = 0.2157631
+coldMean <- mean(rbind(hobos[[5]][,2][1:length(hobos[[5]][,2])],
+                       hobos[[6]][,2][115:length(hobos[[6]][,2])],
+                       hobos[[7]][,2][115:length(hobos[[7]][,2])],
+                       hobos[[8]][,2][115:length(hobos[[8]][,2])],
+                       hobos[[13]][,2][1:length(hobos[[13]][,2])],
+                       hobos[[14]][,2][115:length(hobos[[14]][,2])],
+                       hobos[[15]][,2][115:length(hobos[[15]][,2])],
+                       hobos[[16]][,2][1:length(hobos[[16]][,2])]),
                  na.rm = TRUE)
-coldSD <- sd(rbind(hobos[[4]][,2][88:length(hobos[[4]][,2])],
-                   hobos[[5]][,2][88:length(hobos[[5]][,2])],
-                   hobos[[6]][,2][88:length(hobos[[6]][,2])],
-                   hobos[[10]][,2][88:length(hobos[[10]][,2])],
-                   hobos[[11]][,2][88:length(hobos[[11]][,2])],
-                   hobos[[12]][,2][88:length(hobos[[12]][,2])]),
+coldSD <- sd(rbind(hobos[[5]][,2][1:length(hobos[[5]][,2])],
+                   hobos[[6]][,2][115:length(hobos[[6]][,2])],
+                   hobos[[7]][,2][115:length(hobos[[7]][,2])],
+                   hobos[[8]][,2][115:length(hobos[[8]][,2])],
+                   hobos[[13]][,2][1:length(hobos[[13]][,2])],
+                   hobos[[14]][,2][115:length(hobos[[14]][,2])],
+                   hobos[[15]][,2][115:length(hobos[[15]][,2])],
+                   hobos[[16]][,2][1:length(hobos[[16]][,2])]),
              na.rm = TRUE)
 coldMean
 coldSD
@@ -235,12 +268,8 @@ coldSD
 I will conduct a one-way ANOVA to confirm there are significant differences between treatments.
 
 ```{r}
-rbind(tank1a, tank1b)
+rbind(tank1a, tank1b, na.rm = TRUE)
 ```
-```{r}
-
-```
-
 
 ```{r}
 tempDataLong <- rbind(tank1a %>%
