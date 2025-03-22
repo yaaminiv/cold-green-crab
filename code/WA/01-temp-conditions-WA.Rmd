@@ -378,37 +378,35 @@ tank8b <- as.data.table(tank8b)
 ```
 
 ```{r}
-temp <- as.data.table(tank3a)[as.data.table(tank3b), on = "dateTime", roll = T][as.data.table(tank4a), on = "dateTime", roll = T][as.data.table(tank4b), on = "dateTime", roll = T][as.data.table(tank6a), on = "dateTime", roll = T][as.data.table(tank6b), on = "dateTime", roll = T][as.data.table(tank7a), on = "dateTime", roll = T][as.data.table(tank7b), on = "dateTime", roll = T][as.data.table(tank8a), on = "dateTime", roll = T][as.data.table(tank1a), on = "dateTime", roll = T] #Use data.table rolling join to match HOBO logger data together by nearest dateTime. Use only the loggers wiht at least 411 observations
-temp
+temp <- as.data.table(tank3a)[as.data.table(tank2b), on = "dateTime", roll = T, rollends = F][as.data.table(tank3b), on = "dateTime", roll = T, rollends = F][as.data.table(tank4a), on = "dateTime", roll = T, rollends = F][as.data.table(tank4b), on = "dateTime", roll = T, rollends = F][as.data.table(tank6a), on = "dateTime", roll = T, rollends = F][as.data.table(tank6b), on = "dateTime", roll = T, rollends = F][as.data.table(tank7a), on = "dateTime", roll = T, rollends = F][as.data.table(tank7b), on = "dateTime", roll = T, rollends = F][as.data.table(tank8a), on = "dateTime", roll = T, rollends = F][as.data.table(tank1a), on = "dateTime", roll = T, rollends = F] #Use data.table rolling join to match HOBO logger data together by nearest dateTime. Use only the loggers wiht at least 411 observations
+temp #Confirm changes
 ```
 
 ```{r}
-temp %>%
-  dplyr::select(dateTime, 
-                temp1a, 
-                temp3a, temp3b, 
-                temp4a, temp4b,
-                temp6a, temp6b,
-                temp7a, temp7b,
-                temp8a)
+temp2 <- tank5b[tank1b, on = "dateTime", roll = T, rollends = F][tank2a, on = "dateTime", roll = T, rollends = F][tank5a, on = "dateTime", roll = T, rollends = F][tank8b, on = "dateTime", roll = T, rollends = F][temp, on = "dateTime", roll = T, rollends = F] #Roll HOBO loggers with limited data. First file named is the smallest one, final file rolled is temp (largest file with the most data)
+temp2 #Confirm changes
 ```
 
 ```{r}
-temp %>%
+temp2 %>%
   dplyr::select(dateTime, 
-                temp1a, 
+                temp1a, temp1b,
+                temp2a, temp2b,
                 temp3a, temp3b, 
                 temp4a, temp4b,
+                temp5a, temp5b,
                 temp6a, temp6b,
                 temp7a, temp7b,
-                temp8a) %>%
+                temp8a, temp8b) %>%
   rowwise() %>%
-  mutate(., colderTemp = mean(c(temp1a,
+  mutate(., colderTemp = mean(c(temp1a, temp1b,
+                                temp2a, temp2b,
                                 temp3a, temp3b,
-                                temp4a, temp4b)),
-         coldTemp = mean(c(temp6a, temp6b,
+                                temp4a, temp4b), na.rm = TRUE),
+         coldTemp = mean(c(temp5a, temp5b,
+                           temp6a, temp6b,
                            temp7a, temp7b,
-                           temp8a))) %>%
+                           temp8a, temp8b), na.rm = TRUE)) %>%
   ggplot(., aes(x = dateTime, y = colderTemp)) +
   geom_line(color = plotColors[1]) +
   geom_ribbon(aes(x = dateTime, y = coldMean, ymin = coldMean - coldSD, ymax = coldMean + coldSD), fill = plotColors[2], alpha = 0.15) +
@@ -416,9 +414,9 @@ temp %>%
   geom_line(aes(x = dateTime, y = coldTemp), color = plotColors[2]) +
   geom_ribbon(aes(x = dateTime, y = colderMean, ymin = colderMean - colderSD, ymax = colderMean + colderSD), fill = plotColors[1], alpha = 0.15) +
   geom_hline(yintercept = colderMean, colour = plotColors[1], linetype = 3) +
-  # scale_x_datetime(name = "") +
-  # scale_y_continuous(name = "Temperature (ºC)",
-  #                    breaks = c(seq(0,5,1), seq(5,15,5))) +
+  scale_x_datetime(name = "") +
+  scale_y_continuous(name = "Temperature (ºC)",
+                     breaks = c(seq(0,5,1), seq(5,15,5))) +
   theme_classic(base_size = 15)
 #Combine data from all dataframes and select columns of interest. Use rowwise operations to calculate average temperature for each treatment at each timepoint. Plot colder temepratures for each timepoint. Add a ribbon with the overall average colder temperature and SD. Add a line for the overall average colder temperature. Repeat with the cold temperature. Modify x-axis label. Modify y-axis.
 # ggsave("figures/exp-temp.pdf", height = 8.5, width = 11)
