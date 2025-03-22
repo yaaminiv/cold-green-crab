@@ -211,72 +211,100 @@ head(treatmentTempStats) #Confirm calculations
 write.csv(treatmentTempStats, "temp-mean-sd.csv", quote = FALSE)
 ```
 
-### For each treatment
+## For each treatment
 
 ```{r}
-#Colder: Mean = 2.137014, SD = 0.3486562
-colderMean <- mean(rbind(hobos[[1]][,2][115:length(hobos[[1]][,2])],
-                         hobos[[2]][,2][1:length(hobos[[2]][,2])],
-                         hobos[[3]][,2][115:length(hobos[[3]][,2])],
-                         hobos[[4]][,2][115:length(hobos[[4]][,2])],
-                         hobos[[9]][,2][1:length(hobos[[9]][,2])],
-                         hobos[[10]][,2][115:length(hobos[[10]][,2])],
-                         hobos[[11]][,2][115:length(hobos[[11]][,2])],
-                         hobos[[12]][,2][115:length(hobos[[11]][,2])]),
-                   na.rm = TRUE)
-colderSD <- sd(rbind(hobos[[1]][,2][115:length(hobos[[1]][,2])],
-                     hobos[[2]][,2][1:length(hobos[[2]][,2])],
-                     hobos[[3]][,2][115:length(hobos[[3]][,2])],
-                     hobos[[4]][,2][115:length(hobos[[4]][,2])],
-                     hobos[[9]][,2][1:length(hobos[[9]][,2])],
-                     hobos[[10]][,2][115:length(hobos[[10]][,2])],
-                     hobos[[11]][,2][115:length(hobos[[11]][,2])],
-                     hobos[[12]][,2][115:length(hobos[[11]][,2])]),
-               na.rm = TRUE)
-colderMean
-colderSD
+treatmentTempStatsOverall <- data.frame("treatment" = c("control", "treatment"),
+                                 "meanTempPre" = rep(0, times = 2),
+                                 "sdTempPre" = rep(0, times = 2),
+                                 "meanTempPulse1" = rep(0, times = 2),
+                                 "sdTempPulse1" = rep(0, times = 2),
+                                 "meanTempRest" = rep(0, times = 2),
+                                 "sdTempRest" = rep(0, times = 2),
+                                 "meanTempPulse2" = rep(0, times = 2),
+                                 "sdTempPulse2" = rep(0, times = 2)) #Create an empty dataframe
+treatmentTempStatsOverall #Confirm dataframe creation
 ```
 
 ```{r}
-#Cold: Mean = 5.199698, SD = 0.2157631
-coldMean <- mean(rbind(hobos[[5]][,2][1:length(hobos[[5]][,2])],
-                       hobos[[6]][,2][115:length(hobos[[6]][,2])],
-                       hobos[[7]][,2][115:length(hobos[[7]][,2])],
-                       hobos[[8]][,2][115:length(hobos[[8]][,2])],
-                       hobos[[13]][,2][1:length(hobos[[13]][,2])],
-                       hobos[[14]][,2][115:length(hobos[[14]][,2])],
-                       hobos[[15]][,2][115:length(hobos[[15]][,2])],
-                       hobos[[16]][,2][1:length(hobos[[16]][,2])]),
-                 na.rm = TRUE)
-coldSD <- sd(rbind(hobos[[5]][,2][1:length(hobos[[5]][,2])],
-                   hobos[[6]][,2][115:length(hobos[[6]][,2])],
-                   hobos[[7]][,2][115:length(hobos[[7]][,2])],
-                   hobos[[8]][,2][115:length(hobos[[8]][,2])],
-                   hobos[[13]][,2][1:length(hobos[[13]][,2])],
-                   hobos[[14]][,2][115:length(hobos[[14]][,2])],
-                   hobos[[15]][,2][115:length(hobos[[15]][,2])],
-                   hobos[[16]][,2][1:length(hobos[[16]][,2])]),
-             na.rm = TRUE)
-coldMean
-coldSD
+#Pre-exposure: 1:22
+
+for (i in seq(2, 4, 2)) {
+  treatmentTempStatsOverall[(i/2),2] <-
+    mean(rbind(tempClean[[i]][1:22], 
+               tempClean[[i+1]][1:22],
+               tempClean[[i+4]][1:22], 
+               tempClean[[i+5]][1:22]), na.rm = TRUE)
+  treatmentTempStatsOverall[(i/2),3] <-
+    sd(rbind(tempClean[[i]][1:22], 
+               tempClean[[i+1]][1:22],
+               tempClean[[i+4]][1:22], 
+               tempClean[[i+5]][1:22]), na.rm = TRUE)
+} #For each tank, combine the treatment temperature data from both HOBO loggers, either find the average or SD, and save in treatmentTempStatsOverall
+head(treatmentTempStatsOverall) #Confirm calculations
+```
+
+```{r}
+#Pulse 1: 31:108
+
+for (i in seq(2, 4, 2)) {
+  treatmentTempStatsOverall[(i/2),4] <-
+    mean(rbind(tempClean[[i]][31:108], 
+               tempClean[[i+1]][31:108],
+               tempClean[[i+4]][31:108], 
+               tempClean[[i+5]][31:108]), na.rm = TRUE)
+  treatmentTempStatsOverall[(i/2),5] <-
+    sd(rbind(tempClean[[i]][31:108], 
+               tempClean[[i+1]][31:108],
+               tempClean[[i+4]][31:108], 
+               tempClean[[i+5]][31:108]), na.rm = TRUE)
+} #For each tank, combine the treatment temperature data from both HOBO loggers, either find the average or SD, and save in treatmentTempStatsOverall
+head(treatmentTempStatsOverall) #Confirm calculations
+```
+
+```{r}
+#Rest: 112:291
+
+for (i in seq(2, 4, 2)) {
+  treatmentTempStatsOverall[(i/2),6] <-
+    mean(rbind(tempClean[[i]][112:291], 
+               tempClean[[i+1]][112:291],
+               tempClean[[i+4]][112:291], 
+               tempClean[[i+5]][112:291]), na.rm = TRUE)
+  treatmentTempStatsOverall[(i/2),7] <-
+    sd(rbind(tempClean[[i]][112:291], 
+               tempClean[[i+1]][112:291],
+               tempClean[[i+4]][112:291], 
+               tempClean[[i+5]][112:291]), na.rm = TRUE)
+} #For each tank, combine the treatment temperature data from both HOBO loggers, either find the average or SD, and save in treatmentTempStatsOverall
+head(treatmentTempStatsOverall) #Confirm calculations
+```
+
+```{r}
+#Pulse 2: 301:406
+
+for (i in seq(2, 4, 2)) {
+  treatmentTempStatsOverall[(i/2),8] <-
+    mean(rbind(tempClean[[i]][301:406], 
+               tempClean[[i+1]][301:406],
+               tempClean[[i+4]][301:406], 
+               tempClean[[i+5]][301:406]), na.rm = TRUE)
+  treatmentTempStatsOverall[(i/2),9] <-
+    sd(rbind(tempClean[[i]][301:406], 
+               tempClean[[i+1]][301:406],
+               tempClean[[i+4]][301:406], 
+               tempClean[[i+5]][301:406]), na.rm = TRUE)
+} #For each tank, combine the treatment temperature data from both HOBO loggers, either find the average or SD, and save in treatmentTempStatsOverall
+head(treatmentTempStatsOverall) #Confirm calculations
+```
+
+```{r}
+write.csv(treatmentTempStats, "overall-temp-mean-sd.csv", quote = FALSE)
 ```
 
 # Statistical test
 
 I will conduct a one-way ANOVA to confirm there are significant differences between treatments after the ramp down.
-
-Loggers that started after 7 a.m. on 2024-07-23:
-
-- tank 1b
-- tank 2a
-- tank 5a
-- tank 5b
-- tank 8b
-
-```{r}
-
-```
-
 
 ```{r}
 tempDataLong <- rbind(tank1a %>%
