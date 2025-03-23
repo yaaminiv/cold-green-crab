@@ -104,12 +104,6 @@ tank13a <- as.data.table(tank13a)
 tank13b <- as.data.table(tank13b)
 ```
 
-13b: 402
-11b: 404
-12a: 405
-11a: 406
-12b: 406
-
 ```{r}
 temp <- tank13a[tank10b, on = "dateTime", roll = T, rollends = F][tank10a, on = "dateTime", roll = T, rollends = F][tank13b, on = "dateTime", roll = T, rollends = F][tank11b, on = "dateTime", roll = T, rollends = F][tank12a, on = "dateTime", roll = T, rollends = F][tank12b, on = "dateTime", roll = T, rollends = F][tank11a, on = "dateTime", roll = T, rollends = F] #Roll data by closest dateTime. List begins with the shortest file and ends with the longest file
 temp
@@ -404,16 +398,6 @@ mkdir figures
 ```{r}
 plotColors <- c(brewer.pal(9, "Reds")[7],
                 brewer.pal(9, "Greys")[7]) #Create color scheme
-```
-
-- add pulse 2 ribbons
--treatment
--control
-- add pulse 1 ribbons
--control
-
-```{r}
-treatmentTempStatsOverall
 ```
 
 
