@@ -57,7 +57,7 @@ head(crabMetadata) #Confirm changes
 
 ```{r}
 genotypeData <- read.csv("../../../data/WA/2024-crab-genotype-WA.csv", header = TRUE, na.strings = "") %>%
-  select(., -c(timepoint:gel.date, notes)) %>%
+  dplyr::select(., -c(timepoint:gel.date, notes)) %>%
   rename(., crab.ID = "number") %>%
   filter(., is.na(genotype) == FALSE) %>%
   mutate(., presenceC = case_when(genotype == "CC" ~ "Y",
@@ -265,7 +265,7 @@ genSummarized <- genotypeData %>%
 genSummarized
 ```
 
-Full population p-value: 0.000036240950966106
+Full population p-value: 0.0001102305839834
 
 This significant p-value means that the population is not in HW equilibrium! That means there are external forces acting upon the genotype distribution in this population.
 
