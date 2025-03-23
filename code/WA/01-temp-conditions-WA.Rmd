@@ -267,19 +267,6 @@ coldSD
 
 I will conduct a one-way ANOVA to confirm there are significant differences between treatments after the ramp down.
 
-Loggers that started after 7 a.m. on 2024-07-23:
-
-- tank 1b
-- tank 2a
-- tank 5a
-- tank 5b
-- tank 8b
-
-```{r}
-
-```
-
-
 ```{r}
 tempDataLong <- rbind(tank1a %>%
                         slice(., -(1:114)) %>%
@@ -344,10 +331,6 @@ mkdir figures
 plotColors <- c(brewer.pal(9, "Blues")[9],
                 brewer.pal(9, "Blues")[7]) #Create color scheme
 ```
-
-- roll all temperature loggers together
-- see if there is better syntax for joining multiple tables with data.table
-  - THE LAST ONE NEEDS TO BE TANK 1A
 
 ```{r}
 #Format all temperature data files as data.tables
