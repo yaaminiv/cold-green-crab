@@ -332,7 +332,8 @@ TTRModelComparisons
 ```
 
 ```{r}
-write.csv(TTRModelComparisons, "ttr-model-comparison-stat-output.csv", quote = FALSE, row.names = FALSE) #Save model output
+TTRModelComparisons %>%
+  mutate(., p.adj = p.adjust(p.value, method = "bonferroni")) #Adjust p-values
 ```
 
 ### Calculate average values
@@ -382,6 +383,11 @@ TTRModelComparisons<- rbind(broom::tidy(anova(TTRnullTreatment, TTRmodel)),
                             broom::tidy(anova(TTRmodelReduced, TTRpresenceC)),
                             broom::tidy(anova(TTRmodelReduced, TTRpresenceT))) #Create table for model comparison output
 TTRModelComparisons
+```
+
+```{r}
+TTRModelComparisons <- TTRModelComparisons %>%
+  mutate(p.adj = p.adjust(p.value, method = "bonferroni")) #Adjust p-values
 ```
 
 ```{r}
@@ -447,7 +453,8 @@ TTRthreshModelComparisons
 ```
 
 ```{r}
-write.csv(TTRthreshModelComparisons, "ttr-binomial-model-comparison-output.csv", quote = FALSE, row.names = FALSE) #Save model comparison table
+TTRthreshModelComparisons %>%
+  mutate(p.adj = p.adjust(p.value, method = "bonferroni")) #Adjust p-values
 ```
 
 Alright, there are significant impacts of treatment and time on righting, but no impact of their interaction. So far everything is similar to the MA population. Now I want to test the impact of genotype on binary righting response. 
@@ -499,6 +506,11 @@ TTRthreshModelComparisons <- rbind(broom::tidy(anova(TTRthreshNullTreatment, TTR
                                    broom::tidy(anova(TTRthreshModelRevised, TTRthreshpresenceC)),
                                    broom::tidy(anova(TTRthreshModelRevised, TTRthreshpresenceT))) #Create a table of model comparison output
 TTRthreshModelComparisons
+```
+
+```{r}
+TTRthreshModelComparisons <- TTRthreshModelComparisons %>%
+  mutate(p.adj = p.adjust(p.value, method = "bonferroni")) #Adjust p-values
 ```
 
 ```{r}
