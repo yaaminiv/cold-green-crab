@@ -1013,6 +1013,47 @@ length(modTTRQ10$crab.ID %>% unique(.)) #21 crabs
 ```
 
 ```{r}
+modTTR %>%
+  select(., timepoint, crab.ID, TTRavg, treatment, presenceT) %>%
+  group_by(., crab.ID) %>%
+  pivot_wider(., names_from = timepoint, values_from = TTRavg, names_prefix = "timepoint") %>%
+  mutate_all(~ifelse(is.nan(.), 91, .)) %>%
+  filter(., is.na(timepoint0) == FALSE) %>%
+  filter(., is.na(timepoint1) == FALSE) %>%
+  filter(., is.na(timepoint2) == FALSE) %>%
+  filter(., is.na(timepoint3) == FALSE) %>%
+  filter(., is.na(timepoint4) == FALSE) %>%
+  filter(., is.na(timepoint5) == FALSE) %>%
+  mutate(temperature = case_when(treatment == "0C" ~ 1.56,
+                                 treatment == "5C" ~ 5.39)) %>%
+  arrange(., temperature) %>%
+  mutate(., timepoint1_Q10 = Q10(R2 = timepoint0, 
+                                 R1 = timepoint1, 
+                                 T2 = 15, 
+                                 T1 = temperature)) %>%
+  mutate(., timepoint2_Q10 = Q10(R2 = timepoint0, 
+                                 R1 = timepoint2, 
+                                 T2 = 15, 
+                                 T1 = temperature)) %>%
+  mutate(., timepoint3_Q10 = Q10(R2 = timepoint0, 
+                                 R1 = timepoint3, 
+                                 T2 = 15, 
+                                 T1 = temperature)) %>%
+  mutate(., timepoint4_Q10 = Q10(R2 = timepoint0, 
+                                 R1 = timepoint4, 
+                                 T2 = 15, 
+                                 T1 = temperature)) %>% 
+  mutate(., timepoint5_Q10 = Q10(R2 = timepoint0, 
+                                 R1 = timepoint5, 
+                                 T2 = 15, 
+                                 T1 = temperature)) %>%
+  select(., crab.ID, treatment, presenceT,
+         timepoint1_Q10, timepoint2_Q10, timepoint3_Q10, timepoint4_Q10, timepoint5_Q10) %>%
+  write.csv("Q10-calculations.csv") #Save wide dataframe as a csv
+```
+
+
+```{r}
 modTTRQ10 %>%
   ggplot(., mapping = aes(x = timepoint, y = Q10, color = treatment, shape = treatment, group = crab.ID)) +
   geom_point(size = 2) + geom_line(lty = 3) +
