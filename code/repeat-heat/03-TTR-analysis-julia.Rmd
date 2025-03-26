@@ -99,17 +99,6 @@ modTTR[1:24]$weight %>% mean(., na.rm = TRUE) #24.17931
 modTTR[1:24]$weight %>% sd(., na.rm = TRUE) #8.280845
 ```
 
-
-```{r}
-modTTR %>%
-  filter(., day == 1) %>%
-  dplyr::select(., weight)
-
-as.numeric(modTTR$weight) %>%
-  sd(.)
-```
-
-
 ```{r}
 modTTR %>%
   group_by(., genotype) %>%
@@ -153,6 +142,12 @@ TTRmodel <- lmer(log(TTRavg) ~ as.factor(treatment) + day + as.factor(treatment)
                  data = modTTR, REML = FALSE) #Run model with treatment, timepoint, their interaction, sex, integument color, carapace width, weight, and missing swimmer information as fixed effects, and individual as a random effect. Change the likelihood estimator (REML = FALSE) to compare models with LRT later. Use data without rows with NAs
 summary(TTRmodel) #Look at model output.
 #Residuals explain more random effect variation than crab ID, crab ID explains very little variation
+```
+
+```{r}
+var.lmer <- c(0.02054, 0.22874) #Save variances of random effects as a new vector (crab ID, residuals)
+percentvar.lmer <- (100*var.lmer)/sum(var.lmer) #Calculate percent variances
+percentvar.lmer[1] #Crab ID accounts for 8.23973% of variance
 ```
 
 Now that I've run the full model, I want to test the importance of treatment, day, and their interaction as predictors. I'll include all other factors in the null model to account for any variation they may contribute.
