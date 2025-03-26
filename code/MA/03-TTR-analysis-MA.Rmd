@@ -435,6 +435,11 @@ TTRModelComparisons
 ```
 
 ```{r}
+TTRModelComparisons %>%
+  mutate(p.adj = p.adjust(p.value, method = "bonferroni")) #Adjust p-values for multiple comparisons
+```
+
+```{r}
 write.csv(TTRModelComparisons, "ttr-model-comparison-stat-output.csv", quote = FALSE, row.names = FALSE) #Save model output
 ```
 
