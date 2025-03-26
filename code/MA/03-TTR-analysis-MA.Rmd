@@ -502,6 +502,11 @@ TTRthreshModelComparisons
 ```
 
 ```{r}
+TTRthreshModelComparisons %>%
+  mutate(p.adj = p.adjust(p.value, method = "bonferroni")) #Adjust p-values
+```
+
+```{r}
 write.csv(TTRthreshModelComparisons, "ttr-binomial-model-comparison-output.csv", quote = FALSE, row.names = FALSE) #Save model comparison table
 ```
 
@@ -568,10 +573,15 @@ TTRthreshModelComparisons
 ```
 
 ```{r}
+TTRthreshModelComparisons %>%
+  mutate(p.adj = p.adjust(p.value, method = "bonferroni")) #Adjust p-values
+```
+
+```{r}
 write.csv(TTRthreshModelComparisons, "ttr-binomial-model-comparison-output.csv", quote = FALSE, row.names = FALSE) #Save model comparison table
 ```
 
-Well, looks like there's a significant impact of presence of the T allele and source population on whether or not a crab righted itself!
+The impacts of presence of the T allele and source population on whether or not a crab righted itself are no longer significant after multiple correction. I'll include genotype-specific information in the final figure since there was a trend.
 
 ### Calculate proportions for righting
 
