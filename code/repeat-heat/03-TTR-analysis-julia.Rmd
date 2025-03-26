@@ -89,7 +89,26 @@ head(modTTR) #Confirm formatting
 
 # Population assessment
 
-Before proceeding, I want to understand the distribution of genotypes in the population.
+Before proceeding, I want to understand the distribution of genotypes in the population. I also need to get the average weight and carapace width of the crabs.
+
+```{r}
+modTTR[1:24]$carapace.width %>% mean(., na.rm = TRUE) #46.83333
+modTTR[1:24]$carapace.width %>% sd(., na.rm = TRUE) #5.505439
+
+modTTR[1:24]$weight %>% mean(., na.rm = TRUE) #24.17931
+modTTR[1:24]$weight %>% sd(., na.rm = TRUE) #8.280845
+```
+
+
+```{r}
+modTTR %>%
+  filter(., day == 1) %>%
+  dplyr::select(., weight)
+
+as.numeric(modTTR$weight) %>%
+  sd(.)
+```
+
 
 ```{r}
 modTTR %>%
