@@ -384,10 +384,6 @@ TTRModelComparisons %>%
   mutate(p.adj = p.adjust(p.value, method = "bonferroni")) #Adjust p-values
 ```
 
-```{r}
-write.csv(TTRModelComparisons, "ttr-model-comparison-stat-output.csv", quote = FALSE, row.names = FALSE) #Save model output
-```
-
 ### Calculate average values
 
 ```{r}
@@ -435,7 +431,7 @@ TTRModelComparisons
 ```
 
 ```{r}
-TTRModelComparisons %>%
+TTRModelComparisons <- TTRModelComparisons %>%
   mutate(p.adj = p.adjust(p.value, method = "bonferroni")) #Adjust p-values for multiple comparisons
 ```
 
@@ -506,10 +502,6 @@ TTRthreshModelComparisons %>%
   mutate(p.adj = p.adjust(p.value, method = "bonferroni")) #Adjust p-values
 ```
 
-```{r}
-write.csv(TTRthreshModelComparisons, "ttr-binomial-model-comparison-output.csv", quote = FALSE, row.names = FALSE) #Save model comparison table
-```
-
 Alright, there are significant impacts of treatment and time on righting, but no impact of their interaction. Now I want to test the impact of genotype and population source on binary righting response. 
 
 ```{r}
@@ -573,7 +565,7 @@ TTRthreshModelComparisons
 ```
 
 ```{r}
-TTRthreshModelComparisons %>%
+TTRthreshModelComparisons <- TTRthreshModelComparisons %>%
   mutate(p.adj = p.adjust(p.value, method = "bonferroni")) #Adjust p-values
 ```
 
