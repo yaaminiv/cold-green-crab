@@ -59,7 +59,6 @@ head(crabMetadata) #Confirm changes
 genotypeData <- read.csv("../../../data/WA/2024-crab-genotype-WA.csv", header = TRUE, na.strings = "") %>%
   dplyr::select(., -c(timepoint:gel.date, notes)) %>%
   rename(., crab.ID = "number") %>%
-  filter(., is.na(genotype) == FALSE) %>%
   mutate(., presenceC = case_when(genotype == "CC" ~ "Y",
                                   genotype == "CT" ~ "Y",
                                   genotype == "TT" ~ "N")) %>%
@@ -211,6 +210,14 @@ modTTR %>%
 ggsave("figures/time-to-right-weight.pdf", height = 8.5, width = 11)
 ```
 
+```{r}
+modTTR %>%
+  filter(timepoint == 0) %>%
+  summarize(., weight_mean = mean(weight, na.rm = TRUE),
+            weight_sd = sd(weight, na.rm = TRUE)) #Calculate mean ± SD for weight
+#Weight = 32.84938 g ± 7.61794 g
+```
+
 ## Carapace width
 
 ```{r}
@@ -223,6 +230,14 @@ modTTR %>%
                      breaks = seq(0, 100, 10)) +
   theme_classic(base_size = 15)
 ggsave("figures/time-to-right-carapaceWidth.pdf", height = 8.5, width = 11)
+```
+
+```{r}
+modTTR %>%
+  filter(timepoint == 0) %>%
+  summarize(., cw_mean = mean(carapace.width, na.rm = TRUE),
+            cw_sd = sd(carapace.width, na.rm = TRUE)) #Calculate mean ± SD for carapace width
+#CW = 52.95062 mm ± 4.012173 mm
 ```
 
 ## Genotype
@@ -285,6 +300,11 @@ TTRmodel <- lmer(log(TTRavg) ~ treatment + timepoint + treatment:timepoint +
                  data = (modTTR %>% filter(., is.na(TTRavg) == FALSE)), REML = FALSE) #Run model with treatment, timepoint, their interaction, sex, integument color, carapace width, weight, and missing swimmer information as fixed effects, and individual as a random effect. Change the likelihood estimator (REML = FALSE) to compare models with LRT later. Use data without rows with NAs
 summary(TTRmodel) #Look at model output.
 #Residuals explain more random effect variation than crab ID, crab ID explains very little variation
+```
+```{r}
+var.lmer <- c(0.02357, 0.47326) #Save variances of random effects as a new vector (crab ID, residuals)
+percentvar.lmer <- (100*var.lmer)/sum(var.lmer) #Calculate percent variances
+percentvar.lmer[1] #Crab ID accounts for 4.744077% of variance
 ```
 
 Now that I've run the full model, I want to test the importance of treatment, timepoint, and their interaction as predictors. I'll include all other factors in the null model to account for any variation they may contribute.
