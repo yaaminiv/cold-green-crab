@@ -179,10 +179,6 @@ TTRModelComparisons %>%
   mutate(., p.adj = p.adjust(p.value, method = "bonferroni")) #Perform bonferroni adjustment for multiple comparisons
 ```
 
-```{r}
-write.csv(TTRModelComparisons, "ttr-model-comparison-stat-output.csv", quote = FALSE, row.names = FALSE) #Save model output
-```
-
 ### Calculate average TTR
 
 ```{r}
@@ -231,7 +227,7 @@ TTRModelComparisons
 ```
 
 ```{r}
-TTRModelComparisons %>%
+TTRModelComparisons <- TTRModelComparisons %>%
   mutate(p.adj = p.adjust(p.value, method = "bonferroni")) #Perform p-value corrections
 ```
 
