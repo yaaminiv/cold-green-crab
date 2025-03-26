@@ -175,6 +175,11 @@ TTRModelComparisons
 ```
 
 ```{r}
+TTRModelComparisons %>%
+  mutate(., p.adj = p.adjust(p.value, method = "bonferroni")) #Perform bonferroni adjustment for multiple comparisons
+```
+
+```{r}
 write.csv(TTRModelComparisons, "ttr-model-comparison-stat-output.csv", quote = FALSE, row.names = FALSE) #Save model output
 ```
 
@@ -226,10 +231,15 @@ TTRModelComparisons
 ```
 
 ```{r}
+TTRModelComparisons %>%
+  mutate(p.adj = p.adjust(p.value, method = "bonferroni")) #Perform p-value corrections
+```
+
+```{r}
 write.csv(TTRModelComparisons, "ttr-model-comparison-stat-output.csv", quote = FALSE, row.names = FALSE) #Save model output
 ```
 
-There is a marginally significant impact of the T allele on average TTR. 
+The marginally significant impact of the T allele on average TTR is no longer significant after p-value correction. However, I'll still include this information in a plot since there is a trend. 
 
 ### Calculate average TTR
 
