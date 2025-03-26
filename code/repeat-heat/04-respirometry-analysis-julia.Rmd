@@ -1,0 +1,353 @@
+---
+title: "respo-analysis-kelso"
+output: html_document
+date: "2023-08-05"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+## Setup
+
+```{r}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = normalizePath("~/Desktop/WHOI/respo-analysis/julia/")) #Set root directory
+```
+
+```{r}
+getwd()
+```
+
+### Install Packages
+
+```{r}
+require(tidyverse)
+require(RColorBrewer)
+require(lubridate)
+require(respirometry)
+require(gridExtra)
+install.packages("tidyverse")
+install.packages("dplyr")
+install.packages("RColorBrewer")
+install.packages("lubridate")
+install.packages("respirometry")
+install.packages("gridExtra")
+install.packages("broom")
+```
+
+```{r}
+sessionInfo()
+```
+
+## Import Data
+
+### 2023-08-01
+
+```{r}
+files20230801 <- fs::dir_ls("~/Desktop/WHOI/respo-analysis/julia/20230801/", glob = "*tank??_20230801.txt", recurse = TRUE)
+files20230801
+```
+
+```{r}
+dat20230801 <- read_delim(files20230801, id = "tank", delim = "\t", skip = 20, col_names = FALSE) %>%
+  select(., c(1:4, 7:9, 11))
+
+colnames(dat20230801) <- c("path",
+                           "date", "time", "dt_s", 
+                           "perc_air_sat_2", "perc_air_sat_3", "perc_air_sat_4",
+                           "temp_C", 
+                           "pressure_mbar")
+```
+
+62-67
+
+```{r}
+dat20230801 <- dat20230801 %>%
+  mutate(., tank = str_sub(path, 62, 67)) %>%
+  select(-path) %>%
+  mutate(., treatment = case_when(tank == "tank10" ~ "No_Pulse",
+                                  tank == "tank11" ~ "Pulse",
+                                  tank == "tank12" ~ "No_Pulse",
+                                  tank == "tank13" ~ "Pulse"))
+tail(dat20230801)
+```
+
+### 2023-08-04
+
+```{r}
+files20230804 <- fs::dir_ls("~/Desktop/WHOI/respo-analysis/julia/20230804/", glob = "*tank??_20230804.txt", recurse = TRUE)
+files20230804
+```
+
+```{r}
+dat20230804 <- read_delim(files20230804, id = "tank", delim = "\t", skip = 20, col_names = FALSE) %>%
+  select(., c(1:4, 7:9, 11, 14))
+
+colnames(dat20230804) <- c("path",
+                           "date", "time", "dt_s", 
+                           "perc_air_sat_2", "perc_air_sat_3", "perc_air_sat_4",
+                           "temp_C", 
+                           "pressure_mbar")
+```
+
+```{r}
+dat20230804 <- dat20230804 %>%
+  mutate(., tank = str_sub(path, 62, 67)) %>%
+  select(-path) %>%
+  mutate(., treatment = case_when(tank == "tank10" ~ "No_Pulse",
+                                  tank == "tank11" ~ "Pulse",
+                                  tank == "tank12" ~ "No_Pulse",
+                                  tank == "tank13" ~ "Pulse")) %>%
+  mutate(., perc_air_sat_2 = as.numeric(perc_air_sat_2)) %>%
+  mutate(., perc_air_sat_4 = as.numeric(perc_air_sat_4))
+tail(dat20230804)
+```
+
+## Format Data
+
+### 2023-08-01
+
+```{r}
+dat20230801mod <- dat20230801 %>%
+  mutate(., datetime = dmy_hms(paste(date, time))) %>%
+  mutate(., salinity = case_when(tank == "tank10" ~ 33,
+                                 tank == "tank11" ~ 33,
+                                 tank == "tank12" ~ 30,
+                                 tank == "tank13" ~ 30,)) %>%
+  group_by(., treatment, tank) %>%
+  arrange(., .by_group = TRUE) %>%
+  ungroup(.) %>%
+  pivot_longer(., cols = c(perc_air_sat_2, perc_air_sat_3, perc_air_sat_4), names_to = "og_perc", values_to = "perc_air_sat") %>%
+    mutate(., og_perc = gsub("perc_air_sat_", replacement = "", x = og_perc)) %>%
+    dplyr::rename(., probe_num = og_perc)
+head(dat20230801mod)
+```
+
+### 2023-08-04
+
+```{r}
+dat20230804mod <- dat20230804 %>%
+  mutate(., datetime = dmy_hms(paste(date, time))) %>%
+  mutate(., salinity = case_when(tank == "tank10" ~ 33,
+                                 tank == "tank11" ~ 33,
+                                 tank == "tank12" ~ 32,
+                                 tank == "tank13" ~ 32,)) %>%
+  group_by(., treatment, tank) %>%
+  arrange(., .by_group = TRUE) %>%
+  ungroup(.) %>%
+  pivot_longer(., cols = c(perc_air_sat_2, perc_air_sat_3, perc_air_sat_4), names_to = "og_perc", values_to = "perc_air_sat") %>%
+    mutate(., og_perc = gsub("perc_air_sat_", replacement = "", x = og_perc)) %>%
+    dplyr::rename(., probe_num = og_perc)
+head(dat20230804mod)
+```
+
+## Clean Figure
+
+### 2023-08-04
+
+```{r}
+dat20230804clean <- dat20230804mod %>%
+  filter(., perc_air_sat <= 100) %>% 
+  filter(., !(tank == "tank11" & probe_num == 3 & dt_s > 120 & dt_s < 360)) %>%
+  filter(., !(tank == "tank11" & probe_num == 2 & dt_s < 180)) %>%
+  filter(., !(tank == "tank12" & probe_num == 2 & dt_s < 120)) %>%
+  filter(., !(tank == "tank10" & probe_num == 3 & dt_s < 100)) %>%
+  mutate(., dt_s = ifelse(tank == "tank11" & probe_num == 3, dt_s - 120, dt_s)) %>%
+  mutate(., dt_s = ifelse(tank == "tank11" & probe_num == 2, dt_s - 180, dt_s)) %>%
+  mutate(., dt_s = ifelse(tank == "tank12" & probe_num == 2, dt_s - 120, dt_s)) %>%
+  mutate(., dt_s = ifelse(tank == "tank10" & probe_num == 3, dt_s - 100, dt_s)) %>%
+  group_by(tank, probe_num) %>%
+  filter(., cumsum(perc_air_sat <= 75) == 0) %>%
+  ungroup(.) %>%
+  ggplot(., mapping = aes(x = (dt_s/60), y = perc_air_sat, color = treatment)) +
+  geom_point(size = 0.5) +
+  geom_smooth(method = lm, se = FALSE, lty = 1, color = "grey50")+
+  facet_grid(cols = vars(treatment, tank), rows = vars(probe_num), scales = "free_x") +
+  xlab("Time (min)") + ylab("Oxygen Air Saturation (%)") +
+  scale_y_continuous(breaks = seq(70, 100, 10), 
+                     limits = c(70, 100)) +
+  scale_x_continuous(breaks = seq(0,10,5),
+                     limits = c(0,10)) +
+  scale_color_manual(values = c("#eb8d88", "#9699eb"), 
+                     name = "Treatment",
+                     breaks = c("Pulse","No_Pulse"),
+                     labels = c("Pulse","No_Pulse")) +
+  theme_classic(base_size = 15) + theme(strip.text = element_blank(),
+                                        axis.line = element_line())
+dat20230804clean
+```
+
+```{r}
+##raw data
+dat20230804mod %>%
+  filter(., perc_air_sat <= 100) %>% 
+  filter(., tank == "tank10" & probe_num == 3) %>%
+  #group_by(tank, probe_num) %>%
+  #filter(., cumsum(perc_air_sat <= 80) == 0) %>%
+  ungroup(.) %>%
+  ggplot(., mapping = aes(x = (dt_s), y = perc_air_sat, color = treatment)) +
+  geom_point(size = 0.5) +
+  geom_smooth(method = lm, se = FALSE, lty = 1, color = "grey50")+
+  facet_grid(cols = vars(treatment, tank), rows = vars(probe_num), scales = "free_x") +
+  xlab("Time (min)") + ylab("Oxygen Air Saturation (%)") +
+  scale_y_continuous(breaks = seq(71, 100, 10), 
+                     limits = c(71, 100)) +
+  scale_x_continuous(breaks = seq(0,1000,100),
+                     limits = c(0,1000)) +
+  scale_color_manual(values = c("#eb8d88", "#9699eb"), 
+                     name = "Treatment",
+                     breaks = c("Pulse","No_Pulse"),
+                     labels = c("Pulse","No_Pulse")) +
+  theme_classic(base_size = 15) + theme(strip.text = element_blank(),
+                                        axis.line = element_line())
+```
+
+```{r}
+library(respirometry)
+```
+
+```{r}
+dat20230804mod <- dat20230804mod %>%
+  mutate(., DO_umol_L = conv_o2(o2 = perc_air_sat, from = "percent_a.s.",
+                                to = "umol_per_l",
+                                temp = temp_C,
+                                sal = salinity,
+                                atm_pres = pressure_mbar)) #Create a new DO variable in units umol/L from %saturation using the function conv_o2() in the respirometry package
+head(dat20230804mod)
+```
+
+```{r}
+dat20230804cleanDOumol <- dat20230804mod %>%
+  filter(., perc_air_sat <= 100) %>% 
+  filter(., !(tank == "tank11" & probe_num == 3 & dt_s > 120 & dt_s < 360)) %>%
+  filter(., !(tank == "tank11" & probe_num == 2 & dt_s < 180)) %>%
+  filter(., !(tank == "tank12" & probe_num == 2 & dt_s < 120)) %>%
+  filter(., !(tank == "tank10" & probe_num == 3 & dt_s < 100)) %>%
+  mutate(., dt_s = ifelse(tank == "tank11" & probe_num == 3, dt_s - 120, dt_s)) %>%
+  mutate(., dt_s = ifelse(tank == "tank11" & probe_num == 2, dt_s - 180, dt_s)) %>%
+  mutate(., dt_s = ifelse(tank == "tank12" & probe_num == 2, dt_s - 120, dt_s)) %>%
+  mutate(., dt_s = ifelse(tank == "tank10" & probe_num == 3, dt_s - 100, dt_s)) %>%
+  group_by(tank, probe_num) %>%
+  filter(., cumsum(perc_air_sat <= 75) == 0) %>%
+  ungroup(.) %>%
+  ggplot(., mapping = aes(x = (dt_s/60), y = DO_umol_L, color = treatment)) +
+  geom_point(size = 0.5) +
+  geom_smooth(method = lm, se = FALSE, lty = 1, color = "grey50") +
+  facet_grid(cols = vars(treatment, tank), rows = vars(probe_num), scale = "free_x") +
+  xlab("Time (min)") + ylab("Dissolved Oxygen (µmol)") +
+  scale_y_continuous(breaks = seq(70, 100, 10), 
+                     limits = c(70, 100)) +
+  # scale_x_continuous(breaks = seq(0,10,5),
+  #                    limits = c(0,10)) +
+  scale_color_manual(values = c("#eb8d88", "#9699eb"), 
+                     name = "Treatment",
+                     breaks = c("Pulse","No_Pulse"),
+                     labels = c("Pulse","No_Pulse")) +
+  theme_classic(base_size = 15) + theme(strip.text = element_blank(),
+                                        axis.line = element_line())
+dat20230804cleanDOumol
+
+```
+
+## Clean Data
+
+### 2023-08-04
+
+```{r}
+dat20230804data <- dat20230804mod %>%
+  filter(., perc_air_sat <= 100) %>% 
+  filter(., !(tank == "tank11" & probe_num == 3 & dt_s > 120 & dt_s < 360)) %>%
+  filter(., !(tank == "tank11" & probe_num == 2 & dt_s < 180)) %>%
+  filter(., !(tank == "tank12" & probe_num == 2 & dt_s < 120)) %>%
+  filter(., !(tank == "tank10" & probe_num == 3 & dt_s < 100)) %>%
+  mutate(., dt_s = ifelse(tank == "tank11" & probe_num == 3, dt_s - 120, dt_s)) %>%
+  mutate(., dt_s = ifelse(tank == "tank11" & probe_num == 2, dt_s - 180, dt_s)) %>%
+  mutate(., dt_s = ifelse(tank == "tank12" & probe_num == 2, dt_s - 120, dt_s)) %>%
+  mutate(., dt_s = ifelse(tank == "tank10" & probe_num == 3, dt_s - 100, dt_s)) %>%
+  group_by(tank, probe_num) %>%
+  filter(., cumsum(perc_air_sat <= 75) == 0) %>%
+  ungroup(.)
+
+head(dat20230804data)  
+  
+```
+
+```{r}
+library(tidyverse)
+library(magrittr)
+library(dplyr)
+library(broom)
+```
+
+```{r}
+dat20230804_MO2_slopes <- dat20230804data %>%
+  nest(data = -c(treatment, tank, probe_num)) %>%
+  mutate(fit = map(data, ~lm(DO_umol_L ~ dt_s, data = .))) %>%
+  mutate(tidied = map(fit, tidy)) %>%
+  unnest(tidied)
+dat20230804_MO2_slopes
+```
+
+```{r}
+dat20230804_MO2_glance <- dat20230804data %>%
+  nest(data = -c(treatment, tank, probe_num)) %>%
+  mutate(fit = map(data, ~lm(DO_umol_L ~ dt_s, data = .))) %>%
+  mutate(glanced = map(fit, glance)) %>%
+  unnest(glanced)
+dat20230804_MO2_glance
+```
+
+```{r}
+dat20230804_MO2_slope_results <- dat20230804_MO2_slopes %>%
+  filter(term == "dt_s") %>%
+  mutate(slope_nmol_hr = estimate*1000*60) %>%
+  dplyr::select(treatment, probe_num, slope_nmol_hr, p.value) %>%
+  mutate(r.squared = (dat20230804_MO2_glance$r.squared))
+
+dat20230804_MO2_slope_results
+```
+
+```{bash}
+pwd
+```
+
+```{r}
+#pdf("/Users/juliakelso/Desktop/RespirometryPlot.pdf", width = 11, height = 8)
+dat20230804_MO2_slope_results %>%
+  ggplot(., aes(x = treatment, y = -slope_nmol_hr, color = treatment)) + 
+  geom_boxplot() + geom_point(size = 2) +
+  xlab("Treatment") + ylab("Oxygen Consumption (nmol/hr)") +
+  # scale_x_discrete(breaks = c("No Pulse", "Pulse"),
+  #                  labels = c("No Pulse", "Pulse")) +
+  scale_color_manual(values = c('#9699eb', '#eb8d88'), 
+                     guide = "none") +
+  theme_classic(base_size = 15)
+
+#dev.off()
+```
+
+```{r}
+lm20230804 <- lm(slope_nmol_hr ~ treatment, data = dat20230804_MO2_slope_results)
+summary(lm20230804)
+```
