@@ -388,6 +388,14 @@ mainPlot <- modTTR %>%
   ggplot(mapping = aes(x = as.character(day), y = TTRavg, color = treatment, shape = treatment)) +
   geom_boxplot(outlier.shape = NA) + 
   geom_jitter(position = position_dodge(width = 0.75)) +
+  annotate("rect", 
+           xmin = 2, xmax = 2.38, 
+           ymin = 0, ymax = 15, 
+           alpha = 0.2, fill = plotColors[1]) +
+  annotate("rect", 
+           xmin = 2.62, xmax = 3.38, 
+           ymin = 0, ymax = 15, 
+           alpha = 0.2, fill = plotColors[1]) +
   scale_x_discrete(name = "Day",
                    labels = c("0", "1", "4")) +
   scale_y_continuous(name = "Average Time-to-Right (s)",
@@ -424,7 +432,7 @@ insetPlot <-  modTTR %>%
 
 plotWithInset <- ggdraw() +
   draw_plot(mainPlot) +
-  draw_plot(insetPlot, x = 0.1, y = 0.73, width = 0.52, height = 0.25) #Add inset to the plot
+  draw_plot(insetPlot, x = 0.08, y = 0.71, width = 0.52, height = 0.25) #Add inset to the plot
 
 plotWithInset #Plot the full plot with inset
 
@@ -541,17 +549,25 @@ mainPlotMultipanel <- modTTR %>%
   ggplot(mapping = aes(x = as.character(day), y = TTRavg, color = treatment, shape = treatment)) +
   geom_boxplot(outlier.shape = NA) + 
   geom_jitter(position = position_dodge(width = 0.75)) +
+  annotate("rect", 
+           xmin = 2, xmax = 2.38, 
+           ymin = 0, ymax = 15, 
+           alpha = 0.2, fill = plotColors[1]) +
+  annotate("rect", 
+           xmin = 2.62, xmax = 3.38, 
+           ymin = 0, ymax = 15, 
+           alpha = 0.2, fill = plotColors[1]) +
   scale_x_discrete(name = "",
                    labels = c("0", "1", "4")) +
   scale_y_continuous(name = "Average Time-to-Right (s)",
                      breaks = c(0:5, 10, 15)) +
-  scale_color_manual(name = "",
+  scale_color_manual(guide = "none",
                      values = c(plotColors[2], plotColors[1]),
                      labels = c("Control", "Treatment")) +
-  scale_shape_manual(name = "",
+  scale_shape_manual(guide = "none",
                      values = c(15, 19),
                      labels = c("Control", "Treatment")) +
-  ggtitle("A.") +
+  ggtitle("A. Average Righting Response") +
   theme_classic(base_size = 15) + theme(legend.position = "none") #Select unique day, treatment, and TTRavg data, and remove rows where TTRavg = NA. Plot average TTR for each crab in a boxplot. Do not show outliers with the OG boxplot, but add them in with geom_jitter. Assign colors and shapes to each treatment. Increase base font size.
 
 insetPlotMultipanel <-  modTTR %>%
@@ -564,21 +580,22 @@ insetPlotMultipanel <-  modTTR %>%
   ylab("") +
   scale_x_discrete(name = "Day",
                    labels = c("0", "1", "4")) +
-  scale_color_manual(name = "",
+  scale_color_manual(guide = "none",
                      values = c(plotColors[2], plotColors[1]),
                      labels = c("Control", "Treatment")) +
   scale_y_continuous(limits = c(0,4)) +
-  scale_shape_manual(name = "",
+  scale_shape_manual(guide = "none",
                      values = c(15, 19),
                      labels = c("Control", "Treatment")) +
-  theme_classic() + theme(legend.position = "none",
+  theme_cowplot() + theme(legend.position = "none",
                           axis.line.x.bottom = element_line(linewidth = 0),
                           axis.line.y.left = element_line(linewidth = 0),
-                          panel.border = element_rect(colour = "black", fill = NA, size = 1)) #Create an inset plot for 0 < TTR < 4
+                          panel.border = element_rect(colour = "black", fill = NA, size = 1),
+                          plot.margin = unit(c(0,0,0,0), "pt")) #Create an inset plot for 0 < TTR < 4
 
 plotWithInsetMultipanel <- ggdraw() +
   draw_plot(mainPlotMultipanel) +
-  draw_plot(insetPlotMultipanel, x = 0.1, y = 0.73, width = 0.52, height = 0.25) #Add inset to the plot
+  draw_plot(insetPlotMultipanel, x = 0.075, y = 0.485, width = 0.44, height = 0.4) #Add inset to the plot
 
 plotWithInsetMultipanel #Plot the full plot with inset
 ```
@@ -598,7 +615,7 @@ genotypeMultipanel <- modTTR %>%
   scale_shape_manual(name = "",
                      values = c(15, 19),
                      labels = c("Control", "Treatment")) +
-  ggtitle("B.") +
+  ggtitle("B. Righting Response by Genotype") +
   theme_classic(base_size = 15) + theme(strip.background = element_rect(color = "white"),
                                         strip.text.y = element_blank(),
                                         legend.position = "bottom")
