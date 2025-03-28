@@ -1080,24 +1080,6 @@ modTTRQ10 %>%
 ggsave("figures/time-to-right-average-individuals-Q10-genotype.pdf", height = 8.5, width = 11)
 ```
 
-```{r}
-modTTRQ10 %>%
-  ggplot(., mapping = aes(x = timepoint, y = Q10, color = treatment, shape = treatment, group = crab.ID)) +
-  geom_point(size = 2) + geom_line(lty = 3) +
-  facet_grid(presenceT ~ treatment, labeller = labeller(treatment = treatment_labels,
-                                                        presenceT = presenceT_labels)) +
-  scale_y_continuous(breaks = seq(0, 1, 0.25)) +
-  scale_x_discrete(name = "Exposure Time (Hours)",
-                   breaks = unique(modTTR$timepoint),
-                   labels = c(0, 4, 22, 28, 46, 94)) +
-  scale_color_manual(values = c(plotColors[1], plotColors[2]),
-                     guide = "none") +
-  scale_shape_manual(values = c(15, 17),
-                     guide = "none") +
-  theme_classic(base_size = 15) + theme(strip.background = element_rect(colour = "white")) #Plot Q10 data with timepoint on the x-axis, Q10 on the y-axis, and color and shape defined by treatment. Group by crab.ID. Add points and lines connecting values for each crab. Facet by treatment, allow y-axis to vary by each facet, and include facet labels. Add x-axis label and specify x-axis tick labels. Add shape and color values for each treatment but do not include a legend.
-ggsave("figures/time-to-right-average-individuals-Q10-genotype.pdf", height = 8.5, width = 11)
-```
-
 ## Crabs tracked throught the experiment
 
 I tracked certain individuals throughout the course of the experiment, so I want to see how their responses changed over time.
