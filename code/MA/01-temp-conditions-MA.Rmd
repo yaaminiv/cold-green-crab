@@ -159,55 +159,47 @@ write.csv(treatmentTempStats, "temp-mean-sd.csv", quote = FALSE)
 
 ```{r}
 #Colder: Mean = 1.66, SD = 0.3231426
-colderMean <- mean(rbind(hobos[[1]][,2][88:length(hobos[[1]][,2])],
+colderMeanMA <- mean(rbind(hobos[[1]][,2][88:length(hobos[[1]][,2])],
                          hobos[[2]][,2][88:length(hobos[[2]][,2])],
                          hobos[[3]][,2][88:length(hobos[[3]][,2])],
                          hobos[[7]][,2][88:length(hobos[[7]][,2])],
                          hobos[[8]][,2][88:length(hobos[[8]][,2])],
                          hobos[[9]][,2][88:length(hobos[[9]][,2])]),
                    na.rm = TRUE)
-colderSD <- sd(rbind(hobos[[1]][,2][88:length(hobos[[1]][,2])],
+colderSDMA <- sd(rbind(hobos[[1]][,2][88:length(hobos[[1]][,2])],
                      hobos[[2]][,2][88:length(hobos[[2]][,2])],
                      hobos[[3]][,2][88:length(hobos[[3]][,2])],
                      hobos[[7]][,2][88:length(hobos[[7]][,2])],
                      hobos[[8]][,2][88:length(hobos[[8]][,2])],
                      hobos[[9]][,2][88:length(hobos[[9]][,2])]),
                na.rm = TRUE)
-colderMean
-colderSD
+colderMeanMA
+colderSDMA
 ```
 
 ```{r}
 #Colder: Mean = 5.385082, SD = 0.3004675
-coldMean <- mean(rbind(hobos[[4]][,2][88:length(hobos[[4]][,2])],
+coldMeanMA <- mean(rbind(hobos[[4]][,2][88:length(hobos[[4]][,2])],
                        hobos[[5]][,2][88:length(hobos[[5]][,2])],
                        hobos[[6]][,2][88:length(hobos[[6]][,2])],
                        hobos[[10]][,2][88:length(hobos[[10]][,2])],
                        hobos[[11]][,2][88:length(hobos[[11]][,2])],
                        hobos[[12]][,2][88:length(hobos[[12]][,2])]),
                  na.rm = TRUE)
-coldSD <- sd(rbind(hobos[[4]][,2][88:length(hobos[[4]][,2])],
+coldSDMA <- sd(rbind(hobos[[4]][,2][88:length(hobos[[4]][,2])],
                    hobos[[5]][,2][88:length(hobos[[5]][,2])],
                    hobos[[6]][,2][88:length(hobos[[6]][,2])],
                    hobos[[10]][,2][88:length(hobos[[10]][,2])],
                    hobos[[11]][,2][88:length(hobos[[11]][,2])],
                    hobos[[12]][,2][88:length(hobos[[12]][,2])]),
              na.rm = TRUE)
-coldMean
-coldSD
+coldMeanMA
+coldSDMA
 ```
 
 # Statistical test
 
 I will conduct a one-way ANOVA to confirm there are significant differences between treatments.
-
-```{r}
-rbind(tank1a, tank1b)
-```
-```{r}
-
-```
-
 
 ```{r}
 tempDataLong <- rbind(tank1a %>%
@@ -278,16 +270,58 @@ cbind(tank1a, tank1b,
                            temp7a, temp7b))) %>%
   ggplot(., aes(x = dateTime, y = colderTemp)) +
   geom_line(color = plotColors[1]) +
-  geom_ribbon(aes(x = dateTime, y = coldMean, ymin = coldMean - coldSD, ymax = coldMean + coldSD), fill = plotColors[2], alpha = 0.15) +
-  geom_hline(yintercept = coldMean, colour = plotColors[2], linetype = 3) +
+  geom_ribbon(aes(x = dateTime, y = coldMeanMA, ymin = coldMeanMA - coldSDMA, ymax = coldMeanMA + coldSDMA), fill = plotColors[2], alpha = 0.15) +
+  geom_hline(yintercept = coldMeanMA, colour = plotColors[2], linetype = 3) +
   geom_line(aes(x = dateTime, y = coldTemp), color = plotColors[2]) +
-  geom_ribbon(aes(x = dateTime, y = colderMean, ymin = colderMean - colderSD, ymax = colderMean + colderSD), fill = plotColors[1], alpha = 0.15) +
-  geom_hline(yintercept = colderMean, colour = plotColors[1], linetype = 3) +
+  geom_ribbon(aes(x = dateTime, y = colderMeanMA, ymin = colderMeanMA - colderSDMA, ymax = colderMeanMA + colderSDMA), fill = plotColors[1], alpha = 0.15) +
+  geom_hline(yintercept = colderMeanMA, colour = plotColors[1], linetype = 3) +
   scale_x_datetime(name = "") +
   scale_y_continuous(name = "Temperature (ºC)",
                      breaks = c(seq(0,5,1), seq(5,15,5))) +
   theme_classic(base_size = 15)
 #Combine data from all dataframes and select columns of interest. Use rowwise operations to calculate average temperature for each treatment at each timepoint. Plot colder temepratures for each timepoint. Add a ribbon with the overall average colder temperature and SD. Add a line for the overall average colder temperature. Repeat with the cold temperature. Modify x-axis label. Modify y-axis.
 ggsave("figures/exp-temp.pdf", height = 8.5, width = 11)
+```
+
+```{r}
+MAconditions <- cbind(tank1a, tank1b,
+      tank2a, tank2b,
+      tank3a, tank3b,
+      tank5a, tank5b,
+      tank6a, tank6b,
+      tank7a, tank7b) %>%
+  dplyr::select(., c(1, 4, 
+                     2, 6, 
+                     10, 14, 
+                     18, 22,
+                     26, 30,
+                     34, 38,
+                     42, 46)) %>%
+  rowwise() %>%
+  mutate(., colderTemp = mean(c(temp1a, temp1b,
+                                temp2a, temp2b,
+                                temp3a, temp3b)),
+         coldTemp = mean(c(temp5a, temp5b,
+                           temp6a, temp6b,
+                           temp7a, temp7b))) %>%
+  ggplot(., aes(x = dateTime, y = colderTemp)) +
+  geom_line(color = plotColors[1]) +
+  geom_ribbon(aes(x = dateTime, y = coldMeanMA, ymin = coldMeanMA - coldSDMA, ymax = coldMeanMA + coldSDMA), fill = plotColors[2], alpha = 0.15) +
+  geom_hline(yintercept = coldMeanMA, colour = plotColors[2], linetype = 3) +
+  geom_line(aes(x = dateTime, y = coldTemp), color = plotColors[2]) +
+  geom_ribbon(aes(x = dateTime, y = colderMeanMA, ymin = colderMeanMA - colderSDMA, ymax = colderMeanMA + colderSDMA), fill = plotColors[1], alpha = 0.15) +
+  geom_hline(yintercept = colderMeanMA, colour = plotColors[1], linetype = 3) +
+  scale_x_datetime(name = "") +
+  scale_y_continuous(name = "Temperature (ºC)",
+                     breaks = c(seq(0,5,1), seq(5,15,5))) +
+  ggtitle("A. MA Temperature Conditions") +
+  theme_classic(base_size = 15)
+#Combine data from all dataframes and select columns of interest. Use rowwise operations to calculate average temperature for each treatment at each timepoint. Plot colder temepratures for each timepoint. Add a ribbon with the overall average colder temperature and SD. Add a line for the overall average colder temperature. Repeat with the cold temperature. Modify x-axis label. Modify y-axis.
+
+MAconditions
+```
+
+```{r}
+save.image("~/Documents/cold-green-crab/output/MA/01-temp-conditions/01-temp-conditions.RData") #Save R Data to facilitate making a multipanel figure
 ```
 
