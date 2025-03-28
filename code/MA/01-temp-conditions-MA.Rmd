@@ -118,15 +118,47 @@ tank7b <- tank7b %>%
   slice(., 10:422)
 ```
 
-# Calculate treatment conditions after ramp down
-
-## Calculate treatment mean and SE
+# Calcualte temperature conditions before ramp down
 
 ```{r}
 hobos <- list(tank1a, tank2a, tank3a, tank5a, tank6a, tank7a,
               tank1b, tank2b, tank3b, tank5b, tank6b, tank7b) #Create a list of filenames to cycle through
 hobos
 ```
+
+The first ~40 rows are the end of the acclimation period.
+
+```{r}
+#Acclimation: Mean = 14.83809, SD = 0.5346238
+acclimationMeanMA <- mean(rbind(hobos[[1]][,2][1:40],
+                                hobos[[2]][,2][1:40],
+                                hobos[[3]][,2][1:40],
+                                hobos[[4]][,2][1:40],
+                                hobos[[5]][,2][1:40],
+                                hobos[[6]][,2][1:40],
+                                hobos[[7]][,2][1:40],
+                                hobos[[8]][,2][1:40],
+                                hobos[[9]][,2][1:40]),
+                          na.rm = TRUE)
+acclimationSDMA <- sd(rbind(hobos[[1]][,2][1:40],
+                            hobos[[2]][,2][1:40],
+                            hobos[[3]][,2][1:40],
+                            hobos[[4]][,2][1:40],
+                            hobos[[5]][,2][1:40],
+                            hobos[[6]][,2][1:40],
+                            hobos[[7]][,2][1:40],
+                            hobos[[8]][,2][1:40],
+                            hobos[[9]][,2][1:40]),
+                      na.rm = TRUE)
+acclimationMeanMA
+acclimationSDMA
+```
+
+# Calculate treatment conditions after ramp down
+
+
+
+## Calculate treatment mean and SE
 
 ### For each tank
 
@@ -160,19 +192,19 @@ write.csv(treatmentTempStats, "temp-mean-sd.csv", quote = FALSE)
 ```{r}
 #Colder: Mean = 1.66, SD = 0.3231426
 colderMeanMA <- mean(rbind(hobos[[1]][,2][88:length(hobos[[1]][,2])],
-                         hobos[[2]][,2][88:length(hobos[[2]][,2])],
-                         hobos[[3]][,2][88:length(hobos[[3]][,2])],
-                         hobos[[7]][,2][88:length(hobos[[7]][,2])],
-                         hobos[[8]][,2][88:length(hobos[[8]][,2])],
-                         hobos[[9]][,2][88:length(hobos[[9]][,2])]),
-                   na.rm = TRUE)
+                           hobos[[2]][,2][88:length(hobos[[2]][,2])],
+                           hobos[[3]][,2][88:length(hobos[[3]][,2])],
+                           hobos[[7]][,2][88:length(hobos[[7]][,2])],
+                           hobos[[8]][,2][88:length(hobos[[8]][,2])],
+                           hobos[[9]][,2][88:length(hobos[[9]][,2])]),
+                     na.rm = TRUE)
 colderSDMA <- sd(rbind(hobos[[1]][,2][88:length(hobos[[1]][,2])],
-                     hobos[[2]][,2][88:length(hobos[[2]][,2])],
-                     hobos[[3]][,2][88:length(hobos[[3]][,2])],
-                     hobos[[7]][,2][88:length(hobos[[7]][,2])],
-                     hobos[[8]][,2][88:length(hobos[[8]][,2])],
-                     hobos[[9]][,2][88:length(hobos[[9]][,2])]),
-               na.rm = TRUE)
+                       hobos[[2]][,2][88:length(hobos[[2]][,2])],
+                       hobos[[3]][,2][88:length(hobos[[3]][,2])],
+                       hobos[[7]][,2][88:length(hobos[[7]][,2])],
+                       hobos[[8]][,2][88:length(hobos[[8]][,2])],
+                       hobos[[9]][,2][88:length(hobos[[9]][,2])]),
+                 na.rm = TRUE)
 colderMeanMA
 colderSDMA
 ```
@@ -180,19 +212,19 @@ colderSDMA
 ```{r}
 #Colder: Mean = 5.385082, SD = 0.3004675
 coldMeanMA <- mean(rbind(hobos[[4]][,2][88:length(hobos[[4]][,2])],
-                       hobos[[5]][,2][88:length(hobos[[5]][,2])],
-                       hobos[[6]][,2][88:length(hobos[[6]][,2])],
-                       hobos[[10]][,2][88:length(hobos[[10]][,2])],
-                       hobos[[11]][,2][88:length(hobos[[11]][,2])],
-                       hobos[[12]][,2][88:length(hobos[[12]][,2])]),
-                 na.rm = TRUE)
+                         hobos[[5]][,2][88:length(hobos[[5]][,2])],
+                         hobos[[6]][,2][88:length(hobos[[6]][,2])],
+                         hobos[[10]][,2][88:length(hobos[[10]][,2])],
+                         hobos[[11]][,2][88:length(hobos[[11]][,2])],
+                         hobos[[12]][,2][88:length(hobos[[12]][,2])]),
+                   na.rm = TRUE)
 coldSDMA <- sd(rbind(hobos[[4]][,2][88:length(hobos[[4]][,2])],
-                   hobos[[5]][,2][88:length(hobos[[5]][,2])],
-                   hobos[[6]][,2][88:length(hobos[[6]][,2])],
-                   hobos[[10]][,2][88:length(hobos[[10]][,2])],
-                   hobos[[11]][,2][88:length(hobos[[11]][,2])],
-                   hobos[[12]][,2][88:length(hobos[[12]][,2])]),
-             na.rm = TRUE)
+                     hobos[[5]][,2][88:length(hobos[[5]][,2])],
+                     hobos[[6]][,2][88:length(hobos[[6]][,2])],
+                     hobos[[10]][,2][88:length(hobos[[10]][,2])],
+                     hobos[[11]][,2][88:length(hobos[[11]][,2])],
+                     hobos[[12]][,2][88:length(hobos[[12]][,2])]),
+               na.rm = TRUE)
 coldMeanMA
 coldSDMA
 ```
@@ -285,11 +317,11 @@ ggsave("figures/exp-temp.pdf", height = 8.5, width = 11)
 
 ```{r}
 MAconditions <- cbind(tank1a, tank1b,
-      tank2a, tank2b,
-      tank3a, tank3b,
-      tank5a, tank5b,
-      tank6a, tank6b,
-      tank7a, tank7b) %>%
+                      tank2a, tank2b,
+                      tank3a, tank3b,
+                      tank5a, tank5b,
+                      tank6a, tank6b,
+                      tank7a, tank7b) %>%
   dplyr::select(., c(1, 4, 
                      2, 6, 
                      10, 14, 
