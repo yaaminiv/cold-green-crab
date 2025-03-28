@@ -975,23 +975,23 @@ modTTRQ10 <- modTTR %>%
   arrange(., temperature) %>%
   mutate(., timepoint1_Q10 = Q10(R2 = timepoint0, 
                                  R1 = timepoint1, 
-                                 T2 = 15, 
+                                 T2 = 14.84, 
                                  T1 = temperature)) %>%
   mutate(., timepoint2_Q10 = Q10(R2 = timepoint0, 
                                  R1 = timepoint2, 
-                                 T2 = 15, 
+                                 T2 = 14.84, 
                                  T1 = temperature)) %>%
   mutate(., timepoint3_Q10 = Q10(R2 = timepoint0, 
                                  R1 = timepoint3, 
-                                 T2 = 15, 
+                                 T2 = 14.84, 
                                  T1 = temperature)) %>%
   mutate(., timepoint4_Q10 = Q10(R2 = timepoint0, 
                                  R1 = timepoint4, 
-                                 T2 = 15, 
+                                 T2 = 14.84, 
                                  T1 = temperature)) %>% 
   mutate(., timepoint5_Q10 = Q10(R2 = timepoint0, 
                                  R1 = timepoint5, 
-                                 T2 = 15, 
+                                 T2 = 14.84, 
                                  T1 = temperature)) %>%
   select(., crab.ID, treatment, presenceT,
          timepoint1_Q10, timepoint2_Q10, timepoint3_Q10, timepoint4_Q10, timepoint5_Q10) %>%
@@ -1021,23 +1021,23 @@ modTTR %>%
   arrange(., temperature) %>%
   mutate(., timepoint1_Q10 = Q10(R2 = timepoint0, 
                                  R1 = timepoint1, 
-                                 T2 = 15, 
+                                 T2 = 14.84, 
                                  T1 = temperature)) %>%
   mutate(., timepoint2_Q10 = Q10(R2 = timepoint0, 
                                  R1 = timepoint2, 
-                                 T2 = 15, 
+                                 T2 = 14.84, 
                                  T1 = temperature)) %>%
   mutate(., timepoint3_Q10 = Q10(R2 = timepoint0, 
                                  R1 = timepoint3, 
-                                 T2 = 15, 
+                                 T2 = 14.84, 
                                  T1 = temperature)) %>%
   mutate(., timepoint4_Q10 = Q10(R2 = timepoint0, 
                                  R1 = timepoint4, 
-                                 T2 = 15, 
+                                 T2 = 14.84, 
                                  T1 = temperature)) %>% 
   mutate(., timepoint5_Q10 = Q10(R2 = timepoint0, 
                                  R1 = timepoint5, 
-                                 T2 = 15, 
+                                 T2 = 14.84, 
                                  T1 = temperature)) %>%
   select(., crab.ID, treatment, presenceT,
          timepoint1_Q10, timepoint2_Q10, timepoint3_Q10, timepoint4_Q10, timepoint5_Q10) %>%
