@@ -1299,7 +1299,3 @@ rbind(broom::tidy(TTRthreshModelCombined0) %>%
   mutate(., p.adj = p.adjust(p.value, method = "bonferroni")) %>%
   write.csv("population-comparison-TTRthresh-stats.csv", quote = FALSE, row.names = FALSE) #Combine tidy output from GLMs. Filter out population comparison statistical information and correct for multiple comparisons. Save output as a .csv
 ```
-
-
-
-
