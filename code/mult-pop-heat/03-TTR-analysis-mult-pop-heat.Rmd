@@ -566,72 +566,163 @@ Full population p-value: 1
 
 All three populations used in this experiment are in Hardy-Weinberg equilibrium. 
 
+# Assess differences in TTR based on time
+
+I will use a linear mixed effects model with individual as a random effect to analyze the data, following [this tutorial](https://jontalle.web.engr.illinois.edu/MISC/lme4/bw_LME_tutorial.pdf).
+
+## WA
+
+```{r}
+hist(modTTRWA$TTRavg)
+hist(x = log(modTTRWA$TTRavg)) #Log transformation helps normalize data
+```
+
+```{r}
+TTRmodelWA <- lmer(log(TTRavg) ~ timepoint + 
+                     as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
+                     (1|crab.ID), 
+                   data = modTTRWA, REML = FALSE) #Run model with timepoint, integument color, carapace width, weight, and missing swimmer information as fixed effects, and individual as a random effect. Change the likelihood estimator (REML = FALSE) to compare models with LRT later.
+summary(TTRmodelWA) #Look at model output.
+#Residuals explain more random effect variation than crab ID, crab ID explains very little variation
+```
+
+```{r}
+var.lmerWA <- c(0.001317, 0.240556) #Save variances of random effects as a new vector (crab ID, residuals)
+percentvar.lmerWA <- (100*var.lmerWA)/sum(var.lmerWA) #Calculate percent variances
+percentvar.lmerWA[1] #Crab ID accounts for 0.5445006% of variance
+```
+
+Now I want to test the importance of timepoint. Timepoint is ~22 hours of heat exposure. I'll include all other factors in the null model to account for any variation they may contribute.
+
+```{r}
+TTRnullTimepointWA <- lmer(log(TTRavg) ~ as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID), data = modTTRWA, REML = FALSE) #Run null model without timepoint to identify significance of predictor
+anova(TTRnullTimepointWA, TTRmodelWA) #Timepoint is a significant predictor
+```
+
+## ME
+
+```{r}
+hist(modTTRME$TTRavg)
+hist(x = log(modTTRME$TTRavg)) #Log transformation helps normalize data
+```
+
+```{r}
+modTTRME
+```
+
+```{r}
+TTRmodelME <- lmer(log(TTRavg) ~ timepoint + 
+                     as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
+                     Intensity +
+                     (1|crab.ID), 
+                   data = modTTRME, REML = FALSE) #Run model with timepoint, integument color, carapace width, weight, and missing swimmer information as fixed effects, and individual as a random effect. Also include parasite intensity. Change the likelihood estimator (REML = FALSE) to compare models with LRT later.
+summary(TTRmodelME) #Look at model output.
+#Residuals explain more random effect variation than crab ID, crab ID explains very little variation
+```
+
+```{r}
+var.lmerME <- c(0.06281, 0.16365) #Save variances of random effects as a new vector (crab ID, residuals)
+percentvar.lmerME <- (100*var.lmerME)/sum(var.lmerME) #Calculate percent variances
+percentvar.lmerME[1] #Crab ID accounts for 27.73558% of variance
+```
+
+```{r}
+TTRnullTimepointME <- lmer(log(TTRavg) ~ as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + Intensity + (1|crab.ID), data = modTTRME, REML = FALSE) #Run null model without timepoint to identify significance of predictor
+anova(TTRnullTimepointME, TTRmodelME) #Timepoint is a significant predictor
+```
+
+```{r}
+TTRnullIntensityME <- lmer(log(TTRavg) ~ timepoint + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID), data = modTTRME, REML = FALSE) #Run null model without timepoint to identify significance of predictor
+anova(TTRnullIntensityME, TTRmodelME) #Parasite intensity is not a significant predictor
+```
+
+## NH
+
+```{r}
+hist(modTTRNH$TTRavg)
+hist(x = log(modTTRNH$TTRavg)) #Log transformation helps normalize data
+```
+
+```{r}
+modTTRNH <- modTTRNH %>%
+  filter(., crab.ID != "NH-76") #Remove NH-76, since it died during heat exposure.
+
+modTTRNH
+```
+
+ADD INTENSITY TO MODEL WHEN I HAVE THE CORRECT PARASITE INFORMATION.
+
+```{r}
+TTRmodelNH <- lmer(log(TTRavg) ~ timepoint + 
+                     as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
+                     (1|crab.ID), 
+                   data = modTTRNH, REML = FALSE) #Run model with timepoint, integument color, carapace width, weight, and missing swimmer information as fixed effects, and individual as a random effect. Change the likelihood estimator (REML = FALSE) to compare models with LRT later.
+summary(TTRmodelNH) #Look at model output.
+#Residuals explain more random effect variation than crab ID, crab ID explains very little variation
+```
+
+```{r}
+var.lmerNH <- c(0.07948, 0.93137) #Save variances of random effects as a new vector (crab ID, residuals)
+percentvar.lmerNH <- (100*var.lmerNH)/sum(var.lmerNH) #Calculate percent variances
+percentvar.lmerNH[1] #Crab ID accounts for 7.86269% of variance
+```
+
+ADD INTENSITY WHEN I HAVE THE CORRECT PARASITE INFORMATION.
+
+```{r}
+TTRnullTimepointNH <- lmer(log(TTRavg) ~ as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID), data = modTTRNH, REML = FALSE) #Run null model without timepoint to identify significance of predictor
+anova(TTRnullTimepointNH, TTRmodelNH) #Timepoint is a not a significant predictor
+```
+
+```{r}
+TTRnullIntensityME <- lmer(log(TTRavg) ~ timepoint + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID), data = modTTRME, REML = FALSE) #Run null model without timepoint to identify significance of predictor
+anova(TTRnullIntensityME, TTRmodelME) #Parasite intensity is not a significant predictor
+```
+
+```{r}
+TTRModelComparisons <- rbind(broom::tidy(anova(TTRnullTimepointWA, TTRmodelWA)),
+                             broom::tidy(anova(TTRnullTimepointME, TTRmodelME)),
+                             broom::tidy(anova(TTRnullIntensityME, TTRmodelME)),                           
+                             # broom::tidy(anova(TTRnullIntensityNH, TTRmodelME)),
+                             broom::tidy(anova(TTRnullTimepointNH, TTRmodelNH))) %>%
+  mutate(., p.adj = p.adjust(p.value, method = "bonferroni")) #Create table for model comparison output. Adjust for multiple comparisons.
+TTRModelComparisons #Confirm modifications
+```
+
+```{r}
+write.csv(TTRModelComparisons, "ttr-model-comparison-stat-output.csv", quote = FALSE, row.names = FALSE) #Save statistical output
+```
+
+### Calculate average values
+
+```{r}
+rbind(modTTRWA %>%
+        group_by(., timepoint) %>%
+        summarize(., mean = mean(TTRavg, na.rm = TRUE), sd = sd(TTRavg, na.rm = TRUE)) %>%
+        mutate(., population = "WA"),
+      modTTRME %>%
+        group_by(., timepoint) %>%
+        summarize(., mean = mean(TTRavg, na.rm = TRUE), sd = sd(TTRavg, na.rm = TRUE)) %>%
+        mutate(., population = "ME"),
+      modTTRNH %>%
+        group_by(., timepoint) %>%
+        summarize(., mean = mean(TTRavg, na.rm = TRUE), sd = sd(TTRavg, na.rm = TRUE)) %>%
+        mutate(., population = "NH")) %>%
+  write.csv("average-TTR-calculations.csv", quote = FALSE, row.names = FALSE) #Calculate mean and SD for TTR at each time point for populations. Save as a csv
+```
 
 # CODE IN PROGRESS
 
 
 
 
-# Assess differences in TTR based on treatment and time
 
-I will use a linear mixed effects model with individual as a random effect to analyze the data, following [this tutorial](https://jontalle.web.engr.illinois.edu/MISC/lme4/bw_LME_tutorial.pdf).
 
-```{r}
-hist(modTTR$TTRavg)
-hist(x = log(modTTR$TTRavg)) #Log transformation helps normalize data
-```
 
-```{r}
-TTRmodel <- lmer(log(TTRavg) ~ treatment + timepoint + treatment:timepoint + 
-                   as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
-                   (1|crab.ID), 
-                 data = (modTTR %>% filter(., is.na(TTRavg) == FALSE)), REML = FALSE) #Run model with treatment, timepoint, their interaction, sex, integument color, carapace width, weight, and missing swimmer information as fixed effects, and individual as a random effect. Change the likelihood estimator (REML = FALSE) to compare models with LRT later. Use data without rows with NAs
-summary(TTRmodel) #Look at model output.
-#Residuals explain more random effect variation than crab ID, crab ID explains very little variation
-```
-```{r}
-var.lmer <- c(0.02357, 0.47326) #Save variances of random effects as a new vector (crab ID, residuals)
-percentvar.lmer <- (100*var.lmer)/sum(var.lmer) #Calculate percent variances
-percentvar.lmer[1] #Crab ID accounts for 4.744077% of variance
-```
 
-Now that I've run the full model, I want to test the importance of treatment, timepoint, and their interaction as predictors. I'll include all other factors in the null model to account for any variation they may contribute.
 
-```{r}
-TTRnullTreatment <- lmer(log(TTRavg) ~ timepoint + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID), data = (modTTR %>% filter(., is.na(TTRavg) == FALSE)), REML = FALSE) #Run null model without treatment to identify significance of predictor
-anova(TTRnullTreatment, TTRmodel) #Treatment is a significant predictor
-```
 
-```{r}
-TTRnullTimepoint <- lmer(log(TTRavg) ~ treatment + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID), data = (modTTR %>% filter(., is.na(TTRavg) == FALSE)), REML = FALSE) #Run null model without timepoint to identify significance of predictor
-anova(TTRnullTreatment, TTRmodel) #Timepoint is a significant predictor
-```
 
-```{r}
-TTRnullInteraction <- lmer(log(TTRavg) ~ treatment + timepoint + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID), data = (modTTR %>% filter(., is.na(TTRavg) == FALSE)), REML = FALSE) #Run model without interaction to identify significance of predictor. The full model constructed does not include an interaction
-anova(TTRnullInteraction, TTRmodel) #Interaction is a significant predictor
-```
-
-```{r}
-TTRModelComparisons<- rbind(broom::tidy(anova(TTRnullTreatment, TTRmodel)),
-                            broom::tidy(anova(TTRnullTimepoint, TTRmodel)),
-                            broom::tidy(anova(TTRnullInteraction, TTRmodel))) #Create table for model comparison output
-TTRModelComparisons
-```
-
-```{r}
-TTRModelComparisons %>%
-  mutate(., p.adj = p.adjust(p.value, method = "bonferroni")) #Adjust p-values
-```
-
-### Calculate average values
-
-```{r}
-modTTR %>%
-  group_by(., treatment, timepoint) %>%
-  summarize(., mean = mean(TTRavg, na.rm = TRUE), sd = sd(TTRavg, na.rm = TRUE)) %>%
-  write.csv("average-TTR-calculations.csv", quote = FALSE, row.names = FALSE)
-```
 
 # Effect of genotype
 
@@ -684,138 +775,6 @@ write.csv(TTRModelComparisons, "ttr-model-comparison-stat-output.csv", quote = F
 
 There is no significant impact of genotype on average TTR. There are some additional factors I want to understand: how genotype impacts whether or not a crab flipped, and how genotype impacted a difference in TTR.
 
-## Threshold analysis
-
-### Define threshold
-
-```{r}
-modTTR <- modTTR %>%
-  mutate(., TTRthresh = case_when(!(is.na(trial.1 & trial.2 & trial.3) == FALSE) ~ 0,
-                                  is.na(trial.1 & trial.2 & trial.3) == FALSE ~ 1)) #Create a new column where 1 = righted within 90 seconds in all trials and 0 = failure to right within that threshold
-head(modTTR) #Confirm modifications
-```
-
-### Binomial model
-
-```{r}
-TTRthreshModel <- glmer(I(TTRthresh == 1) ~ treatment + timepoint + treatment:timepoint +
-                          as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
-                          (1|crab.ID), 
-                        family = binomial(), 
-                        data = (modTTR %>% filter(., is.na(genotype) == FALSE))) #Create a binomial model, where 1 = success of righting wihtin the defined threshold
-summary(TTRthreshModel)
-```
-
-```{r}
-TTRthreshNullTreatment <- glmer(I(TTRthresh == 1) ~ timepoint +
-                                  as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
-                                  (1|crab.ID), 
-                                family = binomial(), 
-                                data = (modTTR %>% filter(., is.na(genotype) == FALSE))) #Create null model without treatment
-anova(TTRthreshNullTreatment, TTRthreshModel) #Compare models
-```
-
-```{r}
-TTRthreshNullTimepoint <- glmer(I(TTRthresh == 1) ~ treatment +
-                                  as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
-                                  (1|crab.ID), 
-                                family = binomial(), 
-                                data = (modTTR %>% filter(., is.na(genotype) == FALSE))) #Create null model without timepoint
-anova(TTRthreshNullTimepoint, TTRthreshModel) #Compare models
-```
-
-```{r}
-TTRthreshNullInteraction <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
-                                    as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
-                                    (1|crab.ID), 
-                                  family = binomial(), 
-                                  data = (modTTR %>% filter(., is.na(genotype) == FALSE))) #Create null model without interaction
-anova(TTRthreshNullInteraction, TTRthreshModel) #Compare models
-```
-
-```{r}
-TTRthreshModelComparisons <- rbind(broom::tidy(anova(TTRthreshNullTreatment, TTRthreshModel)),
-                                   broom::tidy(anova(TTRthreshNullTimepoint, TTRthreshModel)),
-                                   broom::tidy(anova(TTRthreshNullInteraction, TTRthreshModel))) #Create a table of model comparison output
-TTRthreshModelComparisons
-```
-
-```{r}
-TTRthreshModelComparisons %>%
-  mutate(p.adj = p.adjust(p.value, method = "bonferroni")) #Adjust p-values
-```
-
-Alright, there are significant impacts of treatment and time on righting, but no impact of their interaction. So far everything is similar to the MA population. Now I want to test the impact of genotype on binary righting response. 
-
-```{r}
-TTRthreshModelRevised <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
-                                 as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
-                                 (1|crab.ID), 
-                               family = binomial(), 
-                               data = (modTTR %>% filter(., is.na(genotype) == FALSE))) #Create a binomial model, where 1 = success of righting wihtin the defined threshold
-summary(TTRthreshModelRevised)
-```
-
-```{r}
-TTRthreshGenotype <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
-                             as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
-                             as.factor(genotype) +
-                             (1|crab.ID), 
-                           family = binomial(), 
-                           data = (modTTR %>% filter(., is.na(genotype) == FALSE))) #Create null model without interaction
-anova(TTRthreshModelRevised, TTRthreshGenotype) #Compare models
-```
-
-```{r}
-TTRthreshpresenceC <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
-                              as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
-                              as.factor(presenceC) +
-                              (1|crab.ID), 
-                            family = binomial(), 
-                            data = (modTTR %>% filter(., is.na(genotype) == FALSE))) #Create null model without interaction
-anova(TTRthreshModelRevised, TTRthreshpresenceC) #Compare models
-```
-
-```{r}
-TTRthreshpresenceT <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
-                              as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
-                              as.factor(presenceT) +
-                              (1|crab.ID), 
-                            family = binomial(), 
-                            data = (modTTR %>% filter(., is.na(genotype) == FALSE))) #Create null model without interaction
-anova(TTRthreshModelRevised, TTRthreshpresenceT) #Compare models
-```
-
-```{r}
-TTRthreshModelComparisons <- rbind(broom::tidy(anova(TTRthreshNullTreatment, TTRthreshModel)),
-                                   broom::tidy(anova(TTRthreshNullTimepoint, TTRthreshModel)),
-                                   broom::tidy(anova(TTRthreshNullInteraction, TTRthreshModel)),
-                                   broom::tidy(anova(TTRthreshModelRevised, TTRthreshGenotype)),
-                                   broom::tidy(anova(TTRthreshModelRevised, TTRthreshpresenceC)),
-                                   broom::tidy(anova(TTRthreshModelRevised, TTRthreshpresenceT))) #Create a table of model comparison output
-TTRthreshModelComparisons
-```
-
-```{r}
-TTRthreshModelComparisons <- TTRthreshModelComparisons %>%
-  mutate(p.adj = p.adjust(p.value, method = "bonferroni")) #Adjust p-values
-```
-
-```{r}
-write.csv(TTRthreshModelComparisons, "ttr-binomial-model-comparison-output.csv", quote = FALSE, row.names = FALSE) #Save model comparison table
-```
-
-No significant impact of genotype on whether or not a crab righted!
-
-### Calculate propportions
-
-```{r}
-modTTR %>%
-  group_by(., treatment, timepoint, TTRthresh) %>%
-  summarize(., count = n())
-```
-
-
 # Plots
 
 ## Average TTR plot
@@ -843,233 +802,6 @@ modTTR %>%
                      labels = c("2.1", "5.2")) +
   theme_classic(base_size = 15) #Select unique timepoint, treatment, and TTRavg data, and remove rows where TTRavg = NA. Plot average TTR for each crab in a boxplot. Do not show outliers with the OG boxplot, but add them in with geom_jitter. Assign colors and shapes to each treatment. Increase base font size.
 ggsave("figures/time-to-right-avg-boxplot.pdf", height = 8.5, width = 11)
-```
-
-## Threshold analysis plot
-
-```{r}
-treatment_labels <- c("1.5C" = "2.1ºC",
-                      "5C" = "5.2ºC") #Modify facet labels for treatment
-timepoint_labels <- c("0" = "0",
-                      "1" = "4",
-                      "2" = "22",
-                      "3" = "28",
-                      "4" = "46",
-                      "5" = "94") #Modify facet labels for timepoint
-```
-
-```{r}
-modTTR %>%
-  group_by(., treatment, timepoint) %>%
-  summarize(., total = n(), 
-            trial1No = sum(is.na(trial.1) == TRUE),
-            trial2No = sum(is.na(trial.2) == TRUE),
-            trial3No = sum(is.na(trial.3) == TRUE)) %>%
-  mutate(., trial1Yes = total - trial1No,
-         trial2Yes = total - trial2No,
-         trial3Yes = total - trial3No) %>%
-  pivot_longer(., cols = c(trial1No, trial1Yes,
-                           trial2No, trial2Yes,
-                           trial3No, trial3Yes), 
-               values_to = "count", names_to = "condition") %>%
-  mutate(., trial = case_when(condition == "trial1No" ~ 1,
-                              condition == "trial1Yes" ~ 1,
-                              condition == "trial2No" ~ 2,
-                              condition == "trial2Yes" ~ 2,
-                              condition == "trial3No" ~ 3,
-                              condition == "trial3Yes" ~ 3)) %>%
-  mutate(., condition = gsub(pattern = "trial1", replacement = "", x = condition),
-         condition = gsub(pattern = "trial2", replacement = "", x = condition),
-         condition = gsub(pattern = "trial3", replacement = "", x = condition)) %>%
-  ggplot(., aes(x = trial, y = count, fill = condition)) +
-  geom_bar(position = "fill", stat = "identity") + 
-  facet_grid(treatment~timepoint, labeller = labeller(treatment = treatment_labels,
-                                                      timepoint = timepoint_labels)) +
-  labs(x = "Trial", y = "Proportion") +
-  scale_fill_manual(name = "",
-                    values = c("grey70", "grey10")) +
-  theme_classic(base_size = 15) + theme(strip.background = element_rect(colour = "white"))
-ggsave("figures/time-to-right-noFlips.pdf", height = 8.5, width = 11)
-
-#Take TTR data and group by timepoint. Count the number of crabs that did not right within 90 seconds during each trial. Subtract that value from the total to get the number of crabs that did right within 90 seconds. Pivot the data longer. Create a trial column based on the condition column. Remove trial information from the text in the condition column. Pipe modified data into ggplot to create a stacked barplot. Facet by treatment and timepoint using facet labels. Relabel axes. Modify fill scale. Use specific base size with classic theme. For facet labels, use a white border (no border).
-```
-
-```{r}
-modTTR %>%
-  group_by(., timepoint, treatment) %>%
-  summarize(., total = n(), 
-            No = sum(is.na(trial.1) == TRUE | is.na(trial.2) == TRUE | is.na(trial.3) == TRUE),
-            Yes = sum(!(is.na(trial.1) == TRUE | is.na(trial.2) == TRUE | is.na(trial.3) == TRUE))) %>%
-  pivot_longer(., cols = c(Yes, No), 
-               values_to = "count", names_to = "condition") %>%
-  mutate(., condition = case_when(condition == "No" ~ "2N",
-                                  condition == "Yes" ~ "1Y")) %>%
-  ggplot(., aes(x = timepoint, y = count, fill = condition)) +
-  geom_bar(position = "fill", stat = "identity") + 
-  facet_wrap(~treatment, labeller = labeller(treatment = treatment_labels)) +
-  scale_x_continuous(name = "Exposure Time (Hours)",
-                     breaks = c(0:5),
-                     labels = c(0, 4, 22, 28, 46, 94)) +
-  scale_y_continuous(name = "Proportion") +
-  scale_fill_manual(name = "",
-                    values = c("grey70", plotColors[1]),
-                    labels = c("Yes", "No")) +
-  theme_classic(base_size = 15) + theme(strip.background = element_rect(colour = "white"))
-ggsave("figures/time-to-right-noFlips-timepoint.pdf", height = 8.5, width = 11)
-```
-
-```{r}
-presenceT_labels <- c("N" = "CC",
-                      "Y" = "CT or TT") #Modify facet labels for precense of the T allele
-```
-
-```{r}
-modTTR %>%
-  group_by(., treatment, genotype) %>%
-  summarize(., total = n(), 
-            trial1No = sum(is.na(trial.1) == TRUE),
-            trial2No = sum(is.na(trial.2) == TRUE),
-            trial3No = sum(is.na(trial.3) == TRUE)) %>%
-  mutate(., trial1Yes = total - trial1No,
-         trial2Yes = total - trial2No,
-         trial3Yes = total - trial3No) %>%
-  pivot_longer(., cols = c(trial1No, trial1Yes,
-                           trial2No, trial2Yes,
-                           trial3No, trial3Yes), 
-               values_to = "count", names_to = "condition") %>%
-  mutate(., trial = case_when(condition == "trial1No" ~ 1,
-                              condition == "trial1Yes" ~ 1,
-                              condition == "trial2No" ~ 2,
-                              condition == "trial2Yes" ~ 2,
-                              condition == "trial3No" ~ 3,
-                              condition == "trial3Yes" ~ 3)) %>%
-  mutate(., condition = gsub(pattern = "trial1", replacement = "", x = condition),
-         condition = gsub(pattern = "trial2", replacement = "", x = condition),
-         condition = gsub(pattern = "trial3", replacement = "", x = condition)) %>%
-  ggplot(., aes(x = trial, y = count, fill = condition)) +
-  geom_bar(position = "fill", stat = "identity") + 
-  facet_grid(treatment~genotype, labeller = labeller(treatment = treatment_labels)) +
-  labs(x = "Trial", y = "Proportion") +
-  scale_fill_manual(name = "",
-                    values = c("grey70", "grey10")) +
-  theme_classic(base_size = 15) + theme(strip.background = element_rect(colour = "white"))
-ggsave("figures/time-to-right-noFlips-tempGenotype.pdf", height = 8.5, width = 11)
-```
-
-```{r}
-modTTR %>%
-  group_by(., treatment, presenceT) %>%
-  summarize(., total = n(), 
-            trial1No = sum(is.na(trial.1) == TRUE),
-            trial2No = sum(is.na(trial.2) == TRUE),
-            trial3No = sum(is.na(trial.3) == TRUE)) %>%
-  mutate(., trial1Yes = total - trial1No,
-         trial2Yes = total - trial2No,
-         trial3Yes = total - trial3No) %>%
-  pivot_longer(., cols = c(trial1No, trial1Yes,
-                           trial2No, trial2Yes,
-                           trial3No, trial3Yes), 
-               values_to = "count", names_to = "condition") %>%
-  mutate(., trial = case_when(condition == "trial1No" ~ 1,
-                              condition == "trial1Yes" ~ 1,
-                              condition == "trial2No" ~ 2,
-                              condition == "trial2Yes" ~ 2,
-                              condition == "trial3No" ~ 3,
-                              condition == "trial3Yes" ~ 3)) %>%
-  mutate(., condition = gsub(pattern = "trial1", replacement = "", x = condition),
-         condition = gsub(pattern = "trial2", replacement = "", x = condition),
-         condition = gsub(pattern = "trial3", replacement = "", x = condition)) %>%
-  ggplot(., aes(x = trial, y = count, fill = condition)) +
-  geom_bar(position = "fill", stat = "identity") + 
-  facet_grid(treatment~presenceT, labeller = labeller(treatment = treatment_labels)) +
-  labs(x = "Trial", y = "Proportion") +
-  scale_fill_manual(name = "",
-                    values = c("grey70", "grey10")) +
-  theme_classic(base_size = 15) + theme(strip.background = element_rect(colour = "white"))
-ggsave("figures/time-to-right-noFlips-temp-presenceT.pdf", height = 8.5, width = 11)
-```
-
-```{r}
-modTTR %>%
-  filter(., is.na(genotype) == FALSE) %>%
-  group_by(., timepoint, presenceT) %>%
-  summarize(., total = n(), 
-            No = sum(is.na(trial.1) == TRUE | is.na(trial.2) == TRUE | is.na(trial.3) == TRUE),
-            Yes = sum(!(is.na(trial.1) == TRUE | is.na(trial.2) == TRUE | is.na(trial.3) == TRUE))) %>%
-  pivot_longer(., cols = c(Yes, No), 
-               values_to = "count", names_to = "condition") %>%
-  mutate(., condition = case_when(condition == "No" ~ "2N",
-                                  condition == "Yes" ~ "1Y")) %>%
-  ggplot(., aes(x = timepoint, y = count, fill = condition)) +
-  geom_bar(position = "fill", stat = "identity") + 
-  facet_grid(~presenceT, labeller = labeller(presenceT = presenceT_labels)) +
-  scale_x_continuous(name = "Hours",
-                     breaks = c(0:5),
-                     labels = c(0, 4, 22, 28, 46, 94)) +
-  scale_y_continuous(name = "Proportion") +
-  scale_fill_manual(name = "",
-                    values = c("grey70", plotColors[1]),
-                    labels = c("Yes", "No")) +
-  theme_classic(base_size = 15) + theme(strip.background = element_rect(colour = "white"))
-ggsave("figures/time-to-right-noFlips-timepointT.pdf", height = 8.5, width = 11)
-```
-
-```{r}
-modTTR %>%
-  filter(., is.na(genotype) == FALSE) %>%
-  group_by(., presenceT) %>%
-  summarize(., total = n(), 
-            trial1No = sum(is.na(trial.1) == TRUE),
-            trial2No = sum(is.na(trial.2) == TRUE),
-            trial3No = sum(is.na(trial.3) == TRUE)) %>%
-  mutate(., trial1Yes = total - trial1No,
-         trial2Yes = total - trial2No,
-         trial3Yes = total - trial3No) %>%
-  pivot_longer(., cols = c(trial1No, trial1Yes,
-                           trial2No, trial2Yes,
-                           trial3No, trial3Yes), 
-               values_to = "count", names_to = "condition") %>%
-  mutate(., trial = case_when(condition == "trial1No" ~ 1,
-                              condition == "trial1Yes" ~ 1,
-                              condition == "trial2No" ~ 2,
-                              condition == "trial2Yes" ~ 2,
-                              condition == "trial3No" ~ 3,
-                              condition == "trial3Yes" ~ 3)) %>%
-  mutate(., condition = gsub(pattern = "trial1", replacement = "", x = condition),
-         condition = gsub(pattern = "trial2", replacement = "", x = condition),
-         condition = gsub(pattern = "trial3", replacement = "", x = condition)) %>%
-  ggplot(., aes(x = trial, y = count, fill = condition)) +
-  geom_bar(position = "fill", stat = "identity") + 
-  facet_grid(~presenceT, labeller = labeller(presenceT = presenceT_labels)) +
-  labs(x = "Trial", y = "Proportion") +
-  scale_fill_manual(name = "",
-                    values = c("grey70", "grey10")) +
-  theme_classic(base_size = 15) + theme(strip.background = element_rect(colour = "white"))
-ggsave("figures/time-to-right-noFlips-trialT.pdf", height = 8.5, width = 11)
-```
-
-```{r}
-modTTR %>%
-  filter(., is.na(genotype) == FALSE) %>%
-  filter(., is.na(trial.1) == TRUE | is.na(trial.2) == TRUE | is.na(trial.3) == TRUE) %>%
-  group_by(., timepoint, genotype) %>%
-  summarize(., total = n(), 
-            No = sum(is.na(trial.1) == TRUE | is.na(trial.2) == TRUE | is.na(trial.3) == TRUE),
-            Yes = sum(!(is.na(trial.1) == TRUE | is.na(trial.2) == TRUE | is.na(trial.3) == TRUE))) %>%
-  pivot_longer(., cols = c(Yes, No), 
-               values_to = "count", names_to = "condition") %>%
-  ggplot(., aes(x = timepoint, y = count, fill = genotype)) +
-  geom_bar(position = "fill", stat = "identity") + 
-  labs(y = "Proportion") +
-  scale_x_continuous(name = "Hours",
-                     breaks = c(0:5),
-                     labels = c(0, 4, 22, 28, 46, 94)) +
-  scale_fill_manual(name = "Genotype",
-                    values = c("grey90", "grey45", "grey0"),
-                    labels = c("CC", "CT","TT")) +
-  theme_classic(base_size = 15)
-ggsave("figures/time-to-right-noFlips-timeT.pdf", height = 8.5, width = 11)
-#Take TTR data and group by timepoint. Count the number of crabs that did not right within 90 seconds during each trial. Subtract that value from the total to get the number of crabs that did right within 90 seconds. Pivot the data longer. Create a trial column based on the condition column. Remove trial information from the text in the condition column. Pipe modified data into ggplot to create a stacked barplot. Facet by treatment and timepoint using facet labels. Relabel axes. Modify fill scale. Use specific base size with classic theme. For facet labels, use a white border (no border).
 ```
 
 ## Multipanel plot
@@ -1130,313 +862,7 @@ ggsave("figures/multipanel-WA-plot.pdf", height = 11, width = 8.5)
 ```
 
 
-# Individual-level analysis
-
-## Q10 analysis
-
-Q10 is a metric used to quantify temperature sensitivity, generally defined as the change in a physiological response over a 10 degree temperature interval. For most organisms, Q10 is around 2 (a two-fold change in a physiological or chemical response due to a 10 degree temperature change).
-
-```{r}
-modTTRQ10 <- modTTR %>%
-  select(., timepoint, crab.ID, TTRavg, treatment, genotype) %>%
-  group_by(., crab.ID) %>%
-  pivot_wider(., names_from = timepoint, values_from = TTRavg, names_prefix = "timepoint") %>%
-  mutate_all(~ifelse(is.nan(.), 91, .)) %>%
-  filter(., is.na(timepoint0) == FALSE) %>%
-  filter(., is.na(timepoint1) == FALSE) %>%
-  filter(., is.na(timepoint2) == FALSE) %>%
-  filter(., is.na(timepoint3) == FALSE) %>%
-  filter(., is.na(timepoint4) == FALSE) %>%
-  filter(., is.na(timepoint5) == FALSE) %>%
-  mutate(temperature = case_when(treatment == "1.5C" ~ 2.13,
-                                 treatment == "5C" ~ 5.19)) %>%
-  arrange(., temperature) %>%
-  mutate(., timepoint1_Q10 = Q10(R2 = timepoint0, 
-                                 R1 = timepoint1, 
-                                 T2 = 15, 
-                                 T1 = temperature)) %>%
-  mutate(., timepoint2_Q10 = Q10(R2 = timepoint0, 
-                                 R1 = timepoint2, 
-                                 T2 = 15, 
-                                 T1 = temperature)) %>%
-  mutate(., timepoint3_Q10 = Q10(R2 = timepoint0, 
-                                 R1 = timepoint3, 
-                                 T2 = 15, 
-                                 T1 = temperature)) %>%
-  mutate(., timepoint4_Q10 = Q10(R2 = timepoint0, 
-                                 R1 = timepoint4, 
-                                 T2 = 15, 
-                                 T1 = temperature)) %>% 
-  mutate(., timepoint5_Q10 = Q10(R2 = timepoint0, 
-                                 R1 = timepoint5, 
-                                 T2 = 15, 
-                                 T1 = temperature)) %>%
-  select(., crab.ID, treatment, genotype,
-         timepoint1_Q10, timepoint2_Q10, timepoint3_Q10, timepoint4_Q10, timepoint5_Q10) %>%
-  pivot_longer(., cols = !c(crab.ID, treatment, genotype), names_to = "timepoint", values_to = "Q10") %>%
-  mutate(., timepoint = gsub(x = timepoint, pattern = "_Q10", replacement = "")) %>%
-  mutate(., timepoint = gsub(x = timepoint, pattern = "timepoint", replacement = "")) %>%
-  mutate(., timepoint = as.numeric(timepoint))
-#Select columns of interest. Add columns for presence of C or T alleles. Pivot wider. Change NaN to 91 and remove any NA measurements. Add a column for temperature based on the treatment column, and arrange data by temperature. Use the Q10 function within the respirometry package to calculate Q10 values for timepoint 0 vs. all other timepoints. Select columns of interest and pivot longer. Use a series of gsub to modify timepoint column and convert to a character format that would be organized numerically. Use a similar approach for treatment.
-head(modTTRQ10)
-length(modTTRQ10$crab.ID %>% unique(.)) #28 crabs
-```
-
-```{r}
-modTTR %>%
-  select(., timepoint, crab.ID, TTRavg, treatment, genotype) %>%
-  group_by(., crab.ID) %>%
-  pivot_wider(., names_from = timepoint, values_from = TTRavg, names_prefix = "timepoint") %>%
-  mutate_all(~ifelse(is.nan(.), 91, .)) %>%
-  filter(., is.na(timepoint0) == FALSE) %>%
-  filter(., is.na(timepoint1) == FALSE) %>%
-  filter(., is.na(timepoint2) == FALSE) %>%
-  filter(., is.na(timepoint3) == FALSE) %>%
-  filter(., is.na(timepoint4) == FALSE) %>%
-  filter(., is.na(timepoint5) == FALSE) %>%
-  mutate(temperature = case_when(treatment == "1.5C" ~ 2.13,
-                                 treatment == "5C" ~ 5.19)) %>%
-  arrange(., temperature) %>%
-  mutate(., timepoint1_Q10 = Q10(R2 = timepoint0, 
-                                 R1 = timepoint1, 
-                                 T2 = 15, 
-                                 T1 = temperature)) %>%
-  mutate(., timepoint2_Q10 = Q10(R2 = timepoint0, 
-                                 R1 = timepoint2, 
-                                 T2 = 15, 
-                                 T1 = temperature)) %>%
-  mutate(., timepoint3_Q10 = Q10(R2 = timepoint0, 
-                                 R1 = timepoint3, 
-                                 T2 = 15, 
-                                 T1 = temperature)) %>%
-  mutate(., timepoint4_Q10 = Q10(R2 = timepoint0, 
-                                 R1 = timepoint4, 
-                                 T2 = 15, 
-                                 T1 = temperature)) %>% 
-  mutate(., timepoint5_Q10 = Q10(R2 = timepoint0, 
-                                 R1 = timepoint5, 
-                                 T2 = 15, 
-                                 T1 = temperature)) %>%
-  write.csv("Q10-calculations.csv") #Save wider table as a csv
-```
-
-```{r}
-modTTRQ10 %>%
-  ggplot(., mapping = aes(x = timepoint, y = Q10, color = treatment, shape = treatment, group = crab.ID)) +
-  geom_point(size = 2) + geom_line(lty = 3) +
-  facet_wrap(. ~ treatment, labeller = labeller(treatment = treatment_labels)) +
-  scale_x_discrete(name = "Exposure Time (Hours)",
-                   breaks = unique(modTTR$timepoint),
-                   labels = c(0, 4, 22, 28, 46, 94)) +
-  scale_color_manual(values = c(plotColors[1], plotColors[2]),
-                     guide = "none") +
-  scale_shape_manual(values = c(15, 17),
-                     guide = "none") +
-  theme_classic(base_size = 15) + theme(strip.background = element_rect(colour = "white")) #Plot Q10 data with timepoint on the x-axis, Q10 on the y-axis, and color and shape defined by treatment. Group by crab.ID. Add points and lines connecting values for each crab. Facet by treatment, allow y-axis to vary by each facet, and include facet labels. Add x-axis label and specify x-axis tick labels. Add shape and color values for each treatment but do not include a legend.
-ggsave("figures/time-to-right-average-individuals-Q10.pdf", height = 8.5, width = 11)
-```
-
-```{r}
-modTTRQ10 %>%
-  ggplot(., mapping = aes(x = timepoint, y = Q10, color = treatment, shape = treatment, group = crab.ID)) +
-  geom_point(size = 2) + geom_line(lty = 3) +
-  facet_grid(genotype ~ treatment, labeller = labeller(treatment = treatment_labels)) +
-  scale_x_discrete(name = "Exposure Time (Hours)",
-                   breaks = unique(modTTR$timepoint),
-                   labels = c(0, 4, 22, 28, 46, 94)) +
-  scale_color_manual(values = c(plotColors[1], plotColors[2]),
-                     guide = "none") +
-  scale_shape_manual(values = c(15, 17),
-                     guide = "none") +
-  theme_classic(base_size = 15) + theme(strip.background = element_rect(colour = "white")) #Plot Q10 data with timepoint on the x-axis, Q10 on the y-axis, and color and shape defined by treatment. Group by crab.ID. Add points and lines connecting values for each crab. Facet by treatment, allow y-axis to vary by each facet, and include facet labels. Add x-axis label and specify x-axis tick labels. Add shape and color values for each treatment but do not include a legend.
-ggsave("figures/time-to-right-average-individuals-Q10-genotype.pdf", height = 8.5, width = 11)
-```
-
-## Crabs tracked throught the experiment
-
-I tracked certain individuals throughout the course of the experiment, so I want to see how their responses changed over time.
-
-```{r}
-left_join(modTTRQ10, modTTR, by = c("crab.ID", "treatment", "genotype", "timepoint")) %>%
-  select(., -c(date:trial.3, sex:presenceT)) %>%
-  filter(., treatment != "5C") %>%
-  ggplot(., mapping = aes(x = timepoint, y = TTRthresh, color = genotype, group = crab.ID)) +
-  geom_point(size = 2) + geom_line(lty = 3) +
-  facet_wrap(~crab.ID) +
-  scale_x_continuous(name = "Exposure Time (Hours)",
-                     breaks = 1:5,
-                     labels = c(4, 22, 28, 46, 94)) +
-  scale_y_continuous(name = "Right?",
-                     breaks = c(0, 1),
-                     labels = c("No", "Yes")) +
-  scale_colour_manual(name = "Genotype",
-                      values = c("grey70", "grey10"),
-                      labels = c("CT", "TT")) +
-  scale_shape_manual(name = "Genotype",
-                     values = c(15, 19),
-                     labels = c("CT", "TT")) +
-  theme_classic(base_size = 15) + theme(strip.background = element_rect(colour = "white")) #Join TTR data with Q10 data to get individuals that were tracked throughout time. Remove superfluous columns and entries at 5ºC. Create point and line graph and wrap by crab ID.
-ggsave("figures/time-to-right-noFlips-individuals-Q10.pdf", height = 8.5, width = 11)
-```
-
-```{r}
-left_join(modTTRQ10, modTTR, by = c("crab.ID", "treatment", "genotype", "timepoint")) %>%
-  select(., -c(Q10:trial.3, sex:presenceT)) %>%
-  filter(., treatment != "5C") %>%
-  pivot_wider(., names_from = "timepoint", names_prefix = "timepoint", values_from = "TTRthresh") %>%
-  mutate(., pattern = case_when(timepoint2 == 0 & timepoint3 == 0 & timepoint4 == 0 & timepoint5 == 0 ~ "4",
-                                timepoint2 == 1 & timepoint3 == 1 & timepoint4 == 1 & timepoint5 == 1 ~ "1",
-                                (timepoint2 == 0 | timepoint3 == 0 | timepoint4 == 0) & timepoint5 == 1 ~ "2",
-                                (timepoint3 == 1 | timepoint4 == 1) & timepoint5 == 0 ~ "3")) %>%
-  group_by(., genotype, pattern) %>%
-  summarize(., count = n()) %>%
-  ggplot(., mapping = aes(x = genotype, y = count, fill = pattern)) +
-  geom_bar(position = "fill", stat = "identity") +
-  labs(y = "Proportion") +
-  scale_x_discrete(name = "Genotype",
-                   labels = c("CT", "TT")) +
-  scale_fill_manual(name = "Pattern",
-                    labels = c("Always", "Recovered", "Failed", "Never"),
-                    values = c("grey90", "grey60", "grey30", "grey0")) +
-  theme_classic(base_size = 15) #Take data and pivot timepoint and threshold information. Assign patterns where 1 = always righting, 2 = recovered, 3 = failure to recover, and 4 = never righting. Group data by genotype and pattern and generate counts. Create stacked barplot.
-ggsave("figures/time-to-right-average-individuals-Q10-genotype-patterns.pdf", height = 8.5, width = 11)
-```
-
-
-```{r}
-modTTR %>%
-  filter(., is.na(genotype) == FALSE) %>%
-  dplyr::select(., crab.ID, treatment, genotype, timepoint, TTRthresh) %>%
-  filter(., timepoint != 0) %>%
-  filter(., treatment == "1.5C") %>%
-  group_by(., crab.ID) %>%
-  arrange(., crab.ID) %>%
-  filter(n() > 3) %>%
-  ggplot(., mapping = aes(x = timepoint, y = TTRthresh, color = genotype, shape = genotype, group = crab.ID)) +
-  geom_point(size = 2) + geom_line(lty = 3) +
-  facet_wrap(~crab.ID) +
-  scale_x_continuous(name = "Exposure Time (Hours)",
-                     breaks = 1:5,
-                     labels = c(4, 22, 28, 46, 94)) +
-  scale_y_continuous(name = "Right?",
-                     breaks = c(0, 1),
-                     labels = c("No", "Yes")) +
-  scale_colour_manual(name = "Genotype",
-                      values = c("grey90", "grey70", "grey10"),
-                      labels = c("CC", "CT", "TT")) +
-  scale_shape_manual(name = "Genotype",
-                     values = c(17, 15, 19),
-                     labels = c("CC", "CT", "TT")) +
-  theme_classic(base_size = 15) + theme(strip.background = element_rect(colour = "white"))
-ggsave("figures/time-to-right-noFlips-individuals.pdf", height = 8.5, width = 11)
-```
-
-```{r}
-modTTR %>%
-  dplyr::select(., crab.ID, treatment, genotype, timepoint, TTRthresh) %>%
-  filter(., timepoint != 0) %>%
-  filter(., treatment == "1.5C") %>%
-  group_by(., crab.ID) %>%
-  arrange(., crab.ID) %>%
-  filter(n() > 3) %>%
-  pivot_wider(., names_from = "timepoint", names_prefix = "timepoint", values_from = "TTRthresh") %>%
-  mutate(., pattern = case_when(timepoint2 == 0 & timepoint3 == 0 & timepoint4 == 0 & timepoint5 == 0 ~ "4",
-                                timepoint2 == 1 & timepoint3 == 1 & timepoint4 == 1 & timepoint5 == 1 ~ "1",
-                                (timepoint2 == 0 | timepoint3 == 0 | timepoint4 == 0) & timepoint5 == 1 ~ "2",
-                                (timepoint3 == 1 | timepoint4 == 1) & timepoint5 == 0 ~ "3")) %>%
-  filter(., is.na(pattern) == FALSE) %>%
-  group_by(., genotype, pattern) %>%
-  summarize(., count = n()) %>%
-  ggplot(., mapping = aes(x = genotype, y = count, fill = pattern)) +
-  geom_bar(position = "fill", stat = "identity") +
-  labs(y = "Proportion") +
-  scale_x_discrete(name = "Genotype",
-                   labels = c("CT", "TT")) +
-  scale_fill_manual(name = "Pattern",
-                    labels = c("Always", "Recovered", "Failed", "Never"),
-                    values = c("grey90", "grey60", "grey30", "grey0")) +
-  theme_classic(base_size = 15) #Take data and pivot timepoint and threshold information. Assign patterns where 1 = always righting, 2 = recovered, 3 = failure to recover, and 4 = never righting. Group data by genotype and pattern and generate counts. Create stacked barplot.
-ggsave("figures/time-to-right-average-individuals-genotype-patterns.pdf", height = 8.5, width = 11)
-```
-
 # Population comparison
-
-The last thing I want to do is compare WA and MA responses!
-
-## Import data
-
-### WA
-
-```{r}
-modTTRWA <- modTTR #Save dataframe with WA-specific tag.
-modTTRWA$population <- "WA" #Add column with population information
-head(modTTRWA)
-```
-
-### MA 
-
-```{r}
-rawTTRMA <- read.csv("../../../data/MA/time-to-right-MA-clean.csv", header = TRUE, na.strings = c("N/A", "NA")) #Import raw data
-head(rawTTRMA) #Confirm import. Trial data is in seconds.
-```
-
-```{r}
-crabMetadataMA <- read.csv("../../../data/MA/crab-metadata-MA.csv", header = TRUE) %>%
-  dplyr::select(., c("number", "tank", "carapace.width", "carapace.length")) %>%
-  dplyr::rename(crab.ID = "number") #Import metadata. Select ID, treatment, width and length columns. Rename "ID" as "crab.ID"
-head(crabMetadataMA) #Confirm changes
-```
-
-```{r}
-genotypeDataMA <- read.csv("../../../data/MA/2024-crab-genotype-MA.csv", header = TRUE, na.strings = "") %>%
-  select(., -c(extraction.date:gel.date, notes:QC.gen)) %>%
-  mutate(., crab.ID = gsub(pattern = "MA-", replacement = "", x = ID)) %>%
-  mutate(., crab.ID = as.numeric(crab.ID)) %>%
-  mutate(., presenceC = case_when(genotype == "CC" ~ "Y",
-                                  genotype == "CT" ~ "Y",
-                                  genotype == "TT" ~ "N")) %>%
-  mutate(., presenceT = case_when(genotype == "CC" ~ "N",
-                                  genotype == "CT" ~ "Y",
-                                  genotype == "TT" ~ "Y")) #Import genotype data. Remove unnecessary columns. Create a crab.ID column to match with other data and ensure it is numeric. Add columns for precense of C and T
-head(genotypeDataMA) #Confirm genotype dataframe creation
-```
-
-```{r}
-modTTRMA <- rawTTRMA %>%
-  dplyr::select(., -notes) %>%
-  left_join(., crabMetadataMA, by = c("crab.ID", "tank", "carapace.width")) %>%
-  filter(., is.na(trial.1) == FALSE) %>%
-  mutate(., integument.cont = case_when(integument.color == "B/G" ~ 0.5,
-                                        integument.color == "G" ~ 1.0,
-                                        integument.color == "Y/G" ~ 1.5,
-                                        integument.color == "Y" ~ 2.0,
-                                        integument.color == "Y/O" ~ 2.5,
-                                        integument.color == "O" ~ 3,
-                                        integument.color == "R/O" ~ 3.5,
-                                        integument.color == "R" ~ 4)) %>%
-  mutate(., treatment = case_when(tank == "T01" ~ "0C",
-                                  tank == "T02" ~ "0C",
-                                  tank == "T03" ~ "0C",
-                                  tank == "T05" ~ "5C",
-                                  tank == "T06" ~ "5C",
-                                  tank == "T07" ~ "5C")) %>%
-  mutate(., missing.swimmer = case_when(missing.swimmer == "Y" ~ missing.swimmer,
-                                        missing.swimmer == "N" ~ missing.swimmer,
-                                        missing.swimmer == "Y " ~ "Y")) %>%
-  mutate(., trial.1 = na_if(trial.1, 91.00)) %>%
-  mutate(., trial.2 = na_if(trial.2, 91.00)) %>%
-  mutate(., trial.3 = na_if(trial.3, 91.00)) %>%
-  rowwise(.) %>% 
-  mutate(., TTRavg = mean(c(trial.1, trial.2, trial.3), na.rm = TRUE)) %>%
-  mutate(., TTRSE = std.error(c(trial.1, trial.2, trial.3), na.rm = TRUE)) %>%
-  left_join(x = ., y = (genotypeDataMA %>% dplyr::select(genotype:presenceT)), by = "crab.ID") %>%
-  ungroup(.) %>% 
-  mutate(., TTRthresh = case_when(!(is.na(trial.1 & trial.2 & trial.3) == FALSE) ~ 0,
-                                  is.na(trial.1 & trial.2 & trial.3) == FALSE ~ 1))
-#Remove sampling ID and notes columns. Use case_when to create a column of continuous integument color metrics. Change all 91 to NA, calculate average and SE using data from the three TTR trials using rowwise operations. Ungroup. Join with genotype data. Create a new column where 1 = righted within 90 seconds in all trials and 0 = failure to right within that threshold. Subset data from hours 0, 22, and 94.
-modTTRMA$population <- "MA" #Add column with population information
-head(modTTRMA) #Confirm formatting
-```
 
 ## Format data
 
@@ -1449,8 +875,6 @@ modTTRCombined <- rbind(modTTRMA, modTTRWA) %>%
 ```
 
 ## Run model
-
-### Average TTR
 
 ```{r}
 TTRCombinedNull <- lmer(log(TTRavg) ~ treatment + timepoint + treatment:timepoint + 
@@ -1471,119 +895,3 @@ anova(TTRCombinedNull, TTRPopulation) #Population is not a significant predictor
 
 Population is not a predictor of average TTR responses! 
 
-### Threshold analysis
-
-Next, I want to investigate the impact of population on failure to right.
-
-```{r}
-TTRthreshModelCombined <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
-                                  as.factor(population) +
-                                  as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
-                                  (1|crab.ID), 
-                                family = binomial(), 
-                                data = (modTTRCombined %>% filter(., is.na(genotype) == FALSE))) #Create a binomial model, where 1 = success of righting wihtin the defined threshold
-summary(TTRthreshModelCombined)
-```
-
-```{r}
-TTRthreshNullPopulation <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
-                                   as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
-                                   (1|crab.ID), 
-                                 family = binomial(), 
-                                 data = (modTTRCombined %>% filter(., is.na(genotype) == FALSE))) #Create null model without treatment
-anova(TTRthreshNullPopulation, TTRthreshModelCombined) #Population is not a factor in failure to right!
-```
-
-It's interesting that overall, population does not significantly impact failure to right. This seems...odd too me. I'm going to subset the data to the lower temperature and specific timepoints and rerun the model to continue my investigation. I think this approach makes sense because we know that in both populations, time and temperature significantly impacts failure to right.
-
-### Specific threshold analysis
-
-Since I'm looking into specific temperatures and timepoints, there are no repeated measures for individual crabs. I don't need to use a mixed-effects models!
-
-```{r}
-modTTRCombinedColder <- modTTRCombined %>%
-  filter(., treatment == "0C" | treatment == "1.5C") #Subset data from colder treatments where failure to right was recorded. 0C = MA, 1.5C = WA
-head(modTTRCombinedColder) #Confirm subsetting
-```
-
-#### 0 hours (`timepoint == 0`)
-
-```{r}
-TTRthreshModelCombined0 <- glm(I(TTRthresh == 1) ~ as.factor(population) +
-                                 as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer),
-                               family = binomial(), 
-                               data = (modTTRCombinedColder %>% filter(., timepoint == 0))) #Create a binomial model, where 1 = success of righting wihtin the defined threshold
-summary(TTRthreshModelCombined0) #No impact of population on failure to right at hour 0
-```
-
-#### 4 hours (`timepoint == 1`)
-
-```{r}
-TTRthreshModelCombined1 <- glm(I(TTRthresh == 1) ~ as.factor(population) +
-                                 as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer),
-                               family = binomial(), 
-                               data = (modTTRCombinedColder %>% filter(., timepoint == 1))) #Create a binomial model, where 1 = success of righting wihtin the defined threshold
-summary(TTRthreshModelCombined1) #No impact of population on failure to right at hour 4
-```
-
-#### 22 hours (`timepoint == 2`)
-
-```{r}
-TTRthreshModelCombined2 <- glm(I(TTRthresh == 1) ~ as.factor(population) +
-                                 as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer),
-                               family = binomial(), 
-                               data = (modTTRCombinedColder %>% filter(., timepoint == 2))) #Create a binomial model, where 1 = success of righting wihtin the defined threshold
-summary(TTRthreshModelCombined2) #Significant impact of population on failure to right at hour 22
-```
-
-#### 28 hours (`timepoint == 3`)
-
-```{r}
-TTRthreshModelCombined3 <- glm(I(TTRthresh == 1) ~ as.factor(population) +
-                                 as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer),
-                               family = binomial(), 
-                               data = (modTTRCombinedColder %>% filter(., timepoint == 3))) #Create a binomial model, where 1 = success of righting wihtin the defined threshold
-summary(TTRthreshModelCombined3) #Significant impact of population on failure to right at hour 28
-```
-
-#### 46 hours (`timepoint == 4`)
-
-```{r}
-TTRthreshModelCombined4 <- glm(I(TTRthresh == 1) ~ as.factor(population) +
-                                 as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer),
-                               family = binomial(), 
-                               data = (modTTRCombinedColder %>% filter(., timepoint == 4))) #Create a binomial model, where 1 = success of righting wihtin the defined threshold
-summary(TTRthreshModelCombined4) #Significant impact of population on failure to right at hour 46
-```
-
-#### 94 hours (`timepoint == 5`)
-
-```{r}
-TTRthreshModelCombined5 <- glm(I(TTRthresh == 1) ~ as.factor(population) +
-                                 as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer),
-                               family = binomial(), 
-                               data = (modTTRCombinedColder %>% filter(., timepoint == 5))) #Create a binomial model, where 1 = success of righting wihtin the defined threshold
-summary(TTRthreshModelCombined5) #Marginal impact of population on failure to right at the end of the experiment
-```
-
-#### Correct for multiple comparisons
-
-Since I've run multiple models, I need to correct for multiple comparisons!
-
-```{r}
-rbind(broom::tidy(TTRthreshModelCombined0) %>%
-        mutate(timepoint = 0),
-      broom::tidy(TTRthreshModelCombined1) %>%
-        mutate(timepoint = 1),
-      broom::tidy(TTRthreshModelCombined2) %>%
-        mutate(timepoint = 2),
-      broom::tidy(TTRthreshModelCombined3) %>%
-        mutate(timepoint = 3),
-      broom::tidy(TTRthreshModelCombined4) %>%
-        mutate(timepoint = 4),
-      broom::tidy(TTRthreshModelCombined5) %>%
-        mutate(timepoint = 5)) %>%
-  filter(., term == "as.factor(population)WA") %>%
-  mutate(., p.adj = p.adjust(p.value, method = "bonferroni")) %>%
-  write.csv("population-comparison-TTRthresh-stats.csv", quote = FALSE, row.names = FALSE) #Combine tidy output from GLMs. Filter out population comparison statistical information and correct for multiple comparisons. Save output as a .csv
-```
