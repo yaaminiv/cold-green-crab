@@ -465,7 +465,8 @@ ggsave("figures/time-to-right-genotype-WA.pdf", height = 8.5, width = 11)
 ```
 
 ```{r}
-genotypeWA %>%
+modTTRWA %>%
+  filter(., timepoint == 22) %>%
   filter(., is.na(genotype) == FALSE) %>%
   group_by(., genotype) %>%
   summarize(., count = n()) %>%
@@ -491,7 +492,8 @@ ggsave("figures/time-to-right-genotype-ME.pdf", height = 8.5, width = 11)
 ```
 
 ```{r}
-genotypeME %>%
+modTTRME %>%
+  filter(., timepoint == 22) %>%
   filter(., is.na(genotype) == FALSE) %>%
   group_by(., genotype) %>%
   summarize(., count = n()) %>%
@@ -517,7 +519,8 @@ ggsave("figures/time-to-right-genotype-NH.pdf", height = 8.5, width = 11)
 ```
 
 ```{r}
-genotypeNH %>%
+modTTRNH %>%
+  filter(., timepoint == 22) %>%
   filter(., is.na(genotype) == FALSE) %>%
   group_by(., genotype) %>%
   summarize(., count = n()) %>%
@@ -819,6 +822,8 @@ TTRModelComparisons <- rbind(broom::tidy(anova(TTRnullTimepointWA, TTRmodelWA)),
 TTRModelComparisons #Confirm modifications
 ```
 
+There is no significant impact of genotype on average TTR in WA, but there is a significant impact of genotype in ME and NH populations!
+
 ```{r}
 write.csv(TTRModelComparisons, "ttr-model-comparison-stat-output.csv", quote = FALSE, row.names = FALSE) #Save statistical output
 ```
@@ -855,7 +860,6 @@ rbind(modTTRWA %>%
 
 
 
-There is no significant impact of genotype on average TTR. There are some additional factors I want to understand: how genotype impacts whether or not a crab flipped, and how genotype impacted a difference in TTR.
 
 # Plots
 
