@@ -28,7 +28,6 @@ getwd()
 #install.packages("RColorBrewer")
 require(tidyverse)
 require(data.table)
-require(lme4)
 require(RColorBrewer)
 ```
 
@@ -299,25 +298,11 @@ write.csv(treatmentTempStats, "overall-temp-mean-sd.csv", quote = FALSE)
 
 # Statistical test
 
-I will conduct a one-way ANOVA to confirm there are significant differences between treatments during the first pulse, and to confirm that there are no significant differences between treatments during the pre-ramp, rest period, and second pulse.
+I will use a Kruskal-Wallis to confirm there are significant differences between treatments during the first pulse, and to confirm that there are no significant differences between treatments during the second pulse. I am using a Kruskal-Wallis test because there is missing data from some of the loggers due to failure, and ANOVAs cannot handle a bunch of missing values very well.
 
 ## Format data
 
-I need to make an individual data frame for each section of the experiment (pre-condition, pulse 1, rest, and pulse 2).
-
-```{r}
-tempPreExpLong <- tempClean[4:22,] %>%
-  pivot_longer(., cols = temp10a:temp13b, values_to = "temperature", names_to = "logger") %>%
-  mutate(., tank = case_when(logger == "temp10a" | logger == "temp10b" ~ "tank10",
-                             logger == "temp11a" | logger == "temp11b" ~ "tank11",
-                             logger == "temp12a" | logger == "temp12b" ~ "tank12",
-                             logger == "temp13a" | logger == "temp13b" ~ "tank13")) %>%
-  mutate(., condition = case_when(tank == "tank10" | tank == "tank12" ~ "control",
-                                  tank == "tank11" | tank == "tank13" ~ "treatment")) %>% 
-  dplyr::select(-logger) %>% 
-  drop_na() #Take pre-exposure data and pivot longer. Create tank and condition columns and remove logger column. Drop rows with NAs
-head(tempPreExpLong)
-```
+I need to make an individual data frame for each pulse.
 
 ```{r}
 tempPulse1Long <- tempClean[31:108,] %>%
@@ -331,20 +316,6 @@ tempPulse1Long <- tempClean[31:108,] %>%
   dplyr::select(-logger) %>% 
   drop_na() #Take pulse 1 data and pivot longer. Create tank and condition columns and remove logger column. Drop rows with NAs
 head(tempPulse1Long)
-```
-
-```{r}
-tempRestLong <- tempClean[112:291,] %>%
-  pivot_longer(., cols = temp10a:temp13b, values_to = "temperature", names_to = "logger") %>%
-  mutate(., tank = case_when(logger == "temp10a" | logger == "temp10b" ~ "tank10",
-                             logger == "temp11a" | logger == "temp11b" ~ "tank11",
-                             logger == "temp12a" | logger == "temp12b" ~ "tank12",
-                             logger == "temp13a" | logger == "temp13b" ~ "tank13")) %>%
-  mutate(., condition = case_when(tank == "tank10" | tank == "tank12" ~ "control",
-                                  tank == "tank11" | tank == "tank13" ~ "treatment")) %>% 
-  dplyr::select(-logger) %>% 
-  drop_na() #Take rest data and pivot longer. Create tank and condition columns and remove logger column. Drop rows with NAs
-head(tempRestLong)
 ```
 
 ```{r}
@@ -364,30 +335,46 @@ head(tempPulse2Long)
 ## Perform ANOVAs
 
 ```{r}
-tempPreExpANOVA <- aov(temperature ~ condition, data = tempPreExpLong)
-summary(tempPreExpANOVA)[[1]][4][[1]][1] #F = 8.519706
-summary(tempPreExpANOVA)[[1]][5][[1]][1] #p = 0.00411743
+tempPulse1Stats <- kruskal.test(temperature ~ condition, data = tempPulse1Long)
+tempPulse1Stats #Significant differences between treatments during the first pulse.
 ```
 
 ```{r}
-tempPulse1ANOVA <- aov(temperature ~ condition, data = tempPulse1Long)
-summary(tempPulse1ANOVA)[[1]][4][[1]][1] #F = 41860.97
-summary(tempPulse1ANOVA)[[1]][5][[1]][1] #p = 0
+tempPulse2Stats <- kruskal.test(temperature ~ condition, data = tempPulse2Long)
+tempPulse2Stats #Significant differences between treatments during the second pulse
+```
+
+As expected, the conditions at Pulse 1 were different between treatments, but the test also identified significant differences during the second pulse. I need to investigate this further.
+
+```{r}
+tempPulse2TankStats <- kruskal.test(temperature ~ tank, data = tempPulse2Long) #Investigate differences by tank
+tempPulse2TankStats #Significant differences between tanks during the second pulse
 ```
 
 ```{r}
-tempRestANOVA <- aov(temperature ~ condition, data = tempRestLong)
-summary(tempRestANOVA)[[1]][4][[1]][1] #F = 0.10543
-summary(tempRestANOVA)[[1]][5][[1]][1] #p = 0.7454668
+tempPulse2TankPairwise <- pairwise.wilcox.test(tempPulse2Long$temperature, tempPulse2Long$tank,
+                     p.adjust.method = "bonferroni") #Control tanks (10 and 12) are not significantly different from eachother. Tanks 11 and 13 (treatment) are significantly different from all other tanks. Tank 13 seems to have the largest difference between all tanks.
+tempPulse2TankPairwise
 ```
+
 
 ```{r}
-tempPulse2ANOVA <- aov(temperature ~ condition, data = tempPulse2Long)
-summary(tempPulse2ANOVA)[[1]][4][[1]][1] #F = 442.4941
-summary(tempPulse2ANOVA)[[1]][5][[1]][1] #p = 2.410091e-79
+rbind(broom::tidy(tempPulse1Stats) %>%
+        mutate(., pulse = 1),
+      broom::tidy(tempPulse2Stats) %>%
+        mutate(., pulse = 2),
+      broom::tidy(tempPulse2TankStats) %>%
+        mutate(., pulse = 2)) %>%
+  write.csv("kruskal-wallis-test-output.csv", quote = FALSE, row.names = FALSE) #Save table with KW test output
 ```
 
-As expected, the conditions at Pulse 1 were different between treatments. While the rest conditions were similar between treatments, the pre-exposure and pulse 2 conditions were not. Looking at the mean ± SD, the pre-exposure conditions do slightly overlap. The differences in pulse 2 are likely due to lower temperature in Tank 13. However, those SD bars do overlap a touch at the edges.
+
+```{r}
+broom::tidy(tempPulse2TankPairwise) %>%
+  write.csv("pairwise-wilcox-test-output-pulse2vtank.csv", quote = FALSE, row.names = FALSE) #Save pairwise test output
+```
+
+Tank 13 being different from all other tanks makes sense based on the tempreautre averages calculated above. Moving forward, I'll use tank as a random effect for the TTR analysis. I'll also need to plot all four tank temperatures during the second pulse.
 
 # Plot full temperature conditions
 

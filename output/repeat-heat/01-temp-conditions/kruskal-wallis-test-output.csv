@@ -1,0 +1,4 @@
+statistic,p.value,parameter,method,pulse
+242.40315414223,1.17685051030967e-54,1,Kruskal-Wallis rank sum test,1
+230.130410927062,5.58344408136316e-52,1,Kruskal-Wallis rank sum test,2
+499.476522876932,6.19606038367451e-108,3,Kruskal-Wallis rank sum test,2
