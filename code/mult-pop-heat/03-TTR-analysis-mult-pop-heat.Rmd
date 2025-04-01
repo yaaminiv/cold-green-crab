@@ -542,28 +542,28 @@ ggsave("figures/genotype-pie-chart-NH.jpg", height = 8.5, width = 11)
 Since I have the genotype data, I want to see if my population is in Hardy-Weinbergy equilibrium. I used [this calculator](https://www.cog-genomics.org/software/stats) to obtain p-values.
 
 ```{r}
-genSummarizedWA <- genotypeWA %>%
-  filter(., is.na(genotype) == FALSE) %>%
+genSummarizedWA <- modTTRWA %>%
+  filter(., timepoint == 22) %>%
   group_by(., genotype) %>%
   summarize(., count = n())
 genSummarizedWA
 ```
 
-WA population p-value: 0.21618933186133
+WA population p-value: 0.083319498041584
 
 ```{r}
-genSummarizedME <- genotypeME %>%
-  filter(., is.na(genotype) == FALSE) %>%
+genSummarizedME <- modTTRME %>%
+  filter(., timepoint == 22) %>%
   group_by(., genotype) %>%
   summarize(., count = n())
 genSummarizedME
 ```
 
-Full population p-value: 0.64694443906897
+Full population p-value: 0.55112220438981
 
 ```{r}
-genSummarizedNH <- genotypeNH %>%
-  filter(., is.na(genotype) == FALSE) %>%
+genSummarizedNH <- modTTRNH %>%
+  filter(., timepoint == 22) %>%
   group_by(., genotype) %>%
   summarize(., count = n())
 genSummarizedNH
