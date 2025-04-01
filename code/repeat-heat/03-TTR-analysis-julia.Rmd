@@ -130,6 +130,8 @@ This population is in Hardy-Weinberg equilibrium!
 
 ## Mixed effects model
 
+In addition to crab ID, I will need to include tank as a random effect since there were significant differences in tank temperatures during the second pulse.
+
 ```{r}
 hist(modTTR$TTRavg)
 hist(x = log(modTTR$TTRavg)) #Log transformation helps normalize data
@@ -138,32 +140,33 @@ hist(x = log(modTTR$TTRavg)) #Log transformation helps normalize data
 ```{r}
 TTRmodel <- lmer(log(TTRavg) ~ as.factor(treatment) + day + as.factor(treatment):day + 
                    as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
-                   (1|crab.ID), 
+                   (1|crab.ID) + (1|tank), 
                  data = modTTR, REML = FALSE) #Run model with treatment, timepoint, their interaction, sex, integument color, carapace width, weight, and missing swimmer information as fixed effects, and individual as a random effect. Change the likelihood estimator (REML = FALSE) to compare models with LRT later. Use data without rows with NAs
 summary(TTRmodel) #Look at model output.
 #Residuals explain more random effect variation than crab ID, crab ID explains very little variation
 ```
 
 ```{r}
-var.lmer <- c(0.02054, 0.22874) #Save variances of random effects as a new vector (crab ID, residuals)
+var.lmer <- c(0.02054, 0, 0.22874) #Save variances of random effects as a new vector (crab ID, tank, residuals)
 percentvar.lmer <- (100*var.lmer)/sum(var.lmer) #Calculate percent variances
 percentvar.lmer[1] #Crab ID accounts for 8.23973% of variance
+percentvar.lmer[2] #Tank accounts for 0% of the variance!
 ```
 
 Now that I've run the full model, I want to test the importance of treatment, day, and their interaction as predictors. I'll include all other factors in the null model to account for any variation they may contribute.
 
 ```{r}
-TTRnullTreatment <- lmer(log(TTRavg) ~ day + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID), data = modTTR, REML = FALSE) #Run null model without treatment to identify significance of predictor
+TTRnullTreatment <- lmer(log(TTRavg) ~ day + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID) + (1|tank), data = modTTR, REML = FALSE) #Run null model without treatment to identify significance of predictor
 anova(TTRnullTreatment, TTRmodel) #Treatment is a significant predictor
 ```
 
 ```{r}
-TTRnullDay <- lmer(log(TTRavg) ~ as.factor(treatment) + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID), data = modTTR, REML = FALSE) #Run null model without day to identify significance of predictor
+TTRnullDay <- lmer(log(TTRavg) ~ as.factor(treatment) + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID) + (1|tank), data = modTTR, REML = FALSE) #Run null model without day to identify significance of predictor
 anova(TTRnullDay, TTRmodel) #Day is a significant predictor
 ```
 
 ```{r}
-TTRnullInteraction <- lmer(log(TTRavg) ~ as.factor(treatment) + day + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID), data = modTTR, REML = FALSE) #Run model without interaction to identify significance of predictor. The full model constructed does not include an interaction
+TTRnullInteraction <- lmer(log(TTRavg) ~ as.factor(treatment) + day + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID) + (1|tank), data = modTTR, REML = FALSE) #Run model without interaction to identify significance of predictor. The full model constructed does not include an interaction
 anova(TTRnullInteraction, TTRmodel) #Interaction is a significant predictor
 ```
 
@@ -202,17 +205,17 @@ abline(h = 0, lty = 2, col = "grey")
 Now that I know treatment, time, and their interaction significantly impact TTR, I want to add in genotype and sourcing information.
 
 ```{r}
-TTRfullGenotype <- lmer(log(TTRavg) ~ as.factor(treatment) + day + as.factor(treatment):day + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + as.factor(genotype) + (1|crab.ID), data = modTTR, REML = FALSE) #Run model with genotype to identify4 significance of predictor
+TTRfullGenotype <- lmer(log(TTRavg) ~ as.factor(treatment) + day + as.factor(treatment):day + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + as.factor(genotype) + (1|crab.ID) + (1|tank), data = modTTR, REML = FALSE) #Run model with genotype to identify4 significance of predictor
 anova(TTRmodel, TTRfullGenotype) #No significant impact of genotype
 ```
 
 ```{r}
-TTRpresenceC <- lmer(log(TTRavg) ~ as.factor(treatment) + day + as.factor(treatment):day + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + as.factor(presenceC) + (1|crab.ID), data = modTTR, REML = FALSE) #Run model with genotype to identify significance of predictor
+TTRpresenceC <- lmer(log(TTRavg) ~ as.factor(treatment) + day + as.factor(treatment):day + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + as.factor(presenceC) + (1|crab.ID) + (1|tank), data = modTTR, REML = FALSE) #Run model with genotype to identify significance of predictor
 anova(TTRmodel, TTRpresenceC) #No significant impact of C allele
 ```
 
 ```{r}
-TTRpresenceT <- lmer(log(TTRavg) ~ as.factor(treatment) + day + as.factor(treatment):day + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + as.factor(presenceT) + (1|crab.ID), data = modTTR, REML = FALSE) #Run model with genotype to identify significance of predictor
+TTRpresenceT <- lmer(log(TTRavg) ~ as.factor(treatment) + day + as.factor(treatment):day + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + as.factor(presenceT) + (1|crab.ID) + (1|tank), data = modTTR, REML = FALSE) #Run model with genotype to identify significance of predictor
 anova(TTRmodel, TTRpresenceT) #Marginal impact of T allele
 ```
 
@@ -229,6 +232,7 @@ TTRModelComparisons
 ```{r}
 TTRModelComparisons <- TTRModelComparisons %>%
   mutate(p.adj = p.adjust(p.value, method = "bonferroni")) #Perform p-value corrections
+TTRModelComparisons
 ```
 
 ```{r}
