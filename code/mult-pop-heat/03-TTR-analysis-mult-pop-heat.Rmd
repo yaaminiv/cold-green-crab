@@ -454,6 +454,80 @@ modTTRNH %>%
 #CW = 68.53333 mm ± 7.443757 mm
 ```
 
+## Parasite
+
+```{r}
+modTTRME %>%
+  ggplot(., mapping = aes(x = timepoint, y = TTRavg, color = Meta)) +
+  geom_jitter(alpha = 0.8) +
+  scale_x_continuous(name = "timepoint",
+                     breaks = unique(modTTRME$timepoint)) +
+  scale_y_continuous(name = "Average Time-to-Right (s)",
+                     breaks = seq(0, 95, 10)) +
+  theme_classic(base_size = 15)
+ggsave("figures/time-to-right-meta-ME.pdf", height = 8.5, width = 11)
+```
+
+```{r}
+modTTRME %>%
+  ggplot(., mapping = aes(x = timepoint, y = TTRavg, color = meta_Intensity)) +
+  geom_jitter(alpha = 0.8) +
+  scale_x_continuous(name = "timepoint",
+                     breaks = unique(modTTRME$timepoint)) +
+  scale_y_continuous(name = "Average Time-to-Right (s)",
+                     breaks = seq(0, 95, 10)) +
+  theme_classic(base_size = 15)
+ggsave("figures/time-to-right-meta_Intensity-ME.pdf", height = 8.5, width = 11)
+```
+
+```{r}
+modTTRME %>%
+  filter(., timepoint == 22) %>%
+  summarize(., meta_mean = mean(Meta, na.rm = TRUE),
+            meta_sd = sd(Meta, na.rm = TRUE),
+            meta_Intensity_mean = mean(meta_Intensity, na.rm = TRUE),
+            meta_Intensity_sd = sd(meta_Intensity, na.rm = TRUE))
+
+#Meta: 23.46667 ± 27.01817	
+#Meta intensity: 0.4614469 ± 0.5599341
+```
+
+```{r}
+modTTRNH %>%
+  ggplot(., mapping = aes(x = timepoint, y = TTRavg, color = meta_Intensity)) +
+  geom_jitter(alpha = 0.8) +
+  scale_x_continuous(name = "timepoint",
+                     breaks = unique(modTTRNH$timepoint)) +
+  scale_y_continuous(name = "Average Time-to-Right (s)",
+                     breaks = seq(0, 95, 10)) +
+  theme_classic(base_size = 15)
+ggsave("figures/time-to-right-meta_Intensity-NH.pdf", height = 8.5, width = 11)
+```
+
+```{r}
+modTTRNH %>%
+  filter(., timepoint == 22) %>%
+  summarize(., meta_mean = mean(Meta, na.rm = TRUE),
+            meta_sd = sd(Meta, na.rm = TRUE),
+            meta_Intensity_mean = mean(meta_Intensity, na.rm = TRUE),
+            meta_Intensity_sd = sd(meta_Intensity, na.rm = TRUE))
+
+#Meta:
+#Meta intensity:
+```
+
+```{r}
+modTTRNH %>%
+  filter(., timepoint == 22) %>%
+  summarize(., acanth_mean = mean(Acanth, na.rm = TRUE),
+            acanth_sd = sd(Acanth, na.rm = TRUE),
+            acanth_Intensity_mean = mean(acanth_Intensity, na.rm = TRUE),
+            acanth_Intensity_sd = sd(acanth_Intensity, na.rm = TRUE))
+
+#Acanth: 	
+#Acanth intensity: 
+```
+
 ## Genotype
 
 ```{r}
