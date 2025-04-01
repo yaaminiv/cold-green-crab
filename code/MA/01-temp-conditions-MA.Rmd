@@ -318,6 +318,12 @@ cbind(tank1a, tank1b,
   geom_line(aes(x = dateTime, y = coldTemp), color = plotColors[2]) +
   geom_ribbon(aes(x = dateTime, y = colderMeanMA, ymin = colderMeanMA - colderSDMA, ymax = colderMeanMA + colderSDMA), fill = plotColors[1], alpha = 0.15) +
   geom_hline(yintercept = colderMeanMA, colour = plotColors[1], linetype = 3) +
+  geom_vline(xintercept = as.POSIXct(ymd_hms("2024-06-24 07:30:00")), linetype = 3, color = "black") + #Hour 0 TTR
+  geom_vline(xintercept = as.POSIXct(ymd_hms("2024-06-24 18:00:00")), linetype = 3, color = "black") + #Hour 4 TTR
+  geom_vline(xintercept = as.POSIXct(ymd_hms("2024-06-25 09:00:00")), linetype = 3, color = "black") + #Hour 22 TTR
+  geom_vline(xintercept = as.POSIXct(ymd_hms("2024-06-25 15:00:00")), linetype = 3, color = "black") + #Hour 28 TTR
+  geom_vline(xintercept = as.POSIXct(ymd_hms("2024-06-26 09:00:00")), linetype = 3, color = "black") + #Hour 46 TTR
+  geom_vline(xintercept = as.POSIXct(ymd_hms("2024-06-28 09:00:00")), linetype = 3, color = "black") + #Hour 96 TTR
   scale_x_datetime(name = "") +
   scale_y_continuous(name = "Temperature (ºC)",
                      breaks = c(seq(0,5,1), seq(5,15,5))) +
@@ -354,6 +360,12 @@ MAconditions <- cbind(tank1a, tank1b,
   geom_line(aes(x = dateTime, y = coldTemp), color = plotColors[2]) +
   geom_ribbon(aes(x = dateTime, y = colderMeanMA, ymin = colderMeanMA - colderSDMA, ymax = colderMeanMA + colderSDMA), fill = plotColors[1], alpha = 0.15) +
   geom_hline(yintercept = colderMeanMA, colour = plotColors[1], linetype = 3) +
+  geom_vline(xintercept = as.POSIXct(ymd_hms("2024-06-24 07:30:00")), linetype = 3, color = "black") + #Hour 0 TTR
+  geom_vline(xintercept = as.POSIXct(ymd_hms("2024-06-24 18:00:00")), linetype = 3, color = "black") + #Hour 4 TTR
+  geom_vline(xintercept = as.POSIXct(ymd_hms("2024-06-25 09:00:00")), linetype = 3, color = "black") + #Hour 22 TTR
+  geom_vline(xintercept = as.POSIXct(ymd_hms("2024-06-25 15:00:00")), linetype = 3, color = "black") + #Hour 28 TTR
+  geom_vline(xintercept = as.POSIXct(ymd_hms("2024-06-26 09:00:00")), linetype = 3, color = "black") + #Hour 46 TTR
+  geom_vline(xintercept = as.POSIXct(ymd_hms("2024-06-28 09:00:00")), linetype = 3, color = "black") + #Hour 96 TTR
   scale_x_datetime(name = "") +
   scale_y_continuous(name = "Temperature (ºC)",
                      breaks = c(seq(0,5,1), seq(5,15,5))) +
