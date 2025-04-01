@@ -231,41 +231,52 @@ coldSDMA
 
 # Statistical test
 
-I will conduct a one-way ANOVA to confirm there are significant differences between treatments.
+I will conduct use a Kruskal-Wallis test to confirm there are significant differences between treatments.
 
 ```{r}
 tempDataLong <- rbind(tank1a %>%
+                        slice(-c(1:87)) %>%
                         dplyr::rename(temp = "temp1a"), 
                       tank1b %>%
+                        slice(-c(1:87)) %>%
                         dplyr::rename(temp = "temp1b"),
                       tank2a %>%
+                        slice(-c(1:87)) %>%
                         dplyr::rename(temp = "temp2a"), 
                       tank2b %>%
+                        slice(-c(1:87)) %>%
                         dplyr::rename(temp = "temp2b"),
                       tank3a %>%
+                        slice(-c(1:87)) %>%
                         dplyr::rename(temp = "temp3a"), 
                       tank3b %>%
+                        slice(-c(1:87)) %>%
                         dplyr::rename(temp = "temp3b"),
                       tank5a %>%
+                        slice(-c(1:87)) %>%
                         dplyr::rename(temp = "temp5a"), 
                       tank5b %>%
+                        slice(-c(1:87)) %>%
                         dplyr::rename(temp = "temp5b"),
                       tank6a %>%
+                        slice(-c(1:87)) %>%
                         dplyr::rename(temp = "temp6a"), 
                       tank6b %>%
+                        slice(-c(1:87)) %>%
                         dplyr::rename(temp = "temp6b"),
                       tank7a %>%
+                        slice(-c(1:87)) %>%
                         dplyr::rename(temp = "temp7a"), 
                       tank7b %>%
+                        slice(-c(1:87)) %>%
                         dplyr::rename(temp = "temp7b")) %>% 
-  drop_na() #Create long dataframe for ANOVA and remove rows with NAs
+  drop_na() #Create long dataframe for statistical testing. Remove ramp down temperatures and rows with NAs.
 tail(tempDataLong) #Confirm dataframe creation
 ```
 
 ```{r}
-tempANOVA <- aov(temp ~ treatment, data = tempDataLong) #One-way ANOVA by treatment
-summary(tempANOVA)[[1]][4][[1]][1] # F = 1028.818
-summary(tempANOVA)[[1]][5][[1]][1] # P-value = 2.797163e-205
+tempStats <- kruskal.test(temp ~ treatment, data = tempDataLong) #One-way ANOVA by treatment
+tempStats #Significant differences between temperature treatments. Chi-sq: 2941.4, p-value = 0
 ```
 
 # Plot full temperature conditions (including ramp down)
