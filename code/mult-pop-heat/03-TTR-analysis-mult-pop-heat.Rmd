@@ -326,6 +326,130 @@ modTTRNH %>%
 ggsave("figures/time-to-right-missswim-NH.pdf", height = 8.5, width = 11)
 ```
 
+## Weight
+
+```{r}
+modTTRWA %>%
+  ggplot(., mapping = aes(x = timepoint, y = TTRavg, color = weight)) +
+  geom_jitter(alpha = 0.8) +
+  scale_x_continuous(name = "timepoint",
+                     breaks = unique(modTTRWA$timepoint)) +
+  scale_y_continuous(name = "Average Time-to-Right (s)",
+                     breaks = seq(0, 100, 10)) +
+  theme_classic(base_size = 15)
+ggsave("figures/time-to-right-weight-WA.pdf", height = 8.5, width = 11)
+```
+
+```{r}
+modTTRWA %>%
+  filter(timepoint == 0) %>%
+  summarize(., weight_mean = mean(weight, na.rm = TRUE),
+            weight_sd = sd(weight, na.rm = TRUE)) #Calculate mean ± SD for weight
+#Weight = 25.11071 g ± 11.35336 g
+```
+
+```{r}
+modTTRME %>%
+  ggplot(., mapping = aes(x = timepoint, y = TTRavg, color = weight)) +
+  geom_jitter(alpha = 0.8) +
+  scale_x_continuous(name = "timepoint",
+                     breaks = unique(modTTRME$timepoint)) +
+  scale_y_continuous(name = "Average Time-to-Right (s)",
+                     breaks = seq(0, 100, 10)) +
+  theme_classic(base_size = 15)
+ggsave("figures/time-to-right-weight-ME.pdf", height = 8.5, width = 11)
+```
+
+```{r}
+modTTRME %>%
+  filter(timepoint == 0) %>%
+  summarize(., weight_mean = mean(weight, na.rm = TRUE),
+            weight_sd = sd(weight, na.rm = TRUE)) #Calculate mean ± SD for weight
+#Weight = 28.094 g ± 7.443818 g
+```
+
+```{r}
+modTTRNH %>%
+  ggplot(., mapping = aes(x = timepoint, y = TTRavg, color = weight)) +
+  geom_jitter(alpha = 0.8) +
+  scale_x_continuous(name = "timepoint",
+                     breaks = unique(modTTRNH$timepoint)) +
+  scale_y_continuous(name = "Average Time-to-Right (s)",
+                     breaks = seq(0, 100, 10)) +
+  theme_classic(base_size = 15)
+ggsave("figures/time-to-right-weight-NH.pdf", height = 8.5, width = 11)
+```
+
+```{r}
+modTTRNH %>%
+  filter(timepoint == 0) %>%
+  summarize(., weight_mean = mean(weight, na.rm = TRUE),
+            weight_sd = sd(weight, na.rm = TRUE)) #Calculate mean ± SD for weight
+#Weight = 73.25467 g ± 21.15626 g
+```
+
+## Carapace width
+
+```{r}
+modTTRWA %>%
+  ggplot(., mapping = aes(x = timepoint, y = TTRavg, color = carapace.width)) +
+  geom_jitter(alpha = 0.8) +
+  scale_x_continuous(name = "timepoint",
+                     breaks = unique(modTTRWA$timepoint)) +
+  scale_y_continuous(name = "Average Time-to-Right (s)",
+                     breaks = seq(0, 100, 10)) +
+  theme_classic(base_size = 15)
+ggsave("figures/time-to-right-carapaceWidth-WA.pdf", height = 8.5, width = 11)
+```
+
+```{r}
+modTTRWA %>%
+  filter(timepoint == 0) %>%
+  summarize(., cw_mean = mean(carapace.width, na.rm = TRUE),
+            cw_sd = sd(carapace.width, na.rm = TRUE)) #Calculate mean ± SD for carapace width
+#CW = 48.92857 mm ± 5.623552 mm
+```
+
+```{r}
+modTTRME %>%
+  ggplot(., mapping = aes(x = timepoint, y = TTRavg, color = carapace.width)) +
+  geom_jitter(alpha = 0.8) +
+  scale_x_continuous(name = "timepoint",
+                     breaks = unique(modTTRME$timepoint)) +
+  scale_y_continuous(name = "Average Time-to-Right (s)",
+                     breaks = seq(0, 100, 10)) +
+  theme_classic(base_size = 15)
+ggsave("figures/time-to-right-carapaceWidth-ME.pdf", height = 8.5, width = 11)
+```
+
+```{r}
+modTTRME %>%
+  filter(timepoint == 0) %>%
+  summarize(., cw_mean = mean(carapace.width, na.rm = TRUE),
+            cw_sd = sd(carapace.width, na.rm = TRUE)) #Calculate mean ± SD for carapace width
+#CW = 50.76667 mm ± 4.11627 mm
+```
+
+```{r}
+modTTRNH %>%
+  ggplot(., mapping = aes(x = timepoint, y = TTRavg, color = carapace.width)) +
+  geom_jitter(alpha = 0.8) +
+  scale_x_continuous(name = "timepoint",
+                     breaks = unique(modTTRNH$timepoint)) +
+  scale_y_continuous(name = "Average Time-to-Right (s)",
+                     breaks = seq(0, 100, 10)) +
+  theme_classic(base_size = 15)
+ggsave("figures/time-to-right-carapaceWidth-NH.pdf", height = 8.5, width = 11)
+```
+
+```{r}
+modTTRNH %>%
+  filter(timepoint == 0) %>%
+  summarize(., cw_mean = mean(carapace.width, na.rm = TRUE),
+            cw_sd = sd(carapace.width, na.rm = TRUE)) #Calculate mean ± SD for carapace width
+#CW = 68.53333 mm ± 7.443757 mm
+```
+
 # CODE IN PROGRESS
 
 
@@ -333,49 +457,7 @@ ggsave("figures/time-to-right-missswim-NH.pdf", height = 8.5, width = 11)
 
 
 
-## Weight
 
-```{r}
-modTTR %>%
-  ggplot(., mapping = aes(x = timepoint, y = TTRavg, color = weight)) +
-  geom_jitter(alpha = 0.8) +
-  scale_x_continuous(name = "timepoint",
-                     breaks = unique(modTTR$timepoint)) +
-  scale_y_continuous(name = "Average Time-to-Right (s)",
-                     breaks = seq(0, 100, 10)) +
-  theme_classic(base_size = 15)
-ggsave("figures/time-to-right-weight.pdf", height = 8.5, width = 11)
-```
-
-```{r}
-modTTR %>%
-  filter(timepoint == 0) %>%
-  summarize(., weight_mean = mean(weight, na.rm = TRUE),
-            weight_sd = sd(weight, na.rm = TRUE)) #Calculate mean ± SD for weight
-#Weight = 32.84938 g ± 7.61794 g
-```
-
-## Carapace width
-
-```{r}
-modTTR %>%
-  ggplot(., mapping = aes(x = timepoint, y = TTRavg, color = carapace.width)) +
-  geom_jitter(alpha = 0.8) +
-  scale_x_continuous(name = "timepoint",
-                     breaks = unique(modTTR$timepoint)) +
-  scale_y_continuous(name = "Average Time-to-Right (s)",
-                     breaks = seq(0, 100, 10)) +
-  theme_classic(base_size = 15)
-ggsave("figures/time-to-right-carapaceWidth.pdf", height = 8.5, width = 11)
-```
-
-```{r}
-modTTR %>%
-  filter(timepoint == 0) %>%
-  summarize(., cw_mean = mean(carapace.width, na.rm = TRUE),
-            cw_sd = sd(carapace.width, na.rm = TRUE)) #Calculate mean ± SD for carapace width
-#CW = 52.95062 mm ± 4.012173 mm
-```
 
 ## Genotype
 
