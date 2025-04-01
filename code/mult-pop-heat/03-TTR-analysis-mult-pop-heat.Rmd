@@ -238,28 +238,14 @@ modTTRNH %>%
 ggsave("figures/time-to-right-sex-NH.pdf", height = 8.5, width = 11)
 ```
 
-## Tank
-
-```{r}
-modTTR %>%
-  ggplot(., mapping = aes(x = timepoint, y = TTRavg, color = tank)) +
-  geom_jitter(alpha = 0.75) +
-  scale_x_continuous(name = "timepoint",
-                     breaks = unique(modTTR$timepoint)) +
-  scale_y_continuous(name = "Average Time-to-Right (s)",
-                     breaks = seq(0, 100, 10)) +
-  theme_classic(base_size = 15)
-ggsave("figures/time-to-right-tank.pdf", height = 8.5, width = 11)
-```
-
 ## Integument color
 
 ```{r}
-modTTR %>%
+modTTRWA %>%
   ggplot(., mapping = aes(x = timepoint, y = TTRavg, color = integument.color)) +
   geom_jitter(alpha = 0.8) +
   scale_x_continuous(name = "timepoint",
-                     breaks = unique(modTTR$timepoint)) +
+                     breaks = unique(modTTRWA$timepoint)) +
   scale_y_continuous(name = "Average Time-to-Right (s)",
                      breaks = seq(0, 100, 10)) +
   scale_color_manual(values = c("#66C2A5","#A6D96A","#D9EF8B","#FFFF99","#FDAE61","#F46D43","#D53E4F"),
@@ -267,24 +253,78 @@ modTTR %>%
                      breaks = c("BG", "G", "YG", "Y", "YO", "O", "RO"),
                      labels = c("BG", "G", "YG", "Y", "YO", "O", "RO")) +
   theme_classic(base_size = 15)
-ggsave("figures/time-to-right-integument.pdf", height = 8.5, width = 11)
+ggsave("figures/time-to-right-integument-WA.pdf", height = 8.5, width = 11)
+```
+
+```{r}
+modTTRME %>%
+  ggplot(., mapping = aes(x = timepoint, y = TTRavg, color = integument.color)) +
+  geom_jitter(alpha = 0.8) +
+  scale_x_continuous(name = "timepoint",
+                     breaks = unique(modTTRME$timepoint)) +
+  scale_y_continuous(name = "Average Time-to-Right (s)",
+                     breaks = seq(0, 100, 10)) +
+  scale_color_manual(values = c("#66C2A5","#A6D96A","#D9EF8B","#FFFF99","#FDAE61","#F46D43","#D53E4F"),
+                     name = "Integument",
+                     breaks = c("BG", "G", "YG", "Y", "YO", "O", "RO"),
+                     labels = c("BG", "G", "YG", "Y", "YO", "O", "RO")) +
+  theme_classic(base_size = 15)
+ggsave("figures/time-to-right-integument-ME.pdf", height = 8.5, width = 11)
+```
+
+```{r}
+modTTRNH %>%
+  ggplot(., mapping = aes(x = timepoint, y = TTRavg, color = integument.color)) +
+  geom_jitter(alpha = 0.8) +
+  scale_x_continuous(name = "timepoint",
+                     breaks = unique(modTTRNH$timepoint)) +
+  scale_y_continuous(name = "Average Time-to-Right (s)",
+                     breaks = seq(0, 100, 10)) +
+  scale_color_manual(values = c("#66C2A5","#A6D96A","#D9EF8B","#FFFF99","#FDAE61","#F46D43","#D53E4F"),
+                     name = "Integument",
+                     breaks = c("BG", "G", "YG", "Y", "YO", "O", "RO"),
+                     labels = c("BG", "G", "YG", "Y", "YO", "O", "RO")) +
+  theme_classic(base_size = 15)
+ggsave("figures/time-to-right-integument-NH.pdf", height = 8.5, width = 11)
 ```
 
 ## Missing swimmer
 
 ```{r}
-modTTR %>%
+modTTRWA %>%
   ggplot(., mapping = aes(x = timepoint, y = TTRavg, color = as.factor(missing.swimmer))) +
   geom_jitter(alpha = 0.8) +
   scale_x_continuous(name = "timepoint",
-                     breaks = unique(modTTR$timepoint)) +
+                     breaks = unique(modTTRWA$timepoint)) +
   scale_y_continuous(name = "Average Time-to-Right (s)",
                      breaks = seq(0, 100, 10)) +
   theme_classic(base_size = 15)
-ggsave("figures/time-to-right-missswim.pdf", height = 8.5, width = 11)
+ggsave("figures/time-to-right-missswim-WA.pdf", height = 8.5, width = 11)
 ```
 
+```{r}
+modTTRME %>%
+  ggplot(., mapping = aes(x = timepoint, y = TTRavg, color = as.factor(missing.swimmer))) +
+  geom_jitter(alpha = 0.8) +
+  scale_x_continuous(name = "timepoint",
+                     breaks = unique(modTTRME$timepoint)) +
+  scale_y_continuous(name = "Average Time-to-Right (s)",
+                     breaks = seq(0, 100, 10)) +
+  theme_classic(base_size = 15)
+ggsave("figures/time-to-right-missswim-ME.pdf", height = 8.5, width = 11)
+```
 
+```{r}
+modTTRNH %>%
+  ggplot(., mapping = aes(x = timepoint, y = TTRavg, color = as.factor(missing.swimmer))) +
+  geom_jitter(alpha = 0.8) +
+  scale_x_continuous(name = "timepoint",
+                     breaks = unique(modTTRNH$timepoint)) +
+  scale_y_continuous(name = "Average Time-to-Right (s)",
+                     breaks = seq(0, 100, 10)) +
+  theme_classic(base_size = 15)
+ggsave("figures/time-to-right-missswim-NH.pdf", height = 8.5, width = 11)
+```
 
 # CODE IN PROGRESS
 
