@@ -898,81 +898,94 @@ ggsave("figures/time-to-right-avg-boxplot.pdf", height = 8.5, width = 11)
 
 ## Genotype effect plots
 
-
-# CODE IN PROGRESS
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+```{r}
+rbind(modTTRME %>%
+        mutate(., population = "ME"),
+      modTTRNH %>%
+        mutate(., population = "NH")) %>%
+  dplyr::select(., c(timepoint, TTRavg, genotype, population)) %>%
+  filter(., is.na(TTRavg) == FALSE) %>%
+  distinct(.) %>%
+  ggplot(mapping = aes(x = as.character(timepoint), y = TTRavg, color = population, shape = population)) +
+  geom_boxplot(outlier.shape = NA) + 
+  geom_jitter(position = position_dodge(width = 0.75)) +
+  facet_grid(population~genotype, scale = "free_y") +
+  scale_y_continuous(name = "Average Time-to-Right (s)") +
+  scale_x_discrete(name = "Exposure Time (Hours)",
+                   labels = c(0, 22)) +
+  scale_color_manual(values = c(plotColors[1], plotColors[2], plotColors[3]),
+                     guide = "none") +
+  scale_shape_manual(values = c(15, 19, 17),
+                     guide = "none") +
+  theme_classic(base_size = 15) + theme(strip.background = element_rect(color = "white"),
+                                        strip.text.y = element_blank()) #Plot average TTR for each crab in a boxplot. Do not show outliers with the OG boxplot, but add them in with geom_jitter. Assign colors and shapes to each treatment. Increase base font size.
+ggsave("figures/time-to-right-by-genotype.pdf", height = 8.5, width = 11)
+```
 
 ## Multipanel plot
 
 ```{r}
-averageTTRWA <- modTTR %>%
-  dplyr::select(., c(timepoint, treatment, TTRavg)) %>%
+mainPlot <- rbind(modTTRWA %>%
+        mutate(., population = "WA",
+               Meta = 0,
+               Acanth = 0,
+               meta_Intensity = "NA",
+               acanth_Intensity = "NA"), 
+      modTTRME %>%
+        mutate(., population = "ME"),
+      modTTRNH %>%
+        mutate(., population = "NH")) %>%
+  dplyr::select(., c(timepoint, TTRavg, population)) %>%
   filter(., is.na(TTRavg) == FALSE) %>%
   distinct(.) %>%
-  ggplot(mapping = aes(x = as.character(timepoint), y = TTRavg, color = treatment, shape = treatment)) +
+  ggplot(mapping = aes(x = as.character(timepoint), y = TTRavg, color = population, shape = population)) +
   geom_boxplot(outlier.shape = NA) + 
   geom_jitter(position = position_dodge(width = 0.75)) +
-  scale_y_continuous(name = "Average Time-to-Right (s)",
-                     breaks = c(seq(0, 20, 5), seq(20, 100, 20))) +
+  facet_wrap(~population, scale = "free_y") +
+  scale_y_continuous(name = "Average Time-to-Right (s)") +
   scale_x_discrete(name = "Exposure Time (Hours)",
-                   breaks = unique(modTTR$timepoint),
-                   labels = c(0, 4, 22, 28, 46, 94)) +
+                   labels = c(0, 22)) +
+  scale_color_manual(values = c(plotColors[1], plotColors[2], plotColors[3]),
+                     guide = "none") +
+  scale_shape_manual(values = c(15, 19, 17),
+                     guide = "none") +
+  ggtitle("A. Righting Response by Population") +
+  theme_classic(base_size = 15) + theme(strip.background = element_rect(color = "white")) #Plot average TTR for each crab in a boxplot. Do not show outliers with the OG boxplot, but add them in with geom_jitter. Assign colors and shapes to each treatment. Increase base font size.
+mainPlot
+```
+
+```{r}
+genotypePlot <- rbind(modTTRME %>%
+        mutate(., population = "ME"),
+      modTTRNH %>%
+        mutate(., population = "NH")) %>%
+  dplyr::select(., c(timepoint, TTRavg, genotype, population)) %>%
+  filter(., is.na(TTRavg) == FALSE) %>%
+  distinct(.) %>%
+  ggplot(mapping = aes(x = as.character(timepoint), y = TTRavg, color = population, shape = population)) +
+  geom_boxplot(outlier.shape = NA) + 
+  geom_jitter(position = position_dodge(width = 0.75)) +
+  facet_grid(population~genotype, scale = "free_y") +
+  scale_y_continuous(name = "Average Time-to-Right (s)") +
+  scale_x_discrete(name = "Exposure Time (Hours)",
+                   labels = c(0, 22)) +
   scale_color_manual(values = c(plotColors[1], plotColors[2]),
-                     name = "Temperature (ºC)",
-                     breaks = c("1.5C", "5C"),
-                     labels = c("2.1", "5.2")) +
+                     guide = "none") +
   scale_shape_manual(values = c(15, 19),
-                     name = "Temperature (ºC)",
-                     breaks = c("1.5C", "5C"),
-                     labels = c("2.1", "5.2")) +
-  ggtitle("A. Average Righting Response for WA Crabs") +
-  theme_classic(base_size = 15) + theme(legend.position = "bottom") #Select unique timepoint, treatment, and TTRavg data, and remove rows where TTRavg = NA. Plot average TTR for each crab in a boxplot. Do not show outliers with the OG boxplot, but add them in with geom_jitter. Assign colors and shapes to each treatment. Increase base font size.
+                     guide = "none") +
+  ggtitle("B. Righting Response by Genotype") +
+  theme_classic(base_size = 15) + theme(strip.background = element_rect(color = "white"),
+                                        strip.text.y = element_blank()) #Plot average TTR for each crab in a boxplot. Do not show outliers with the OG boxplot, but add them in with geom_jitter. Assign colors and shapes to each treatment. Increase base font size.
+genotypePlot
 ```
 
 ```{r}
-failureToRightWA <- modTTR %>%
-  group_by(., timepoint, treatment) %>%
-  summarize(., total = n(), 
-            No = sum(is.na(trial.1) == TRUE | is.na(trial.2) == TRUE | is.na(trial.3) == TRUE),
-            Yes = sum(!(is.na(trial.1) == TRUE | is.na(trial.2) == TRUE | is.na(trial.3) == TRUE))) %>%
-  pivot_longer(., cols = c(Yes, No), 
-               values_to = "count", names_to = "condition") %>%
-  mutate(., condition = case_when(condition == "No" ~ "2N",
-                                  condition == "Yes" ~ "1Y")) %>%
-  ggplot(., aes(x = timepoint, y = count, fill = condition)) +
-  geom_bar(position = "fill", stat = "identity") + 
-  facet_wrap(~treatment, labeller = labeller(treatment = treatment_labels)) +
-  scale_x_continuous(name = "Exposure Time (Hours)",
-                     breaks = c(0:5),
-                     labels = c(0, 4, 22, 28, 46, 94)) +
-  scale_y_continuous(name = "Proportion of Crabs") +
-  scale_fill_manual(name = "",
-                    values = c("grey70", plotColors[1]),
-                    labels = c("Yes", "No")) +
-  ggtitle("B. Proportion of WA Crabs that Righted") +
-  theme_classic(base_size = 15) + theme(strip.background = element_rect(colour = "white"),
-                                        legend.position = "bottom")
+mainPlot / genotypePlot
+ggsave("figures/time-to-right-multipanel.pdf", height = 11, width = 8.5)
 ```
 
-```{r}
-averageTTRWA / failureToRightWA
-ggsave("figures/multipanel-WA-plot.pdf", height = 11, width = 8.5)
-```
 
+# CODE IN PROGRESS
 
 # Population comparison
 
