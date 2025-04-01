@@ -318,9 +318,8 @@ tail(tempDataLong) #Confirm dataframe creation
 ```
 
 ```{r}
-tempANOVA <- aov(temp ~ treatment, data = tempDataLong) #One-way ANOVA by treatment
-summary(tempANOVA)[[1]][4][[1]][1] # F = 113927.9
-summary(tempANOVA)[[1]][5][[1]][1] # P-value = 0
+tempStats <- kruskal.test(temp ~ treatment, data = tempDataLong) #Kruskal-Wallis test by treatment
+tempStats #Chisq = 3191.8, p-value < 2.2e-16
 ```
 
 # Plot full temperature conditions (including ramp down)
