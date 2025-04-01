@@ -88,7 +88,8 @@ head(genotypeME) #Confirm import
 
 ```{r}
 parasiteME <- read.csv("../../../data/mult-pop-heat/ME_HSP_Para.csv", header = TRUE) %>%
-  mutate(., Intensity = Meta/CW) %>%
+  mutate(., meta_Intensity = Meta/CW) %>%
+  mutate(., acanth_Intensity = Acanth/CW) %>%
   dplyr::select(., -c(Species:CW)) #Import parasite data and calculate intensity. Select columns of interest.
 head(parasiteME) #Confirm import
 ```
@@ -96,7 +97,8 @@ head(parasiteME) #Confirm import
 ## NH
 
 ```{r}
-rawTTRNH <- read.csv("../../../data/mult-pop-heat/NH_HSP_TTR.csv", header = TRUE, na.strings = c("N/A", "NA")) #Import raw data
+rawTTRNH <- read.csv("../../../data/mult-pop-heat/NH_HSP_TTR.csv", header = TRUE, na.strings = c("N/A", "NA")) %>%
+  dplyr::select(-carapace.length) #Import raw data and remove carapace length column
 head(rawTTRNH)
 ```
 
@@ -114,6 +116,8 @@ head(genotypeNH) #Confirm import
 
 ```{r}
 parasiteNH <- read.csv("../../../data/mult-pop-heat/NH_HSP_Para.csv", header = TRUE) %>%
+  mutate(., meta_Intensity = Meta/CW) %>%
+  mutate(., acanth_Intensity = Acanth/CW) %>%
   dplyr::select(., -c(Species:CW)) #Import parasite data and select columns of interest
 head(parasiteNH) #Confirm import
 ```
@@ -612,7 +616,7 @@ hist(x = log(modTTRME$TTRavg)) #Log transformation helps normalize data
 ```{r}
 TTRmodelME <- lmer(log(TTRavg) ~ timepoint + 
                      as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
-                     Intensity +
+                     meta_Intensity +
                      (1|crab.ID), 
                    data = modTTRME, REML = FALSE) #Run model with timepoint, integument color, carapace width, weight, and missing swimmer information as fixed effects, and individual as a random effect. Also include parasite intensity. Change the likelihood estimator (REML = FALSE) to compare models with LRT later.
 summary(TTRmodelME) #Look at model output.
@@ -626,7 +630,7 @@ percentvar.lmerME[1] #Crab ID accounts for 27.73558% of variance
 ```
 
 ```{r}
-TTRnullTimepointME <- lmer(log(TTRavg) ~ as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + Intensity + (1|crab.ID), data = modTTRME, REML = FALSE) #Run null model without timepoint to identify significance of predictor
+TTRnullTimepointME <- lmer(log(TTRavg) ~ as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + meta_Intensity + (1|crab.ID), data = modTTRME, REML = FALSE) #Run null model without timepoint to identify significance of predictor
 anova(TTRnullTimepointME, TTRmodelME) #Timepoint is a significant predictor
 ```
 
@@ -846,6 +850,55 @@ rbind(modTTRWA %>%
   write.csv("average-TTR-calculations-genotype.csv", quote = FALSE, row.names = FALSE) #Calculate mean and SD for TTR at each time point and by genotype for populations. Save as a csv
 ```
 
+# Plots
+
+## Average TTR plot by population
+
+```{r}
+rbind(modTTRWA %>%
+        mutate(., population = "WA",
+               Meta = 0,
+               Acanth = 0,
+               meta_Intensity = "NA",
+               acanth_Intensity = "NA"), 
+      modTTRME %>%
+        mutate(., population = "ME"),
+      modTTRNH %>%
+        mutate(., population = "NH"))
+```
+
+```{r}
+rbind(modTTRWA %>%
+        mutate(., population = "WA",
+               Meta = 0,
+               Acanth = 0,
+               meta_Intensity = "NA",
+               acanth_Intensity = "NA"), 
+      modTTRME %>%
+        mutate(., population = "ME"),
+      modTTRNH %>%
+        mutate(., population = "NH")) %>%
+  dplyr::select(., c(timepoint, TTRavg, population)) %>%
+  filter(., is.na(TTRavg) == FALSE) %>%
+  distinct(.) %>%
+  ggplot(mapping = aes(x = as.character(timepoint), y = TTRavg, color = population, shape = population)) +
+  geom_boxplot(outlier.shape = NA) + 
+  geom_jitter(position = position_dodge(width = 0.75)) +
+  facet_wrap(~population, scale = "free_y") +
+  scale_y_continuous(name = "Average Time-to-Right (s)") +
+  scale_x_discrete(name = "Exposure Time (Hours)",
+                   labels = c(0, 22)) +
+  scale_color_manual(values = c(plotColors[1], plotColors[2], plotColors[3]),
+                     guide = "none") +
+  scale_shape_manual(values = c(15, 19, 17),
+                     guide = "none") +
+  theme_classic(base_size = 15) + theme(strip.background = element_rect(color = "white")) #Plot average TTR for each crab in a boxplot. Do not show outliers with the OG boxplot, but add them in with geom_jitter. Assign colors and shapes to each treatment. Increase base font size.
+ggsave("figures/time-to-right-avg-boxplot.pdf", height = 8.5, width = 11)
+```
+
+## Genotype effect plots
+
+
 # CODE IN PROGRESS
 
 
@@ -861,34 +914,7 @@ rbind(modTTRWA %>%
 
 
 
-# Plots
 
-## Average TTR plot
-
-```{r}
-modTTR %>%
-  dplyr::select(., c(timepoint, treatment, TTRavg)) %>%
-  filter(., is.na(TTRavg) == FALSE) %>%
-  distinct(.) %>%
-  ggplot(mapping = aes(x = as.character(timepoint), y = TTRavg, color = treatment, shape = treatment)) +
-  geom_boxplot(outlier.shape = NA) + 
-  geom_jitter(position = position_dodge(width = 0.75)) +
-  scale_y_continuous(name = "Average Time-to-Right (s)",
-                     breaks = c(seq(0, 20, 5), seq(20, 100, 20))) +
-  scale_x_discrete(name = "Exposure Time (Hours)",
-                   breaks = unique(modTTR$timepoint),
-                   labels = c(0, 4, 22, 28, 46, 94)) +
-  scale_color_manual(values = c(plotColors[1], plotColors[2]),
-                     name = "Temperature (ºC)",
-                     breaks = c("1.5C", "5C"),
-                     labels = c("2.1", "5.2")) +
-  scale_shape_manual(values = c(15, 19),
-                     name = "Temperature (ºC)",
-                     breaks = c("1.5C", "5C"),
-                     labels = c("2.1", "5.2")) +
-  theme_classic(base_size = 15) #Select unique timepoint, treatment, and TTRavg data, and remove rows where TTRavg = NA. Plot average TTR for each crab in a boxplot. Do not show outliers with the OG boxplot, but add them in with geom_jitter. Assign colors and shapes to each treatment. Increase base font size.
-ggsave("figures/time-to-right-avg-boxplot.pdf", height = 8.5, width = 11)
-```
 
 ## Multipanel plot
 
