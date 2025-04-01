@@ -607,10 +607,6 @@ hist(x = log(modTTRME$TTRavg)) #Log transformation helps normalize data
 ```
 
 ```{r}
-modTTRME
-```
-
-```{r}
 TTRmodelME <- lmer(log(TTRavg) ~ timepoint + 
                      as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                      Intensity +
@@ -679,6 +675,8 @@ TTRnullIntensityME <- lmer(log(TTRavg) ~ timepoint + as.factor(sex) + integument
 anova(TTRnullIntensityME, TTRmodelME) #Parasite intensity is not a significant predictor
 ```
 
+## Save model output
+
 ```{r}
 TTRModelComparisons <- rbind(broom::tidy(anova(TTRnullTimepointWA, TTRmodelWA)),
                              broom::tidy(anova(TTRnullTimepointME, TTRmodelME)),
@@ -693,7 +691,7 @@ TTRModelComparisons #Confirm modifications
 write.csv(TTRModelComparisons, "ttr-model-comparison-stat-output.csv", quote = FALSE, row.names = FALSE) #Save statistical output
 ```
 
-### Calculate average values
+## Calculate average values
 
 ```{r}
 rbind(modTTRWA %>%
@@ -711,6 +709,141 @@ rbind(modTTRWA %>%
   write.csv("average-TTR-calculations.csv", quote = FALSE, row.names = FALSE) #Calculate mean and SD for TTR at each time point for populations. Save as a csv
 ```
 
+# Effect of genotype
+
+Now that I understand the factors that impact TTR in each population, I can determine if genotype also impacts TTR.
+
+## WA
+
+There was a significant impact of time on average TTR in WA.
+
+```{r}
+TTRfullGenotypeWA <- lmer(log(TTRavg) ~ timepoint + 
+                            as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
+                            as.factor(genotype) + 
+                            (1|crab.ID), 
+                          data = modTTRWA, REML = FALSE) #Run model with genotype to identify significance of predictor
+anova(TTRmodelWA, TTRfullGenotypeWA) #No significant impact of genotype
+```
+
+```{r}
+TTRpresenceCWA <- lmer(log(TTRavg) ~ timepoint + 
+                         as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
+                         as.factor(presenceC) + 
+                         (1|crab.ID), 
+                       data = modTTRWA, REML = FALSE) #Run model with presenceC to identify significance of predictor
+anova(TTRmodelWA, TTRpresenceCWA) #No significant impact of C allele
+```
+
+```{r}
+TTRpresenceTWA <- lmer(log(TTRavg) ~ timepoint + 
+                         as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
+                         as.factor(presenceT) + 
+                         (1|crab.ID), 
+                       data = modTTRWA, REML = FALSE) #Run model with presenceT to identify significance of predictor
+anova(TTRmodelWA, TTRpresenceTWA) #No significant impact of T allele
+```
+
+## ME
+
+There was a significant impact of time, but not parasite intensity, on average TTR in ME.
+
+```{r}
+TTRmodelMERevised <- lmer(log(TTRavg) ~ timepoint + 
+                            as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
+                            (1|crab.ID), 
+                          data = modTTRME, REML = FALSE) #Run model with timepoint, integument color, carapace width, weight, and missing swimmer information as fixed effects, and individual as a random effect. Also include parasite intensity. Change the likelihood estimator (REML = FALSE) to compare models with LRT later.
+summary(TTRmodelMERevised) #Look at model output.
+#Residuals explain more random effect variation than crab ID, crab ID explains very little variation
+```
+
+```{r}
+var.lmerMERevised <- c(0.06308, 0.16365) #Save variances of random effects as a new vector (crab ID, residuals)
+percentvar.lmerMERevised <- (100*var.lmerMERevised)/sum(var.lmerMERevised) #Calculate percent variances
+percentvar.lmerMERevised[1] #Crab ID accounts for 27.82164% of variance
+```
+
+I'll look at full genotype only. Since there were no TT crabs tested, C is present in every crab, so I can't test the significance of the presence of the C allele! Testing for the presence of the T allele will just duplicate the full genotype contrast.
+
+```{r}
+TTRfullGenotypeME <- lmer(log(TTRavg) ~ timepoint + 
+                            as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
+                            as.factor(genotype) + 
+                            (1|crab.ID), 
+                          data = modTTRME, REML = FALSE) #Run model with genotype to identify significance of predictor
+anova(TTRmodelMERevised, TTRfullGenotypeME) #Significant impact of genotype
+```
+
+## NH
+
+There was no significant impact of timepoint on TTR.
+
+```{r}
+TTRmodelNHRevised <- lmer(log(TTRavg) ~ as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
+                            (1|crab.ID), 
+                          data = modTTRNH, REML = FALSE) #Run model with timepoint, integument color, carapace width, weight, and missing swimmer information as fixed effects, and individual as a random effect. Also include parasite intensity. Change the likelihood estimator (REML = FALSE) to compare models with LRT later.
+summary(TTRmodelNHRevised) #Look at model output.
+#Residuals explain more random effect variation than crab ID, crab ID explains very little variation
+```
+
+```{r}
+var.lmerNHRevised <- c(0.06574, 0.95885) #Save variances of random effects as a new vector (crab ID, residuals)
+percentvar.lmerNHRevised <- (100*var.lmerNHRevised)/sum(var.lmerNHRevised) #Calculate percent variances
+percentvar.lmerNHRevised[1] #Crab ID accounts for 6.416225% of variance
+```
+
+Same thing as the ME population: I only have CC and CT in this population, so I will only test for significance of genotype.
+
+```{r}
+TTRfullGenotypeNH <- lmer(log(TTRavg) ~ as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
+                            as.factor(genotype) + 
+                            (1|crab.ID), 
+                          data = modTTRNH, REML = FALSE) #Run model with genotype to identify significance of predictor
+anova(TTRmodelNHRevised, TTRfullGenotypeNH) #Significant impact of genotype
+```
+
+## Save model output
+
+```{r}
+TTRModelComparisons <- rbind(broom::tidy(anova(TTRnullTimepointWA, TTRmodelWA)),
+                             broom::tidy(anova(TTRmodelWA, TTRfullGenotypeWA)),
+                             broom::tidy(anova(TTRmodelWA, TTRpresenceCWA)),
+                             broom::tidy(anova(TTRmodelWA, TTRpresenceTWA)),
+                             broom::tidy(anova(TTRnullTimepointME, TTRmodelME)),
+                             broom::tidy(anova(TTRnullIntensityME, TTRmodelME)), 
+                             broom::tidy(anova(TTRmodelMERevised, TTRfullGenotypeME)), 
+                             broom::tidy(anova(TTRnullTimepointNH, TTRmodelNH)),
+                             # broom::tidy(anova(TTRnullIntensityNH, TTRmodelNH)),
+                             broom::tidy(anova(TTRmodelNHRevised, TTRfullGenotypeNH))) %>%
+  mutate(., p.adj = p.adjust(p.value, method = "bonferroni")) #Create table for model comparison output. Adjust for multiple comparisons.
+TTRModelComparisons #Confirm modifications
+```
+
+```{r}
+write.csv(TTRModelComparisons, "ttr-model-comparison-stat-output.csv", quote = FALSE, row.names = FALSE) #Save statistical output
+```
+
+## Calculate average values
+
+```{r}
+rbind(modTTRWA %>%
+        group_by(., timepoint) %>%
+        summarize(., mean = mean(TTRavg, na.rm = TRUE), sd = sd(TTRavg, na.rm = TRUE)) %>%
+        mutate(., population = "WA"),
+      modTTRME %>%
+        group_by(., timepoint) %>%
+        summarize(., mean = mean(TTRavg, na.rm = TRUE), sd = sd(TTRavg, na.rm = TRUE)) %>%
+        mutate(., population = "ME"),
+      modTTRNH %>%
+        group_by(., timepoint) %>%
+        summarize(., mean = mean(TTRavg, na.rm = TRUE), sd = sd(TTRavg, na.rm = TRUE)) %>%
+        mutate(., population = "NH")) %>%
+  write.csv("average-TTR-calculations.csv", quote = FALSE, row.names = FALSE) #Calculate mean and SD for TTR at each time point for populations. Save as a csv
+```
+
+
+
+
 # CODE IN PROGRESS
 
 
@@ -724,54 +857,6 @@ rbind(modTTRWA %>%
 
 
 
-# Effect of genotype
-
-## Impact on average TTR
-
-Now that I know treatment, time, and their interaction significantly impact TTR, I want to add in genotype information.
-
-```{r}
-TTRmodelReduced <- lmer(log(TTRavg) ~ treatment + timepoint + treatment:timepoint + 
-                          as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
-                          (1|crab.ID), 
-                        data = (modTTR %>% filter(., is.na(TTRavg) == FALSE) %>% filter(., is.na(genotype) == FALSE)), REML = FALSE) #Run model with treatment, timepoint, their interaction, sex, integument color, carapace width, weight, and missing swimmer information as fixed effects, and individual as a random effect. Change the likelihood estimator (REML = FALSE) to compare models with LRT later. Use data without rows with NAs
-summary(TTRmodelReduced) #Look at model output.
-#Residuals explain more random effect variation than crab ID, crab ID explains very little variation
-```
-
-```{r}
-TTRfullGenotype <- lmer(log(TTRavg) ~ treatment + timepoint + treatment:timepoint + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + as.factor(genotype) + (1|crab.ID), data = (modTTR %>% filter(., is.na(TTRavg) == FALSE) %>% filter(., is.na(genotype) == FALSE)), REML = FALSE) #Run model with genotype to identify significance of predictor
-anova(TTRmodelReduced, TTRfullGenotype) #No significant impact of genotype
-```
-
-```{r}
-TTRpresenceC <- lmer(log(TTRavg) ~ treatment + timepoint + treatment:timepoint + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + as.factor(presenceC) + (1|crab.ID), data = (modTTR %>% filter(., is.na(TTRavg) == FALSE) %>% filter(., is.na(genotype) == FALSE)), REML = FALSE) #Run model with genotype to identify significance of predictor
-anova(TTRmodelReduced, TTRpresenceC) #No significant impact of C allele
-```
-
-```{r}
-TTRpresenceT <- lmer(log(TTRavg) ~ treatment + timepoint + treatment:timepoint + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + as.factor(presenceT) + (1|crab.ID), data = (modTTR %>% filter(., is.na(TTRavg) == FALSE) %>% filter(., is.na(genotype) == FALSE)), REML = FALSE) #Run model with genotype to identify significance of predictor
-anova(TTRmodelReduced, TTRpresenceT) #No significant impact of T allele
-```
-
-```{r}
-TTRModelComparisons<- rbind(broom::tidy(anova(TTRnullTreatment, TTRmodel)),
-                            broom::tidy(anova(TTRnullTimepoint, TTRmodel)),
-                            broom::tidy(anova(TTRnullInteraction, TTRmodel)),
-                            broom::tidy(anova(TTRmodelReduced, TTRfullGenotype)),
-                            broom::tidy(anova(TTRmodelReduced, TTRpresenceC)),
-                            broom::tidy(anova(TTRmodelReduced, TTRpresenceT))) #Create table for model comparison output
-TTRModelComparisons
-```
-
-```{r}
-TTRModelComparisons <- TTRModelComparisons %>%
-  mutate(p.adj = p.adjust(p.value, method = "bonferroni")) #Adjust p-values
-```
-
-```{r}
-write.csv(TTRModelComparisons, "ttr-model-comparison-stat-output.csv", quote = FALSE, row.names = FALSE) #Save model output
-```
 
 There is no significant impact of genotype on average TTR. There are some additional factors I want to understand: how genotype impacts whether or not a crab flipped, and how genotype impacted a difference in TTR.
 
