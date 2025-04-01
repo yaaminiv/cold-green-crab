@@ -51,8 +51,7 @@ sessionInfo()
 ## WA
 
 ```{r}
-rawTTRWA <- read.csv("../../../data/mult-pop-heat/WA_HSP_TTR.csv", header = TRUE, na.strings = c("N/A", "NA")) %>%
-  dplyr::select(-genotype) #Import raw data
+rawTTRWA <- read.csv("../../../data/mult-pop-heat/WA_HSP_TTR.csv", header = TRUE, na.strings = c("N/A", "NA")) #Import raw data
 head(rawTTRWA)
 ```
 
@@ -71,8 +70,7 @@ head(genotypeWA) #Confirm import
 ## ME
 
 ```{r}
-rawTTRME <- read.csv("../../../data/mult-pop-heat/ME_HSP_TTR.csv", header = TRUE, na.strings = c("N/A", "NA")) %>%
-  dplyr::select(-genotype) #Import raw data
+rawTTRME <- read.csv("../../../data/mult-pop-heat/ME_HSP_TTR.csv", header = TRUE, na.strings = c("N/A", "NA")) #Import raw data
 head(rawTTRME)
 ```
 
@@ -90,7 +88,8 @@ head(genotypeME) #Confirm import
 
 ```{r}
 parasiteME <- read.csv("../../../data/mult-pop-heat/ME_HSP_Para.csv", header = TRUE) %>%
-  dplyr::select(., -c(Species:CW, X)) #Import parasite data and select columns of interest
+  mutate(., Intensity = Meta/CW) %>%
+  dplyr::select(., -c(Species:CW)) #Import parasite data and calculate intensity. Select columns of interest.
 head(parasiteME) #Confirm import
 ```
 
@@ -119,42 +118,11 @@ parasiteNH <- read.csv("../../../data/mult-pop-heat/NH_HSP_Para.csv", header = T
 head(parasiteNH) #Confirm import
 ```
 
-# CODE IN PROGRESS
-
-
-
-```{r}
-rawTTR <- read.csv("../../../data/WA/time-to-right-WA-clean.csv", header = TRUE, na.strings = c("N/A", "NA")) #Import raw data
-head(rawTTR) #Confirm import. Trial data is in seconds.
-```
-
-```{r}
-crabMetadata <- read.csv("../../../data/WA/crab-metadata-WA.csv", header = TRUE) %>%
-  dplyr::select(., c("number", "tank", "carapace.width", "carapace.length")) %>%
-  dplyr::rename(crab.ID = "number") #Import metadata. Select ID, treatment, width and length columns. Rename "ID" as "crab.ID"
-head(crabMetadata) #Confirm changes
-```
-
-```{r}
-genotypeData <- read.csv("../../../data/WA/2024-crab-genotype-WA.csv", header = TRUE, na.strings = "") %>%
-  dplyr::select(., -c(timepoint:gel.date, notes)) %>%
-  rename(., crab.ID = "number") %>%
-  mutate(., presenceC = case_when(genotype == "CC" ~ "Y",
-                                  genotype == "CT" ~ "Y",
-                                  genotype == "TT" ~ "N")) %>%
-  mutate(., presenceT = case_when(genotype == "CC" ~ "N",
-                                  genotype == "CT" ~ "Y",
-                                  genotype == "TT" ~ "Y")) #Import genotype data. Remove unnecessary columns. Create a crab.ID column to match with other data and ensure it is numeric. Add columns for precense of C and T
-head(genotypeData) #Confirm genotype dataframe creation
-```
-
 # Format data
 
 ```{r}
-modTTR <- rawTTR %>%
+modTTRWA <- rawTTRWA %>%
   dplyr::select(., -notes) %>%
-  left_join(., crabMetadata, by = c("crab.ID", "tank", "carapace.width")) %>%
-  filter(., is.na(trial.1) == FALSE) %>%
   mutate(., integument.cont = case_when(integument.color == "BG" ~ 0.5,
                                         integument.color == "G" ~ 1.0,
                                         integument.color == "YG" ~ 1.5,
@@ -163,26 +131,61 @@ modTTR <- rawTTR %>%
                                         integument.color == "O" ~ 3,
                                         integument.color == "RO" ~ 3.5,
                                         integument.color == "R" ~ 4)) %>%
-  mutate(., treatment = case_when(tank == "T01" ~ "1.5C",
-                                  tank == "T02" ~ "1.5C",
-                                  tank == "T03" ~ "1.5C",
-                                  tank == "T04" ~ "1.5C",
-                                  tank == "T05" ~ "5C",
-                                  tank == "T06" ~ "5C",
-                                  tank == "T07" ~ "5C",
-                                  tank == "T08" ~ "5C")) %>%
-  mutate(., missing.swimmer = case_when(missing.swimmer == "Y" ~ missing.swimmer,
-                                        missing.swimmer == "N" ~ missing.swimmer,
-                                        missing.swimmer == "Y " ~ "Y")) %>%
   mutate(., trial.1 = na_if(trial.1, 91.00)) %>%
   mutate(., trial.2 = na_if(trial.2, 91.00)) %>%
   mutate(., trial.3 = na_if(trial.3, 91.00)) %>%
   rowwise(.) %>% 
   mutate(., TTRavg = mean(c(trial.1, trial.2, trial.3), na.rm = TRUE)) %>%
   mutate(., TTRSE = std.error(c(trial.1, trial.2, trial.3), na.rm = TRUE)) %>%
-  left_join(x = ., y = (genotypeData %>% dplyr::select(crab.ID, genotype:presenceT)), by = "crab.ID") %>%
+  left_join(x = ., y = (genotypeWA %>% dplyr::select(crab.ID, genotype:presenceT)), by = "crab.ID") %>%
   ungroup(.) #Remove sampling ID and notes columns. Use case_when to create a column of continuous integument color metrics. Change all 91 to NA, calculate average and SE using data from the three TTR trials using rowwise operations. Ungroup. Join with genotype data.
-head(modTTR) #Confirm formatting
+head(modTTRWA) #Confirm formatting
+```
+
+```{r}
+modTTRME <- rawTTRME %>%
+  dplyr::select(., -notes) %>%
+  mutate(., integument.cont = case_when(integument.color == "BG" ~ 0.5,
+                                        integument.color == "G" ~ 1.0,
+                                        integument.color == "YG" ~ 1.5,
+                                        integument.color == "Y" ~ 2.0,
+                                        integument.color == "YO" ~ 2.5,
+                                        integument.color == "O" ~ 3,
+                                        integument.color == "RO" ~ 3.5,
+                                        integument.color == "R" ~ 4)) %>%
+  mutate(., trial.1 = na_if(trial.1, 91.00)) %>%
+  mutate(., trial.2 = na_if(trial.2, 91.00)) %>%
+  mutate(., trial.3 = na_if(trial.3, 91.00)) %>%
+  rowwise(.) %>% 
+  mutate(., TTRavg = mean(c(trial.1, trial.2, trial.3), na.rm = TRUE)) %>%
+  mutate(., TTRSE = std.error(c(trial.1, trial.2, trial.3), na.rm = TRUE)) %>%
+  left_join(x = ., y = (genotypeME %>% dplyr::select(crab.ID, genotype:presenceT)), by = "crab.ID") %>%
+  left_join(x = ., y = parasiteME, by = "crab.ID") %>%
+  ungroup(.) #Remove sampling ID and notes columns. Use case_when to create a column of continuous integument color metrics. Change all 91 to NA, calculate average and SE using data from the three TTR trials using rowwise operations. Ungroup. Join with genotype data.
+head(modTTRME) #Confirm formatting
+```
+
+```{r}
+modTTRNH <- rawTTRNH %>%
+  dplyr::select(., -notes) %>%
+  mutate(., integument.cont = case_when(integument.color == "BG" ~ 0.5,
+                                        integument.color == "G" ~ 1.0,
+                                        integument.color == "YG" ~ 1.5,
+                                        integument.color == "Y" ~ 2.0,
+                                        integument.color == "YO" ~ 2.5,
+                                        integument.color == "O" ~ 3,
+                                        integument.color == "RO" ~ 3.5,
+                                        integument.color == "R" ~ 4)) %>%
+  mutate(., trial.1 = na_if(trial.1, 91.00)) %>%
+  mutate(., trial.2 = na_if(trial.2, 91.00)) %>%
+  mutate(., trial.3 = na_if(trial.3, 91.00)) %>%
+  rowwise(.) %>% 
+  mutate(., TTRavg = mean(c(trial.1, trial.2, trial.3), na.rm = TRUE)) %>%
+  mutate(., TTRSE = std.error(c(trial.1, trial.2, trial.3), na.rm = TRUE)) %>%
+  left_join(x = ., y = (genotypeNH %>% dplyr::select(crab.ID, genotype:presenceT)), by = "crab.ID") %>%
+  left_join(x = ., y = parasiteNH, by = "crab.ID") %>%
+  ungroup(.) #Remove sampling ID and notes columns. Use case_when to create a column of continuous integument color metrics. Change all 91 to NA, calculate average and SE using data from the three TTR trials using rowwise operations. Ungroup. Join with genotype data.
+head(modTTRNH) #Confirm formatting
 ```
 
 # Data exploration
@@ -192,42 +195,47 @@ mkdir figures
 ```
 
 ```{r}
-plotColors <- c(brewer.pal(9, "Blues")[9],
-                brewer.pal(9, "Blues")[7]) #Create color scheme
+plotColors <- c(brewer.pal(9, "Greens")[7],
+                brewer.pal(9, "Oranges")[7],
+                brewer.pal(9, "Purples")[7]) #Create color scheme
 ```
-
-## Treatment
-
-```{r}
-modTTR %>%
-  ggplot(., mapping = aes(x = timepoint, y = TTRavg, color = treatment)) +
-  geom_jitter(alpha = 0.75) +
-  scale_x_continuous(name = "Timepoint",
-                     breaks = unique(modTTR$timepoint)) +
-  scale_y_continuous(name = "Average Time-to-Right (s)",
-                     breaks = seq(0, 100, 10)) +
-  scale_color_manual(values = c(plotColors[1], plotColors[2]), 
-                     name = "Temperature (ºC)",
-                     breaks = c("1.5C", "5C"),
-                     labels = c("1.5", "5")) +
-  theme_classic(base_size = 15) #Plot average TTR and add lm fits without SE bars. Modify x-axis to only show experimental timepoints where TTR was measured. Assign colors to each treatment. Increase base font size.
-ggsave("figures/time-to-right-raw.pdf", height = 8.5, width = 11)
-```
-
-I'm now going to make plots for various other factors to see if any of these need to be taken into consideration!
 
 ## Sex
 
 ```{r}
-modTTR %>%
+modTTRWA %>%
   ggplot(., mapping = aes(x = timepoint, y = TTRavg, color = sex)) +
   geom_jitter(alpha = 0.75) +
   scale_x_continuous(name = "timepoint",
-                     breaks = unique(modTTR$timepoint)) +
+                     breaks = unique(modTTRWA$timepoint)) +
   scale_y_continuous(name = "Average Time-to-Right (s)",
                      breaks = seq(0, 100, 10)) +
   theme_classic(base_size = 15)
-ggsave("figures/time-to-right-sex.pdf", height = 8.5, width = 11)
+ggsave("figures/time-to-right-sex-WA.pdf", height = 8.5, width = 11)
+```
+
+```{r}
+modTTRME %>%
+  ggplot(., mapping = aes(x = timepoint, y = TTRavg, color = sex)) +
+  geom_jitter(alpha = 0.75) +
+  scale_x_continuous(name = "timepoint",
+                     breaks = unique(modTTRME$timepoint)) +
+  scale_y_continuous(name = "Average Time-to-Right (s)",
+                     breaks = seq(0, 100, 10)) +
+  theme_classic(base_size = 15)
+ggsave("figures/time-to-right-sex-ME.pdf", height = 8.5, width = 11)
+```
+
+```{r}
+modTTRNH %>%
+  ggplot(., mapping = aes(x = timepoint, y = TTRavg, color = sex)) +
+  geom_jitter(alpha = 0.75) +
+  scale_x_continuous(name = "timepoint",
+                     breaks = unique(modTTRNH$timepoint)) +
+  scale_y_continuous(name = "Average Time-to-Right (s)",
+                     breaks = seq(0, 100, 10)) +
+  theme_classic(base_size = 15)
+ggsave("figures/time-to-right-sex-NH.pdf", height = 8.5, width = 11)
 ```
 
 ## Tank
@@ -275,6 +283,15 @@ modTTR %>%
   theme_classic(base_size = 15)
 ggsave("figures/time-to-right-missswim.pdf", height = 8.5, width = 11)
 ```
+
+
+
+# CODE IN PROGRESS
+
+
+
+
+
 
 ## Weight
 
