@@ -334,7 +334,7 @@ tempPulse2Long <- tempClean[301:406,] %>%
 head(tempPulse2Long)
 ```
 
-## Perform ANOVAs
+## Perform Kruskal-Wallis tests
 
 ```{r}
 tempPulse1Stats <- kruskal.test(temperature ~ condition, data = tempPulse1Long)

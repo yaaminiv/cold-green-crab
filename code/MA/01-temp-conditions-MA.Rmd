@@ -276,7 +276,9 @@ tail(tempDataLong) #Confirm dataframe creation
 
 ```{r}
 tempStats <- kruskal.test(temp ~ treatment, data = tempDataLong) #One-way ANOVA by treatment
-tempStats #Significant differences between temperature treatments. Chi-sq: 2941.4, p-value = 0
+tempStats #Significant differences between temperature treatments. Chi-sq: 2941.37, p-value = 0
+
+broom::tidy(tempStats)
 ```
 
 # Plot full temperature conditions (including ramp down)

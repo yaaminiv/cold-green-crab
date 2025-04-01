@@ -267,7 +267,7 @@ coldSD
 
 # Statistical test
 
-I will conduct a one-way ANOVA to confirm there are significant differences between treatments after the ramp down.
+I will conduct a Kruskal-Wallis test to confirm there are significant differences between treatments after the ramp down.
 
 ```{r}
 tempDataLong <- rbind(tank1a %>%
@@ -320,6 +320,8 @@ tail(tempDataLong) #Confirm dataframe creation
 ```{r}
 tempStats <- kruskal.test(temp ~ treatment, data = tempDataLong) #Kruskal-Wallis test by treatment
 tempStats #Chisq = 3191.8, p-value < 2.2e-16
+
+broom::tidy(tempStats)
 ```
 
 # Plot full temperature conditions (including ramp down)
