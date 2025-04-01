@@ -827,22 +827,19 @@ write.csv(TTRModelComparisons, "ttr-model-comparison-stat-output.csv", quote = F
 
 ```{r}
 rbind(modTTRWA %>%
-        group_by(., timepoint) %>%
+        group_by(., timepoint, genotype) %>%
         summarize(., mean = mean(TTRavg, na.rm = TRUE), sd = sd(TTRavg, na.rm = TRUE)) %>%
         mutate(., population = "WA"),
       modTTRME %>%
-        group_by(., timepoint) %>%
+        group_by(., timepoint, genotype) %>%
         summarize(., mean = mean(TTRavg, na.rm = TRUE), sd = sd(TTRavg, na.rm = TRUE)) %>%
         mutate(., population = "ME"),
       modTTRNH %>%
-        group_by(., timepoint) %>%
+        group_by(., timepoint, genotype) %>%
         summarize(., mean = mean(TTRavg, na.rm = TRUE), sd = sd(TTRavg, na.rm = TRUE)) %>%
         mutate(., population = "NH")) %>%
-  write.csv("average-TTR-calculations.csv", quote = FALSE, row.names = FALSE) #Calculate mean and SD for TTR at each time point for populations. Save as a csv
+  write.csv("average-TTR-calculations-genotype.csv", quote = FALSE, row.names = FALSE) #Calculate mean and SD for TTR at each time point and by genotype for populations. Save as a csv
 ```
-
-
-
 
 # CODE IN PROGRESS
 
