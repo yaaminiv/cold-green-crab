@@ -1000,15 +1000,15 @@ ggsave("figures/time-to-right-by-genotype.pdf", height = 8.5, width = 11)
 
 ```{r}
 mainPlot <- rbind(modTTRWA %>%
-        mutate(., population = "WA",
-               Meta = 0,
-               Acanth = 0,
-               meta_Intensity = "NA",
-               acanth_Intensity = "NA"), 
-      modTTRME %>%
-        mutate(., population = "ME"),
-      modTTRNH %>%
-        mutate(., population = "NH")) %>%
+                    mutate(., population = "WA",
+                           Meta = 0,
+                           Acanth = 0,
+                           meta_Intensity = "NA",
+                           acanth_Intensity = "NA"), 
+                  modTTRME %>%
+                    mutate(., population = "ME"),
+                  modTTRNH %>%
+                    mutate(., population = "NH")) %>%
   dplyr::select(., c(timepoint, TTRavg, population)) %>%
   filter(., is.na(TTRavg) == FALSE) %>%
   distinct(.) %>%
@@ -1030,9 +1030,9 @@ mainPlot
 
 ```{r}
 genotypePlot <- rbind(modTTRME %>%
-        mutate(., population = "ME"),
-      modTTRNH %>%
-        mutate(., population = "NH")) %>%
+                        mutate(., population = "ME"),
+                      modTTRNH %>%
+                        mutate(., population = "NH")) %>%
   dplyr::select(., c(timepoint, TTRavg, genotype, population)) %>%
   filter(., is.na(TTRavg) == FALSE) %>%
   distinct(.) %>%
@@ -1058,39 +1058,49 @@ mainPlot / genotypePlot
 ggsave("figures/time-to-right-multipanel.pdf", height = 11, width = 8.5)
 ```
 
-
-# CODE IN PROGRESS
-
 # Population comparison
 
 ## Format data
 
+RE-EVALUATE PARASITE ADDITION BASED ON PARASITE INFORMATION FROM NH
+
 ```{r}
-modTTRCombined <- rbind(modTTRMA, modTTRWA) %>%
-  dplyr::select(., treatment, timepoint, crab.ID, 
-                TTRavg, TTRthresh, 
+modTTRCombined <- rbind(modTTRWA %>%
+                          mutate(., population = "WA",
+                                 Meta = 0,
+                                 Acanth = 0,
+                                 meta_Intensity = "NA",
+                                 acanth_Intensity = "NA"), 
+                        modTTRME %>%
+                          mutate(., population = "ME"),
+                        modTTRNH %>%
+                          mutate(., population = "NH")) %>%
+  dplyr::select(., timepoint, crab.ID, 
+                TTRavg, 
                 population, 
-                sex, integument.cont, carapace.width, weight, missing.swimmer, genotype, presenceC, presenceT) #Rbind data from both populations, and select columns of interest to use in the model
+                sex, integument.cont, carapace.width, weight, missing.swimmer, 
+                Meta, Acanth, meta_Intensity, acanth_Intensity,
+                genotype, presenceC, presenceT) #Rbind data from both populations, and select columns of interest to use in the model
+head(modTTRCombined) #Confirm import
 ```
 
 ## Run model
 
 ```{r}
-TTRCombinedNull <- lmer(log(TTRavg) ~ treatment + timepoint + treatment:timepoint + 
+TTRCombinedNull <- lmer(log(TTRavg) ~ timepoint + 
                           as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                           (1|crab.ID), 
-                        data = (modTTRCombined %>% filter(., is.na(TTRavg) == FALSE)), REML = FALSE) #Null model without population
+                        data = modTTRCombined, REML = FALSE) #Null model without population
 summary(TTRCombinedNull) #Crab ID doesn't explain any variation!
 ```
 
 ```{r}
-TTRPopulation <- lmer(log(TTRavg) ~ treatment + timepoint + treatment:timepoint + 
+TTRPopulation <- lmer(log(TTRavg) ~ timepoint + 
                         as.factor(population) +
                         as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                         (1|crab.ID), 
-                      data = (modTTRCombined %>% filter(., is.na(TTRavg) == FALSE)), REML = FALSE) #Model with population
-anova(TTRCombinedNull, TTRPopulation) #Population is not a significant predictor of avg TTR responses!
+                      data = modTTRCombined, REML = FALSE) #Model with population
+anova(TTRCombinedNull, TTRPopulation) #Population is a marginally significant factor. Chisq = 4.6271, p = 0.09891
 ```
 
-Population is not a predictor of average TTR responses! 
-
+Population has a marginal impact on average TTR.
