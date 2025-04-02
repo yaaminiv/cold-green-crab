@@ -249,7 +249,112 @@ broom::tidy(tempLongStatsME) #Chi-sq: 264.8512, p = 1.503481e-59
 
 # NH
 
+## Import and format data
 
+Outliers from when HOBO loggers recorded data while outside of the tank were removed manually.
+
+```{r}
+#Import CSV output from HOBO loggers. Skip first line of CSV and specify header. Retain second and third columns, rename columns, and format dateTime column correctly
+
+tank1aNH <- read.csv("../../../data/mult-pop-heat/HOBO/NH_T1A.csv", skip = 1, header = TRUE) %>% dplyr::select(., 2:3) %>% rename(dateTime = Date.Time..GMT.04.00, temp1a = Temp...C..LGR.S.N..20548771..SEN.S.N..20548771.)  %>% mutate(dateTime = as.POSIXct(dateTime, format = "%m/%d/%y%t%H:%M"))
+tank1bNH <- read.csv("../../../data/mult-pop-heat/HOBO/NH_T1B.csv", skip = 1, header = TRUE) %>% dplyr::select(., 2:3) %>% rename(dateTime = Date.Time..GMT.04.00, temp1b = Temp...C..LGR.S.N..21435406..SEN.S.N..21435406.) %>% mutate(dateTime = as.POSIXct(dateTime, format = "%m/%d/%y%t%H:%M"))
+
+tank2aNH <- read.csv("../../../data/mult-pop-heat/HOBO/NH_T2A.csv", skip = 1, header = TRUE) %>% dplyr::select(., 2:3) %>% rename(dateTime = Date.Time..GMT.04.00, temp2a = Temp...C..LGR.S.N..20548772..SEN.S.N..20548772.) %>% mutate(dateTime = as.POSIXct(dateTime, format = "%m/%d/%y%t%H:%M"))
+tank2bNH <- read.csv("../../../data/mult-pop-heat/HOBO/NH_T2B.csv", skip = 1, header = TRUE) %>% dplyr::select(., 2:3) %>% rename(dateTime = Date.Time..GMT.04.00, temp2b = Temp...C..LGR.S.N..20239628..SEN.S.N..20239628.) %>% mutate(dateTime = as.POSIXct(dateTime, format = "%m/%d/%y%t%H:%M"))
+```
+
+```{r}
+#Add columns for tank ID and treatment
+
+tank1aNH <- tank1aNH %>% 
+  mutate(., tank = 1) %>%
+  slice(., -276)
+tank1bNH <- tank1bNH %>% 
+  mutate(., tank = 1) %>%
+  slice(., -276)
+
+tank2aNH <- tank2aNH %>% 
+  mutate(., tank = 2)
+tank2bNH <- tank2bNH %>% 
+  mutate(., tank = 2)
+```
+
+```{r}
+tempCleanNH <- cbind(tank1aNH, tank1bNH,
+                   tank2aNH, tank2bNH) %>%
+  dplyr::select(c(1, 
+                  2, 5,
+                  8, 11)) #cbind data and select necessary columns
+head(tempCleanNH) #Confirm changes
+```
+
+## Calculate treatment conditions
+
+### For each tank
+
+```{r}
+treatmentTempStatsNH <- data.frame("tank" = c(1:2),
+                                 "meanTemp" = rep(0, times = 2),
+                                 "sdTemp" = rep(0, times = 2)) #Create an empty dataframe
+treatmentTempStatsNH #Confirm dataframe creation
+```
+
+```{r}
+for (i in seq(2, 4, 2)) {
+  treatmentTempStatsNH[(i/2),2] <-
+    mean(rbind(tempCleanNH[[i]][-c(1:184)], 
+               tempCleanNH[[i+1]][-c(1:184)]), na.rm = TRUE)
+  treatmentTempStatsNH[(i/2),3] <-
+    sd(rbind(tempCleanNH[[i]][-c(1:184)], 
+             tempCleanNH[[i+1]][-c(1:184)]), na.rm = TRUE)
+} #For each tank, combine the treatment temperature data from both HOBO loggers, either find the average or SD, and save in treatmentTempStats.
+head(treatmentTempStatsNH) #Confirm calculations
+```
+
+```{r}
+write.csv(treatmentTempStatsNH, "temp-mean-sd-NH.csv", quote = FALSE)
+```
+
+### Overall conditions
+
+```{r}
+rbind(tempCleanNH$temp1a[-c(1:184)],
+      tempCleanNH$temp1b[-c(1:184)],
+      tempCleanNH$temp2a[-c(1:184)],
+      tempCleanNH$temp2b[-c(1:184)]) %>%
+  mean(.) #Mean = 29.91406
+rbind(tempCleanNH$temp1a[-c(1:184)],
+      tempCleanNH$temp1b[-c(1:184)],
+      tempCleanNH$temp2a[-c(1:184)],
+      tempCleanNH$temp2b[-c(1:184)]) %>%
+  sd(.) #Mean = 0.3027249
+```
+
+## Statistical test
+
+I will use a Kruskal-Wallis to confirm there are significant differences between tanks.
+
+### Format data
+
+```{r}
+tempLongNH <- tempCleanNH %>%
+  slice(-c(1:184)) %>%
+  pivot_longer(., cols = temp1a:temp2b, values_to = "temperature", names_to = "logger") %>%
+  mutate(., tank = case_when(logger == "temp1a" | logger == "temp1b" ~ "tank1",
+                             logger == "temp2a" | logger == "temp2b" ~ "tank2")) %>%
+  dplyr::select(-logger) %>% 
+  drop_na()
+head(tempLongNH)
+```
+
+### Perform Kruskal-Wallis tests
+
+```{r}
+tempLongStatsNH <- kruskal.test(temperature ~ tank, data = tempLongNH)
+tempLongStatsNH #Significant differences between treatments.
+
+broom::tidy(tempLongStatsNH) #Chi-sq: 264.8512, p = 1.503481e-59
+```
 
 
 
