@@ -32,14 +32,12 @@ getwd()
 #install.packages("lme4")
 #install.packages("ggpubr")
 #install.packages("patchwork")
-#install.packages("respirometry")
 require(tidyverse)
 require(plotrix)
 require(RColorBrewer)
 require(lme4)
 require(ggpubr)
 require(patchwork)
-require(respirometry)
 ```
 
 ```{r}
@@ -94,6 +92,16 @@ parasiteME <- read.csv("../../../data/mult-pop-heat/ME_HSP_Para.csv", header = T
 head(parasiteME) #Confirm import
 ```
 
+```{r}
+genotypeME$crab.ID %>% unique(.) %>% length(.)
+parasiteME$crab.ID %>% unique(.) %>% length(.)
+```
+
+```{r}
+left_join(genotypeME, parasiteME, by = "crab.ID") %>%
+  filter(., is.na(Meta) == TRUE)
+```
+
 ## NH
 
 ```{r}
@@ -120,6 +128,16 @@ parasiteNH <- read.csv("../../../data/mult-pop-heat/NH_HSP_Para.csv", header = T
   mutate(., acanth_Intensity = Acanth/CW) %>%
   dplyr::select(., -c(Species:CW)) #Import parasite data and select columns of interest
 head(parasiteNH) #Confirm import
+```
+
+```{r}
+genotypeNH$crab.ID %>% unique(.) %>% length(.)
+parasiteNH$crab.ID %>% unique(.) %>% length(.)
+```
+
+```{r}
+left_join(genotypeNH, parasiteNH, by = "crab.ID") %>%
+  filter(., is.na(Meta) == TRUE)
 ```
 
 # Format data
@@ -488,6 +506,8 @@ modTTRME %>%
             meta_Intensity_mean = mean(meta_Intensity, na.rm = TRUE),
             meta_Intensity_sd = sd(meta_Intensity, na.rm = TRUE))
 
+range(modTTRME %>% filter(., timepoint == 22) %>% dplyr::select(Meta))
+
 #Meta: 23.46667 ± 27.01817	
 #Meta intensity: 0.4614469 ± 0.5599341
 ```
@@ -838,12 +858,6 @@ summary(TTRmodelMERevised) #Look at model output.
 #Residuals explain more random effect variation than crab ID, crab ID explains very little variation
 ```
 
-```{r}
-var.lmerMERevised <- c(0.06308, 0.16365) #Save variances of random effects as a new vector (crab ID, residuals)
-percentvar.lmerMERevised <- (100*var.lmerMERevised)/sum(var.lmerMERevised) #Calculate percent variances
-percentvar.lmerMERevised[1] #Crab ID accounts for 27.82164% of variance
-```
-
 I'll look at full genotype only. Since there were no TT crabs tested, C is present in every crab, so I can't test the significance of the presence of the C allele! Testing for the presence of the T allele will just duplicate the full genotype contrast.
 
 ```{r}
@@ -853,6 +867,16 @@ TTRfullGenotypeME <- lmer(log(TTRavg) ~ timepoint +
                             (1|crab.ID), 
                           data = modTTRME, REML = FALSE) #Run model with genotype to identify significance of predictor
 anova(TTRmodelMERevised, TTRfullGenotypeME) #Significant impact of genotype
+```
+
+```{r}
+summary(TTRfullGenotypeME)
+```
+
+```{r}
+var.lmerMERevised <- c(0.02651, 0.16365) #Save variances of random effects as a new vector (crab ID, residuals)
+percentvar.lmerMERevised <- (100*var.lmerMERevised)/sum(var.lmerMERevised) #Calculate percent variances
+percentvar.lmerMERevised[1] #Crab ID accounts for 13.94089% of variance
 ```
 
 ## NH
@@ -867,12 +891,6 @@ summary(TTRmodelNHRevised) #Look at model output.
 #Residuals explain more random effect variation than crab ID, crab ID explains very little variation
 ```
 
-```{r}
-var.lmerNHRevised <- c(0.06574, 0.95885) #Save variances of random effects as a new vector (crab ID, residuals)
-percentvar.lmerNHRevised <- (100*var.lmerNHRevised)/sum(var.lmerNHRevised) #Calculate percent variances
-percentvar.lmerNHRevised[1] #Crab ID accounts for 6.416225% of variance
-```
-
 Same thing as the ME population: I only have CC and CT in this population, so I will only test for significance of genotype.
 
 ```{r}
@@ -881,6 +899,16 @@ TTRfullGenotypeNH <- lmer(log(TTRavg) ~ as.factor(sex) + integument.cont + carap
                             (1|crab.ID), 
                           data = modTTRNH, REML = FALSE) #Run model with genotype to identify significance of predictor
 anova(TTRmodelNHRevised, TTRfullGenotypeNH) #Significant impact of genotype
+```
+
+```{r}
+summary(TTRfullGenotypeNH)
+```
+
+```{r}
+var.lmerNHRevised <- c(0.0000, 0.6723) #Save variances of random effects as a new vector (crab ID, residuals)
+percentvar.lmerNHRevised <- (100*var.lmerNHRevised)/sum(var.lmerNHRevised) #Calculate percent variances
+percentvar.lmerNHRevised[1] #Crab ID accounts for 6.416225% of variance
 ```
 
 ## Save model output
