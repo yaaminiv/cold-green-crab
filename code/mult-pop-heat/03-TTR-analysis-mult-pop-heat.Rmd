@@ -1024,8 +1024,6 @@ ggsave("figures/time-to-right-genotype-NH.pdf", height = 8.5, width = 11)
 
 ## Format data
 
-RE-EVALUATE PARASITE ADDITION BASED ON PARASITE INFORMATION FROM NH
-
 ```{r}
 modTTRCombined <- rbind(modTTRWA %>%
                           mutate(., population = "WA",
@@ -1034,9 +1032,7 @@ modTTRCombined <- rbind(modTTRWA %>%
                                  meta_Intensity = "NA",
                                  acanth_Intensity = "NA"), 
                         modTTRME %>%
-                          mutate(., population = "ME"),
-                        modTTRNH %>%
-                          mutate(., population = "NH")) %>%
+                          mutate(., population = "ME")) %>%
   dplyr::select(., timepoint, crab.ID, 
                 TTRavg, 
                 population, 
@@ -1057,12 +1053,18 @@ summary(TTRCombinedNull) #Crab ID doesn't explain any variation!
 ```
 
 ```{r}
+var.lmerCombined <- c(0.04355, 0.20392) #Save variances of random effects as a new vector (crab ID, residuals)
+percentvar.lmerCombined <- (100*var.lmerCombined)/sum(var.lmerCombined) #Calculate percent variances
+percentvar.lmerCombined[1] #Crab ID accounts for 17.59809% of variance
+```
+
+```{r}
 TTRPopulation <- lmer(log(TTRavg) ~ timepoint + 
                         as.factor(population) +
                         as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                         (1|crab.ID), 
                       data = modTTRCombined, REML = FALSE) #Model with population
-anova(TTRCombinedNull, TTRPopulation) #Population is a marginally significant factor. Chisq = 4.6271, p = 0.09891
+anova(TTRCombinedNull, TTRPopulation) #Population is a marginally significant factor. Chisq = 3.5767, p = 0.0586
 ```
 
 Population has a marginal impact on average TTR.
