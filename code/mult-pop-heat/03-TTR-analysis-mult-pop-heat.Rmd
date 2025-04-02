@@ -895,11 +895,7 @@ rbind(modTTRWA %>%
       modTTRME %>%
         group_by(., timepoint, genotype) %>%
         summarize(., mean = mean(TTRavg, na.rm = TRUE), sd = sd(TTRavg, na.rm = TRUE)) %>%
-        mutate(., population = "ME"),
-      modTTRNH %>%
-        group_by(., timepoint, genotype) %>%
-        summarize(., mean = mean(TTRavg, na.rm = TRUE), sd = sd(TTRavg, na.rm = TRUE)) %>%
-        mutate(., population = "NH")) %>%
+        mutate(., population = "ME")) %>%
   write.csv("average-TTR-calculations-genotype.csv", quote = FALSE, row.names = FALSE) #Calculate mean and SD for TTR at each time point and by genotype for populations. Save as a csv
 ```
 
@@ -908,7 +904,6 @@ modTTRNH %>%
   group_by(., genotype) %>%
   summarize(., mean = mean(TTRavg, na.rm = TRUE), sd = sd(TTRavg, na.rm = TRUE)) #NH averages by genotype irrespective of timepoint (timepoint was not significant).
 ```
-
 
 # Plots
 
