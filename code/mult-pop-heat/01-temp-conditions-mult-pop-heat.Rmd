@@ -52,9 +52,11 @@ tank2bWA <- read.csv("../../../data/mult-pop-heat/HOBO/WA_T2B.csv", skip = 1, he
 #Add columns for tank ID and treatment
 
 tank1aWA <- tank1aWA %>% 
-  mutate(., tank = 1)
+  mutate(., tank = 1) %>%
+  slice(., -1177)
 tank1bWA <- tank1bWA %>% 
-  mutate(., tank = 1)
+  mutate(., tank = 1) %>%
+  slice(., -1177)
 
 tank2aWA <- tank2aWA %>% 
   mutate(., tank = 2)
@@ -85,11 +87,11 @@ treatmentTempStatsWA #Confirm dataframe creation
 ```{r}
 for (i in seq(2, 4, 2)) {
   treatmentTempStatsWA[(i/2),2] <-
-    mean(rbind(tempCleanWA[[i]], 
-               tempCleanWA[[i+1]]), na.rm = TRUE)
+    mean(rbind(tempCleanWA[[i]][3:93], 
+               tempCleanWA[[i+1]][3:93]), na.rm = TRUE)
   treatmentTempStatsWA[(i/2),3] <-
-    sd(rbind(tempCleanWA[[i]], 
-             tempCleanWA[[i+1]]), na.rm = TRUE)
+    sd(rbind(tempCleanWA[[i]][3:93], 
+             tempCleanWA[[i+1]][3:93]), na.rm = TRUE)
 } #For each tank, combine the treatment temperature data from both HOBO loggers, either find the average or SD, and save in treatmentTempStats
 head(treatmentTempStatsWA) #Confirm calculations
 ```
@@ -101,16 +103,35 @@ write.csv(treatmentTempStatsWA, "temp-mean-sd-WA.csv", quote = FALSE)
 ### Overall conditions
 
 ```{r}
-rbind(tempCleanWA$temp1a,
-      tempCleanWA$temp1b,
-      tempCleanWA$temp2a,
-      tempCleanWA$temp2b) %>%
-  mean(.) #Mean = 30.07167
-rbind(tempCleanWA$temp1a,
-      tempCleanWA$temp1b,
-      tempCleanWA$temp2a,
-      tempCleanWA$temp2b) %>%
-  sd(.) #Mean = 0.2188562
+#Exposure conditions 
+
+rbind(tempCleanWA$temp1a[3:93],
+      tempCleanWA$temp1b[3:93],
+      tempCleanWA$temp2a[3:93],
+      tempCleanWA$temp2b[3:93]) %>%
+  mean(.) #Mean = 30.03588
+rbind(tempCleanWA$temp1a[3:93],
+      tempCleanWA$temp1b[3:93],
+      tempCleanWA$temp2a[3:93],
+      tempCleanWA$temp2b[3:93]) %>%
+  sd(.) #Mean = 0.300692
+```
+
+It doesn't seem like the loggers were active during the acclimation period. The loggers were kept in tanks after the experiment so I can use that information to roughly calculate what the acclimation conditions were.
+
+```{r}
+#Acclimation conditions 
+
+rbind(tempCleanWA$temp1a[123:1170],
+      tempCleanWA$temp1b[123:1170],
+      tempCleanWA$temp2a[123:1170],
+      tempCleanWA$temp2b[123:1170]) %>%
+  mean(.) #Mean = 22.78631
+rbind(tempCleanWA$temp1a[123:1170],
+      tempCleanWA$temp1b[123:1170],
+      tempCleanWA$temp2a[123:1170],
+      tempCleanWA$temp2b[123:1170]) %>%
+  sd(.) #Mean = 0.4322318
 ```
 
 ## Statistical test
@@ -120,7 +141,7 @@ I will use a Kruskal-Wallis to confirm there are significant differences between
 ### Format data
 
 ```{r}
-tempLongWA <- tempCleanWA %>%
+tempLongWA <- tempCleanWA[3:93,] %>%
   pivot_longer(., cols = temp1a:temp2b, values_to = "temperature", names_to = "logger") %>%
   mutate(., tank = case_when(logger == "temp1a" | logger == "temp1b" ~ "tank1",
                              logger == "temp2a" | logger == "temp2b" ~ "tank2")) %>%
@@ -135,7 +156,7 @@ head(tempLongWA)
 tempLongStatsWA <- kruskal.test(temperature ~ tank, data = tempLongWA)
 tempLongStatsWA #Significant differences between treatments.
 
-broom::tidy(tempLongStatsWA) #Chi-sq: 166.9319, p = 3.461811e-38
+broom::tidy(tempLongStatsWA) #Chi-sq: 181.8361, p = 1.925508e-41	
 ```
 
 # ME
@@ -209,6 +230,8 @@ write.csv(treatmentTempStatsME, "temp-mean-sd-ME.csv", quote = FALSE)
 ### Overall conditions
 
 ```{r}
+#Exposure temperature
+
 rbind(tempCleanME$temp1a[-c(1:184)],
       tempCleanME$temp1b[-c(1:184)],
       tempCleanME$temp2a[-c(1:184)],
@@ -219,6 +242,21 @@ rbind(tempCleanME$temp1a[-c(1:184)],
       tempCleanME$temp2a[-c(1:184)],
       tempCleanME$temp2b[-c(1:184)]) %>%
   sd(.) #Mean = 0.3027249
+```
+
+```{r}
+# Acclimation temperature
+
+rbind(tempCleanME$temp1a[c(1:180)],
+      tempCleanME$temp1b[c(1:180)],
+      tempCleanME$temp2a[c(1:180)],
+      tempCleanME$temp2b[c(1:180)]) %>%
+  mean(.) #Mean = 24.0956
+rbind(tempCleanME$temp1a[c(1:180)],
+      tempCleanME$temp1b[c(1:180)],
+      tempCleanME$temp2a[c(1:180)],
+      tempCleanME$temp2b[c(1:180)]) %>%
+  sd(.) #Mean = 0.1767467
 ```
 
 ## Statistical test
@@ -267,11 +305,9 @@ tank2bNH <- read.csv("../../../data/mult-pop-heat/HOBO/NH_T2B.csv", skip = 1, he
 #Add columns for tank ID and treatment
 
 tank1aNH <- tank1aNH %>% 
-  mutate(., tank = 1) %>%
-  slice(., -276)
+  mutate(., tank = 1)
 tank1bNH <- tank1bNH %>% 
-  mutate(., tank = 1) %>%
-  slice(., -276)
+  mutate(., tank = 1)
 
 tank2aNH <- tank2aNH %>% 
   mutate(., tank = 2)
@@ -302,11 +338,11 @@ treatmentTempStatsNH #Confirm dataframe creation
 ```{r}
 for (i in seq(2, 4, 2)) {
   treatmentTempStatsNH[(i/2),2] <-
-    mean(rbind(tempCleanNH[[i]][-c(1:184)], 
-               tempCleanNH[[i+1]][-c(1:184)]), na.rm = TRUE)
+    mean(rbind(tempCleanNH[[i]], 
+               tempCleanNH[[i+1]]), na.rm = TRUE)
   treatmentTempStatsNH[(i/2),3] <-
-    sd(rbind(tempCleanNH[[i]][-c(1:184)], 
-             tempCleanNH[[i+1]][-c(1:184)]), na.rm = TRUE)
+    sd(rbind(tempCleanNH[[i]], 
+             tempCleanNH[[i+1]]), na.rm = TRUE)
 } #For each tank, combine the treatment temperature data from both HOBO loggers, either find the average or SD, and save in treatmentTempStats.
 head(treatmentTempStatsNH) #Confirm calculations
 ```
@@ -318,45 +354,17 @@ write.csv(treatmentTempStatsNH, "temp-mean-sd-NH.csv", quote = FALSE)
 ### Overall conditions
 
 ```{r}
-rbind(tempCleanNH$temp1a[-c(1:184)],
-      tempCleanNH$temp1b[-c(1:184)],
-      tempCleanNH$temp2a[-c(1:184)],
-      tempCleanNH$temp2b[-c(1:184)]) %>%
-  mean(.) #Mean = 29.91406
-rbind(tempCleanNH$temp1a[-c(1:184)],
-      tempCleanNH$temp1b[-c(1:184)],
-      tempCleanNH$temp2a[-c(1:184)],
-      tempCleanNH$temp2b[-c(1:184)]) %>%
-  sd(.) #Mean = 0.3027249
+rbind(tempCleanNH$temp1a,
+      tempCleanNH$temp1b,
+      tempCleanNH$temp2a,
+      tempCleanNH$temp2b) %>%
+  mean(.) #Mean = 22.5643
+rbind(tempCleanNH$temp1a,
+      tempCleanNH$temp1b,
+      tempCleanNH$temp2a,
+      tempCleanNH$temp2b) %>%
+  sd(.) #Mean = 0.3813463
 ```
-
-## Statistical test
-
-I will use a Kruskal-Wallis to confirm there are significant differences between tanks.
-
-### Format data
-
-```{r}
-tempLongNH <- tempCleanNH %>%
-  slice(-c(1:184)) %>%
-  pivot_longer(., cols = temp1a:temp2b, values_to = "temperature", names_to = "logger") %>%
-  mutate(., tank = case_when(logger == "temp1a" | logger == "temp1b" ~ "tank1",
-                             logger == "temp2a" | logger == "temp2b" ~ "tank2")) %>%
-  dplyr::select(-logger) %>% 
-  drop_na()
-head(tempLongNH)
-```
-
-### Perform Kruskal-Wallis tests
-
-```{r}
-tempLongStatsNH <- kruskal.test(temperature ~ tank, data = tempLongNH)
-tempLongStatsNH #Significant differences between treatments.
-
-broom::tidy(tempLongStatsNH) #Chi-sq: 264.8512, p = 1.503481e-59
-```
-
-
 
 # Plot full temperature conditions
 
