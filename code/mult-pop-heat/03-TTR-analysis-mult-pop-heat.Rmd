@@ -733,57 +733,12 @@ TTRnullIntensityME <- lmer(log(TTRavg) ~ timepoint + as.factor(sex) + integument
 anova(TTRnullIntensityME, TTRmodelME) #Parasite intensity is not a significant predictor
 ```
 
-## NH
-
-```{r}
-hist(modTTRNH$TTRavg)
-hist(x = log(modTTRNH$TTRavg)) #Log transformation helps normalize data
-```
-
-```{r}
-modTTRNH <- modTTRNH %>%
-  filter(., crab.ID != "NH-76") #Remove NH-76, since it died during heat exposure.
-
-modTTRNH
-```
-
-ADD INTENSITY TO MODEL WHEN I HAVE THE CORRECT PARASITE INFORMATION.
-
-```{r}
-TTRmodelNH <- lmer(log(TTRavg) ~ timepoint + 
-                     as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
-                     (1|crab.ID), 
-                   data = modTTRNH, REML = FALSE) #Run model with timepoint, integument color, carapace width, weight, and missing swimmer information as fixed effects, and individual as a random effect. Change the likelihood estimator (REML = FALSE) to compare models with LRT later.
-summary(TTRmodelNH) #Look at model output.
-#Residuals explain more random effect variation than crab ID, crab ID explains very little variation
-```
-
-```{r}
-var.lmerNH <- c(0.07948, 0.93137) #Save variances of random effects as a new vector (crab ID, residuals)
-percentvar.lmerNH <- (100*var.lmerNH)/sum(var.lmerNH) #Calculate percent variances
-percentvar.lmerNH[1] #Crab ID accounts for 7.86269% of variance
-```
-
-ADD INTENSITY WHEN I HAVE THE CORRECT PARASITE INFORMATION.
-
-```{r}
-TTRnullTimepointNH <- lmer(log(TTRavg) ~ as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID), data = modTTRNH, REML = FALSE) #Run null model without timepoint to identify significance of predictor
-anova(TTRnullTimepointNH, TTRmodelNH) #Timepoint is a not a significant predictor
-```
-
-```{r}
-TTRnullIntensityME <- lmer(log(TTRavg) ~ timepoint + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID), data = modTTRME, REML = FALSE) #Run null model without timepoint to identify significance of predictor
-anova(TTRnullIntensityME, TTRmodelME) #Parasite intensity is not a significant predictor
-```
-
 ## Save model output
 
 ```{r}
 TTRModelComparisons <- rbind(broom::tidy(anova(TTRnullTimepointWA, TTRmodelWA)),
                              broom::tidy(anova(TTRnullTimepointME, TTRmodelME)),
-                             broom::tidy(anova(TTRnullIntensityME, TTRmodelME)),                           
-                             # broom::tidy(anova(TTRnullIntensityNH, TTRmodelME)),
-                             broom::tidy(anova(TTRnullTimepointNH, TTRmodelNH))) %>%
+                             broom::tidy(anova(TTRnullIntensityME, TTRmodelME))) %>%
   mutate(., p.adj = p.adjust(p.value, method = "bonferroni")) #Create table for model comparison output. Adjust for multiple comparisons.
 TTRModelComparisons #Confirm modifications
 ```
@@ -802,11 +757,7 @@ rbind(modTTRWA %>%
       modTTRME %>%
         group_by(., timepoint) %>%
         summarize(., mean = mean(TTRavg, na.rm = TRUE), sd = sd(TTRavg, na.rm = TRUE)) %>%
-        mutate(., population = "ME"),
-      modTTRNH %>%
-        group_by(., timepoint) %>%
-        summarize(., mean = mean(TTRavg, na.rm = TRUE), sd = sd(TTRavg, na.rm = TRUE)) %>%
-        mutate(., population = "NH")) %>%
+        mutate(., population = "ME")) %>%
   write.csv("average-TTR-calculations.csv", quote = FALSE, row.names = FALSE) #Calculate mean and SD for TTR at each time point for populations. Save as a csv
 ```
 
