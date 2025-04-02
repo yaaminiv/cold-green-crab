@@ -106,7 +106,8 @@ left_join(genotypeME, parasiteME, by = "crab.ID") %>%
 
 ```{r}
 rawTTRNH <- read.csv("../../../data/mult-pop-heat/NH_HSP_TTR.csv", header = TRUE, na.strings = c("N/A", "NA")) %>%
-  dplyr::select(-carapace.length) #Import raw data and remove carapace length column
+  dplyr::select(-carapace.length) %>%
+  filter(., timepoint == 0) #Import raw data and remove carapace length column. Only use data from the first timepoint.
 head(rawTTRNH)
 ```
 
@@ -832,13 +833,13 @@ percentvar.lmerMERevised[1] #Crab ID accounts for 13.94089% of variance
 
 ## NH
 
-There was no significant impact of timepoint on TTR.
+I only have one timepoint for the NH experiment (no 22 hour heat stress), so I didn't include NH in the time analysis above. I will examine genotype's impact on TTR in these crabs.
 
 ```{r}
-TTRmodelNHRevised <- lmer(log(TTRavg) ~ as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
+TTRmodelNH <- lmer(log(TTRavg) ~ as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                             (1|crab.ID), 
                           data = modTTRNH, REML = FALSE) #Run model with timepoint, integument color, carapace width, weight, and missing swimmer information as fixed effects, and individual as a random effect. Also include parasite intensity. Change the likelihood estimator (REML = FALSE) to compare models with LRT later.
-summary(TTRmodelNHRevised) #Look at model output.
+summary(TTRmodelNH) #Look at model output.
 #Residuals explain more random effect variation than crab ID, crab ID explains very little variation
 ```
 
@@ -849,7 +850,7 @@ TTRfullGenotypeNH <- lmer(log(TTRavg) ~ as.factor(sex) + integument.cont + carap
                             as.factor(genotype) + 
                             (1|crab.ID), 
                           data = modTTRNH, REML = FALSE) #Run model with genotype to identify significance of predictor
-anova(TTRmodelNHRevised, TTRfullGenotypeNH) #Significant impact of genotype
+anova(TTRmodelNH, TTRfullGenotypeNH) #Significant impact of genotype
 ```
 
 ```{r}
@@ -857,9 +858,9 @@ summary(TTRfullGenotypeNH)
 ```
 
 ```{r}
-var.lmerNHRevised <- c(0.0000, 0.6723) #Save variances of random effects as a new vector (crab ID, residuals)
-percentvar.lmerNHRevised <- (100*var.lmerNHRevised)/sum(var.lmerNHRevised) #Calculate percent variances
-percentvar.lmerNHRevised[1] #Crab ID accounts for 6.416225% of variance
+var.lmerNH <- c(0.0000, 0.6723) #Save variances of random effects as a new vector (crab ID, residuals)
+percentvar.lmerNH <- (100*var.lmerNH)/sum(var.lmerNH) #Calculate percent variances
+percentvar.lmerNH[1] #Crab ID accounts for 6.416225% of variance
 ```
 
 ## Save model output
@@ -872,9 +873,8 @@ TTRModelComparisons <- rbind(broom::tidy(anova(TTRnullTimepointWA, TTRmodelWA)),
                              broom::tidy(anova(TTRnullTimepointME, TTRmodelME)),
                              broom::tidy(anova(TTRnullIntensityME, TTRmodelME)), 
                              broom::tidy(anova(TTRmodelMERevised, TTRfullGenotypeME)), 
-                             broom::tidy(anova(TTRnullTimepointNH, TTRmodelNH)),
                              # broom::tidy(anova(TTRnullIntensityNH, TTRmodelNH)),
-                             broom::tidy(anova(TTRmodelNHRevised, TTRfullGenotypeNH))) %>%
+                             broom::tidy(anova(TTRmodelNH, TTRfullGenotypeNH))) %>%
   mutate(., p.adj = p.adjust(p.value, method = "bonferroni")) #Create table for model comparison output. Adjust for multiple comparisons.
 TTRModelComparisons #Confirm modifications
 ```
