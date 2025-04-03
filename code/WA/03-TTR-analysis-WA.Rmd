@@ -841,6 +841,283 @@ averageTTRWA / failureToRightWA
 ggsave("figures/multipanel-WA-plot.pdf", height = 11, width = 8.5)
 ```
 
+# Multipanel genotype plot
+
+## Experiment 1: WA
+
+### Import and format data
+
+```{r}
+rawTTRWAHeat <- read.csv("../../../data/mult-pop-heat/WA_HSP_TTR.csv", header = TRUE, na.strings = c("N/A", "NA")) #Import raw data
+head(rawTTRWAHeat)
+```
+
+```{r}
+genotypeWAHeat <- read.csv("../../../data/mult-pop-heat/WA_genotype.csv", header = TRUE) %>%
+  dplyr::select(., -c(extraction.date:gel.date, notes)) %>%
+  mutate(., presenceC = case_when(genotype == "CC" ~ "Y",
+                                  genotype == "CT" ~ "Y",
+                                  genotype == "TT" ~ "N")) %>%
+  mutate(., presenceT = case_when(genotype == "CC" ~ "N",
+                                  genotype == "CT" ~ "Y",
+                                  genotype == "TT" ~ "Y")) #Import genotype data. Remove unnecessary columns. Create a crab.ID column to match with other data and ensure it is numeric. Add columns for precense of C and T
+head(genotypeWAHeat) #Confirm import
+```
+
+```{r}
+modTTRWAHeat <- rawTTRWAHeat %>%
+  dplyr::select(., -notes) %>%
+  mutate(., integument.cont = case_when(integument.color == "BG" ~ 0.5,
+                                        integument.color == "G" ~ 1.0,
+                                        integument.color == "YG" ~ 1.5,
+                                        integument.color == "Y" ~ 2.0,
+                                        integument.color == "YO" ~ 2.5,
+                                        integument.color == "O" ~ 3,
+                                        integument.color == "RO" ~ 3.5,
+                                        integument.color == "R" ~ 4)) %>%
+  mutate(., trial.1 = na_if(trial.1, 91.00)) %>%
+  mutate(., trial.2 = na_if(trial.2, 91.00)) %>%
+  mutate(., trial.3 = na_if(trial.3, 91.00)) %>%
+  rowwise(.) %>% 
+  mutate(., TTRavg = mean(c(trial.1, trial.2, trial.3), na.rm = TRUE)) %>%
+  mutate(., TTRSE = std.error(c(trial.1, trial.2, trial.3), na.rm = TRUE)) %>%
+  left_join(x = ., y = (genotypeWAHeat %>% dplyr::select(crab.ID, genotype:presenceT)), by = "crab.ID") %>%
+  ungroup(.) #Remove sampling ID and notes columns. Use case_when to create a column of continuous integument color metrics. Change all 91 to NA, calculate average and SE using data from the three TTR trials using rowwise operations. Ungroup. Join with genotype data.
+head(modTTRWAHeat) #Confirm formatting
+```
+
+### Create plot
+
+```{r}
+experiment1WA <- modTTRWAHeat %>%
+  filter(., timepoint == 22) %>%
+  dplyr::select(., crab.ID, genotype) %>%
+  group_by(., genotype) %>%
+  summarize(., count = n()) %>%
+  ggplot(mapping = aes(x = "", y = count, fill = genotype)) +
+  geom_col(color = "black") +
+  coord_polar(theta = "y", start = 0) +
+  geom_text(aes(label = paste0(round((count/sum(count)*100), digits = 0), "%")), 
+            position = position_stack(vjust = 0.5), 
+            size = 6,
+            color = c("black", "black", "white")) +
+  scale_fill_manual(name = "Genotype",
+                    values = c("grey90", "grey45", "grey0")) +
+  ggtitle("A. Experiment 1: WA") +
+  theme_void(base_size = 15) + theme(legend.position = "none",
+                                     plot.title = element_text(hjust = 0.5)) #Filter for final timepoint and select columns of interest. Group by genotype then create pie chart. Add labels for percentage genotype in population.
+experiment1WA
+```
+
+## Experiment 1: ME
+
+### Import and format data
+
+```{r}
+rawTTRMEHeat <- read.csv("../../../data/mult-pop-heat/ME_HSP_TTR.csv", header = TRUE, na.strings = c("N/A", "NA")) #Import raw data
+head(rawTTRMEHeat)
+```
+
+```{r}
+genotypeMEHeat <- read.csv("../../../data/mult-pop-heat/ME_genotype.csv", header = TRUE) %>%
+  dplyr::select(., -c(extraction.date:gel.date, notes)) %>%
+  mutate(., presenceC = case_when(genotype == "CC" ~ "Y",
+                                  genotype == "CT" ~ "Y",
+                                  genotype == "TT" ~ "N")) %>%
+  mutate(., presenceT = case_when(genotype == "CC" ~ "N",
+                                  genotype == "CT" ~ "Y",
+                                  genotype == "TT" ~ "Y")) #Import genotype data. Remove unnecessary columns. Create a crab.ID column to match with other data and ensure it is numeric. Add columns for precense of C and T
+head(genotypeMEHeat) #Confirm import
+```
+
+```{r}
+modTTRMEHeat <- rawTTRMEHeat %>%
+  dplyr::select(., -notes) %>%
+  mutate(., integument.cont = case_when(integument.color == "BG" ~ 0.5,
+                                        integument.color == "G" ~ 1.0,
+                                        integument.color == "YG" ~ 1.5,
+                                        integument.color == "Y" ~ 2.0,
+                                        integument.color == "YO" ~ 2.5,
+                                        integument.color == "O" ~ 3,
+                                        integument.color == "RO" ~ 3.5,
+                                        integument.color == "R" ~ 4)) %>%
+  mutate(., trial.1 = na_if(trial.1, 91.00)) %>%
+  mutate(., trial.2 = na_if(trial.2, 91.00)) %>%
+  mutate(., trial.3 = na_if(trial.3, 91.00)) %>%
+  rowwise(.) %>% 
+  mutate(., TTRavg = mean(c(trial.1, trial.2, trial.3), na.rm = TRUE)) %>%
+  mutate(., TTRSE = std.error(c(trial.1, trial.2, trial.3), na.rm = TRUE)) %>%
+  left_join(x = ., y = (genotypeMEHeat %>% dplyr::select(crab.ID, genotype:presenceT)), by = "crab.ID") %>%
+  ungroup(.) #Remove sampling ID and notes columns. Use case_when to create a column of continuous integument color metrics. Change all 91 to NA, calculate average and SE using data from the three TTR trials using rowwise operations. Ungroup. Join with genotype data.
+head(modTTRMEHeat) #Confirm formatting
+```
+
+### Create plot
+
+```{r}
+experiment1ME <- modTTRMEHeat %>%
+  filter(., timepoint == 22) %>%
+  dplyr::select(., crab.ID, genotype) %>%
+  group_by(., genotype) %>%
+  summarize(., count = n()) %>%
+  ggplot(mapping = aes(x = "", y = count, fill = genotype)) +
+  geom_col(color = "black") +
+  coord_polar(theta = "y", start = 0) +
+  geom_text(aes(label = paste0(round((count/sum(count)*100), digits = 0), "%")), 
+            position = position_stack(vjust = 0.5), 
+            size = 6,
+            color = c("black", "black")) +
+  scale_fill_manual(name = "Genotype",
+                    values = c("grey90", "grey45", "grey0")) +
+  ggtitle("A. Experiment 1: ME") +
+  theme_void(base_size = 15) + theme(legend.position = "none",
+                                     plot.title = element_text(hjust = 0.5)) #Filter for final timepoint and select columns of interest. Group by genotype then create pie chart. Add labels for percentage genotype in population.
+experiment1ME
+```
+
+## Experiment 2
+
+### Import and format data
+
+```{r}
+rawTTRRepeat <- read.csv("../../../data/repeat-heat/time-to-right-genotype-julia.csv", header = TRUE) #Import raw data
+head(rawTTRRepeat) #Confirm import. Trial data is in seconds.
+```
+
+```{r}
+modTTRRepeat <- rawTTRRepeat %>%
+  dplyr::select(., -c(notes, probe.number)) %>%
+  mutate(., day = case_when(date == "7/31/23" ~ 1,
+                            date == "8/1/23" ~ 2,
+                            date == "8/2/23" ~ 2,
+                            date == "8/4/23" ~ 5)) %>%
+  mutate(., treatment = case_when (tank == "10" | tank == "12" ~ "No Pulse",
+                                   tank == "11" | tank == "13" ~ "Pulse")) %>%
+  mutate(., integument.cont = case_when(integument.color == "BG" ~ 0.5,
+                                        integument.color == "G" ~ 1.0,
+                                        integument.color == "YG" ~ 1.5,
+                                        integument.color == "Y" ~ 2.0,
+                                        integument.color == "YO" ~ 2.5,
+                                        integument.color == "O" ~ 3)) %>%
+  mutate(., presenceC = case_when(genotype == "CC" ~ "Y",
+                                  genotype == "CT" ~ "Y",
+                                  genotype == "TT" ~ "N")) %>%
+  mutate(., presenceT = case_when(genotype == "CC" ~ "N",
+                                  genotype == "CT" ~ "Y",
+                                  genotype == "TT" ~ "Y")) %>%
+  mutate(., trial.1 = na_if(trial.1, 91.00)) %>%
+  mutate(., trial.2 = na_if(trial.2, 91.00)) %>%
+  mutate(., trial.3 = na_if(trial.3, 91.00)) %>%
+  rowwise(.) %>% 
+  mutate(., TTRavg = mean(c(trial.1, trial.2, trial.3), na.rm = TRUE)) %>%
+  filter(., is.na(TTRavg) == FALSE) %>%
+  mutate(., TTRSE = std.error(c(trial.1, trial.2, trial.3), na.rm = TRUE)) %>%
+  filter(., is.na(TTRSE) == FALSE) %>%
+  group_by(., day, treatment) %>%
+  mutate(., TTRavgFull = mean(TTRavg)) %>%
+  mutate(., TTRSEFull = std.error(TTRavg)) %>%
+  mutate(., TTRavgFullLow = TTRavgFull - TTRSEFull) %>%
+  mutate(., TTRavgFullHigh = TTRavgFull + TTRSEFull) %>%
+  ungroup(.) #Remove sampling ID and notes columns. Add new column with day information, combining 8/1 and 8/2 into the same day4. Create a a new column that with an index for width/length. Create new column as a binary for whether or not crabs are missing legs. Use case_when to create a column of continuous integument color metrics. Change all 91 to NA, calculate average and SE using data from the three TTR trials using rowwise operations, and remove rows where TTRavg | TTRSE = NA. Calculate average and SE for all samples in a treatment for each day. Add/subtract TTRSEFull to/from TTRavgFull to get bounds. Ungroup.
+head(modTTRRepeat) #Confirm formatting
+```
+
+### Create plot
+
+```{r}
+experiment2Plot <- modTTRRepeat %>%
+  filter(., day == 1) %>%
+  dplyr::select(., crab.ID, genotype) %>%
+  group_by(., genotype) %>%
+  summarize(., count = n()) %>%
+  ggplot(mapping = aes(x = "", y = count, fill = genotype)) +
+  geom_col(color = "black") +
+  coord_polar(theta = "y", start = 0) +
+  geom_text(aes(label = paste0(round((count/sum(count)*100), digits = 0), "%")), 
+            position = position_stack(vjust = 0.5), 
+            size = 6,
+            color = c("black", "black", "white")) +
+  scale_fill_manual(name = "Genotype",
+                    values = c("grey90", "grey45", "grey0")) +
+  ggtitle("C. Experiment 2: WA") +
+  theme_void(base_size = 15) + theme(legend.position = "none",
+                                     plot.title = element_text(hjust = 0.5)) #rbind data from experiment 1. Filter for final timepoint and select columns of interest. Group by population and genotype then create pie charts. Use position = "fill" to deal with uneven sample sizes. Facet by population and add scale and title information.
+experiment2Plot
+```
+
+## Experiment 3: MA
+
+### Import and format data
+
+```{r}
+genotypeDataMA <- read.csv("../../../data/MA/2024-crab-genotype-MA.csv", header = TRUE, na.strings = "") %>%
+  select(., -c(extraction.date:gel.date, notes:QC.gen)) %>%
+  mutate(., crab.ID = gsub(pattern = "MA-", replacement = "", x = ID)) %>%
+  mutate(., crab.ID = as.numeric(crab.ID)) %>%
+  mutate(., presenceC = case_when(genotype == "CC" ~ "Y",
+                                  genotype == "CT" ~ "Y",
+                                  genotype == "TT" ~ "N")) %>%
+  mutate(., presenceT = case_when(genotype == "CC" ~ "N",
+                                  genotype == "CT" ~ "Y",
+                                  genotype == "TT" ~ "Y")) #Import genotype data. Remove unnecessary columns. Create a crab.ID column to match with other data and ensure it is numeric. Add columns for precense of C and T
+head(genotypeDataMA) #Confirm genotype dataframe creation
+```
+
+### Create plot
+
+```{r}
+experiment3MA <- genotypeDataMA %>%
+  filter(., is.na(genotype) == FALSE) %>%
+  dplyr::select(., crab.ID, genotype) %>%
+  group_by(., genotype) %>%
+  summarize(., count = n()) %>%
+  ggplot(mapping = aes(x = "", y = count, fill = genotype)) +
+  geom_col(color = "black") +
+  coord_polar(theta = "y", start = 0) +
+  geom_text(aes(label = paste0(round((count/sum(count)*100), digits = 0), "%")), 
+            position = position_stack(vjust = 0.5), 
+            size = 6,
+            color = c("black", "black", "white")) +
+  scale_fill_manual(name = "Genotype",
+                    values = c("grey90", "grey45", "grey0")) +
+  ggtitle("D. Experiment 3: MA") +
+  theme_void(base_size = 15) + theme(legend.position = "none",
+                                     plot.title = element_text(hjust = 0.5)) #rbind data from experiment 1. Filter for final timepoint and select columns of interest. Group by population and genotype then create pie charts. Use position = "fill" to deal with uneven sample sizes. Facet by population and add scale and title information.
+experiment3MA
+```
+
+## Experiment 3: WA
+
+This data has already been imported in the script.
+
+### Create plot
+
+```{r}
+experiment3WA <- genotypeData %>%
+  filter(., is.na(genotype) == FALSE) %>%
+  dplyr::select(., crab.ID, genotype) %>%
+  group_by(., genotype) %>%
+  summarize(., count = n()) %>%
+  ggplot(mapping = aes(x = "", y = count, fill = genotype)) +
+  geom_col(color = "black") +
+  coord_polar(theta = "y", start = 0) +
+  geom_text(aes(label = paste0(round((count/sum(count)*100), digits = 0), "%")), 
+            position = position_stack(vjust = 0.5), 
+            size = 6,
+            color = c("black", "black", "white")) +
+  scale_fill_manual(name = "Genotype",
+                    values = c("grey90", "grey45", "grey0")) +
+  ggtitle("E. Experiment 3: WA") +
+  theme_void(base_size = 15) + theme(legend.position = "right",
+                                     plot.title = element_text(hjust = 0.5)) #rbind data from experiment 1. Filter for final timepoint and select columns of interest. Group by population and genotype then create pie charts. Use position = "fill" to deal with uneven sample sizes. Facet by population and add scale and title information.
+experiment3WA
+```
+## Create multipanel plot
+
+```{r}
+(experiment1WA | experiment1ME | experiment2Plot) / ( experiment3MA | experiment3WA)
+ggsave("figures/multipanel-genotype-plot.pdf", height = 8.5, width = 11)
+```
 
 # Individual-level analysis
 
