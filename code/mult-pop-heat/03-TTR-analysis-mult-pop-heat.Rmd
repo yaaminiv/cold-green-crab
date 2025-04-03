@@ -527,26 +527,42 @@ ggsave("figures/time-to-right-meta_Intensity-NH.pdf", height = 8.5, width = 11)
 
 ```{r}
 modTTRNH %>%
-  filter(., timepoint == 22) %>%
+  ggplot(., mapping = aes(x = timepoint, y = TTRavg, color = acanth_Intensity)) +
+  geom_jitter(alpha = 0.8) +
+  scale_x_continuous(name = "timepoint",
+                     breaks = unique(modTTRNH$timepoint)) +
+  scale_y_continuous(name = "Average Time-to-Right (s)",
+                     breaks = seq(0, 95, 10)) +
+  theme_classic(base_size = 15)
+ggsave("figures/time-to-right-acanth_Intensity-NH.pdf", height = 8.5, width = 11)
+```
+
+```{r}
+modTTRNH %>%
   summarize(., meta_mean = mean(Meta, na.rm = TRUE),
             meta_sd = sd(Meta, na.rm = TRUE),
             meta_Intensity_mean = mean(meta_Intensity, na.rm = TRUE),
             meta_Intensity_sd = sd(meta_Intensity, na.rm = TRUE))
 
-#Meta:
-#Meta intensity:
+range(modTTRNH %>% dplyr::select(Meta))
+
+#Meta: 72.13333 ± 149.3107
+#Meta intensity: 1.064814 ± 2.197705
+#Meta range:  0-471
 ```
 
 ```{r}
 modTTRNH %>%
-  filter(., timepoint == 22) %>%
   summarize(., acanth_mean = mean(Acanth, na.rm = TRUE),
             acanth_sd = sd(Acanth, na.rm = TRUE),
             acanth_Intensity_mean = mean(acanth_Intensity, na.rm = TRUE),
             acanth_Intensity_sd = sd(acanth_Intensity, na.rm = TRUE))
 
-#Acanth: 	
-#Acanth intensity: 
+range(modTTRNH %>% dplyr::select(Acanth))
+
+#Acanth: 2.866667 ± 5.692936
+#Acanth intensity: 0.03836931 ± 0.07250577
+#Range: 0-19
 ```
 
 ## Genotype
@@ -834,6 +850,16 @@ percentvar.lmerMERevised[1] #Crab ID accounts for 13.94089% of variance
 ## NH
 
 I only have one timepoint for the NH experiment (no 22 hour heat stress), so I didn't include NH in the time analysis above. I will examine genotype's impact on TTR in these crabs using a GLM (no repeated measurements).
+
+First, I will see if parasite terms need to be included in the model.
+
+```{r}
+TTRparasiteNH <- glm(log(TTRavg) ~ as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
+                            meta_Intensity + acanth_Intensity, 
+                          data = modTTRNH) #Run model with parasite intensity information
+summary(TTRparasiteNH) #Parasite intensity is not significant
+```
+
 
 ```{r}
 TTRfullGenotypeNH <- glm(log(TTRavg) ~ as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
