@@ -30,12 +30,14 @@ getwd()
 #install.packages("plotrix")
 #install.packages("RColorBrewer")
 #install.packages("lme4")
+#install.packages("lsmeans")
 #install.packages("ggpubr")
 #install.packages("patchwork")
 require(tidyverse)
 require(plotrix)
 require(RColorBrewer)
 require(lme4)
+require(lsmeans)
 require(ggpubr)
 require(patchwork)
 ```
@@ -717,6 +719,11 @@ TTRnullTimepointWA <- lmer(log(TTRavg) ~ as.factor(sex) + integument.cont + cara
 anova(TTRnullTimepointWA, TTRmodelWA) #Timepoint is a significant predictor
 ```
 
+```{r}
+TTRmodelWA_timepoint <- lsmeans(TTRmodelWA, pairwise~timepoint, adjust = "tukey") #Pairwise tukey test for timepoint
+TTRmodelWA_timepoint$contrasts #t = -5.020, p <.0001 
+```
+
 ## ME
 
 ```{r}
@@ -743,6 +750,11 @@ percentvar.lmerME[1] #Crab ID accounts for 27.73558% of variance
 ```{r}
 TTRnullTimepointME <- lmer(log(TTRavg) ~ as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + meta_Intensity + (1|crab.ID), data = modTTRME, REML = FALSE) #Run null model without timepoint to identify significance of predictor
 anova(TTRnullTimepointME, TTRmodelME) #Timepoint is a significant predictor
+```
+
+```{r}
+TTRmodelME_timepoint <- lsmeans(TTRmodelME, pairwise~timepoint, adjust = "tukey") #Pairwise tukey test for timepoint
+TTRmodelME_timepoint$contrasts #t = -5.093, p <.0001 
 ```
 
 ```{r}
@@ -838,6 +850,11 @@ anova(TTRmodelMERevised, TTRfullGenotypeME) #Significant impact of genotype
 ```
 
 ```{r}
+TTRmodelME_genotype <- lsmeans(TTRfullGenotypeME, pairwise~as.factor(genotype), adjust = "tukey") #Pairwise tukey test for genotype
+TTRmodelME_genotype$contrasts #t = 2.786, p = 0.0082
+```
+
+```{r}
 summary(TTRfullGenotypeME)
 ```
 
@@ -855,17 +872,22 @@ First, I will see if parasite terms need to be included in the model.
 
 ```{r}
 TTRparasiteNH <- glm(log(TTRavg) ~ as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
-                            meta_Intensity + acanth_Intensity, 
-                          data = modTTRNH) #Run model with parasite intensity information
+                       meta_Intensity + acanth_Intensity, 
+                     data = modTTRNH) #Run model with parasite intensity information
 summary(TTRparasiteNH) #Parasite intensity is not significant
 ```
 
 
 ```{r}
 TTRfullGenotypeNH <- glm(log(TTRavg) ~ as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
-                            as.factor(genotype), 
-                          data = modTTRNH) #Run model with genotype to identify significance of predictor
+                           as.factor(genotype), 
+                         data = modTTRNH) #Run model with genotype to identify significance of predictor
 summary(TTRfullGenotypeNH) #Significant impact of genotype. t = 3.536, p = 0.00767
+```
+
+```{r}
+TTRmodelNH_genotype <- lsmeans(TTRfullGenotypeNH, pairwise~as.factor(genotype), adjust = "tukey") #Pairwise tukey test for genotype
+TTRmodelNH_genotype$contrasts #t = -3.536, p = 0.0077
 ```
 
 ## Save model output
@@ -886,6 +908,18 @@ There is no significant impact of genotype on average TTR in WA, but there is a 
 
 ```{r}
 write.csv(TTRModelComparisons, "ttr-model-comparison-stat-output.csv", quote = FALSE, row.names = FALSE) #Save statistical output
+```
+
+```{r}
+rbind(broom::tidy(TTRmodelWA_timepoint$contrasts) %>%
+        mutate(., population = "WA"),
+      broom::tidy(TTRmodelME_timepoint$contrasts) %>%
+        mutate(., population = "ME"),
+      broom::tidy(TTRmodelME_genotype$contrasts) %>%
+        mutate(., population = "ME"),
+      broom::tidy(TTRmodelNH_genotype$contrasts) %>%
+        mutate(., population = "NH")) %>%
+  write.csv(., "tukey-test-output.csv", quote = FALSE, row.names = FALSE)
 ```
 
 ## Calculate average values
@@ -965,18 +999,18 @@ rbind(modTTRWA %>%
                    labels = c(0, 22)) +
   scale_color_manual(values = c(plotColors[1], plotColors[3],
                                 plotColors[1], plotColors[3]),
-                    labels = c("ME, CC",
-                               "WA, CC",
-                               "ME, CT",
-                               "WA, CT or TT"),
-                    name = "Population & Genotype") +
+                     labels = c("ME, CC",
+                                "WA, CC",
+                                "ME, CT",
+                                "WA, CT or TT"),
+                     name = "Population & Genotype") +
   scale_shape_manual(values = c(15, 19,
                                 15, 19),
-                    labels = c("ME, CC",
-                               "WA, CC",
-                               "ME, CT",
-                               "WA, CT or TT"),
-                    name = "Population & Genotype") +
+                     labels = c("ME, CC",
+                                "WA, CC",
+                                "ME, CT",
+                                "WA, CT or TT"),
+                     name = "Population & Genotype") +
   scale_fill_manual(values = c("NA", "NA",
                                plotColors[1], plotColors[3]),
                     labels = c("ME, CC",
@@ -1069,13 +1103,13 @@ mainPlot
 
 ```{r}
 genotypePlot <- rbind(modTTRWA %>%
-        mutate(., population = "WA",
-               Meta = 0,
-               Acanth = 0,
-               meta_Intensity = "NA",
-               acanth_Intensity = "NA"), 
-      modTTRME %>%
-        mutate(., population = "ME")) %>%
+                        mutate(., population = "WA",
+                               Meta = 0,
+                               Acanth = 0,
+                               meta_Intensity = "NA",
+                               acanth_Intensity = "NA"), 
+                      modTTRME %>%
+                        mutate(., population = "ME")) %>%
   dplyr::select(., c(timepoint, TTRavg, presenceT, population)) %>%
   mutate(., presenceTpop = case_when(presenceT == "Y" & population == "ME" ~ "Y_ME",
                                      presenceT == "N" & population == "ME" ~ "N_ME",
@@ -1091,18 +1125,18 @@ genotypePlot <- rbind(modTTRWA %>%
                    labels = c(0, 22)) +
   scale_color_manual(values = c(plotColors[1], plotColors[3],
                                 plotColors[1], plotColors[3]),
-                    labels = c("ME, CC",
-                               "WA, CC",
-                               "ME, CT",
-                               "WA, CT or TT"),
-                    name = "") +
+                     labels = c("ME, CC",
+                                "WA, CC",
+                                "ME, CT",
+                                "WA, CT or TT"),
+                     name = "") +
   scale_shape_manual(values = c(15, 19,
                                 15, 19),
-                    labels = c("ME, CC",
-                               "WA, CC",
-                               "ME, CT",
-                               "WA, CT or TT"),
-                    name = "") +
+                     labels = c("ME, CC",
+                                "WA, CC",
+                                "ME, CT",
+                                "WA, CT or TT"),
+                     name = "") +
   scale_fill_manual(values = c("NA", "NA",
                                plotColors[1], plotColors[3]),
                     labels = c("ME, CC",
