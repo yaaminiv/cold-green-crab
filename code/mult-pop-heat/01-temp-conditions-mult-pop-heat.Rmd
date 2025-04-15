@@ -253,6 +253,12 @@ tempCleanME$dateTime[275] - tempCleanME$dateTime[185]
 ```
 
 ```{r}
+tempCleanME$dateTime[185] - tempCleanME$dateTime[160] #6.25 hour ramp up
+tempCleanME$temp1a[185] - tempCleanME$temp1a[160] #5.8ºC difference
+```
+
+
+```{r}
 # Acclimation temperature
 
 rbind(tempCleanME$temp1a[c(1:180)],
@@ -423,3 +429,8 @@ plotME
 plotWA / plotME
 ggsave("figures/exp-temp.pdf", height = 8.5, width = 11)
 ```
+
+```{r}
+save.image("01-temp-conditions-mult-pop-heat.RData") #Save RData to load in another script.
+```
+
