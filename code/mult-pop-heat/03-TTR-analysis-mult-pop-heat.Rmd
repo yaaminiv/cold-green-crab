@@ -986,7 +986,7 @@ rbind(modTTRWA %>%
                     name = "Population & Genotype") +
   theme_classic(base_size = 15) + theme(strip.background = element_rect(color = "white"),
                                         strip.text.y = element_blank()) #Plot average TTR for each crab in a boxplot. Do not show outliers with the OG boxplot, but add them in with geom_jitter. Assign colors and shapes to each treatment. Increase base font size.
-ggsave("../../output/mult-pop-heat/01-temp-conditions/figures/time-to-right-by-genotype.pdf", height = 8.5, width = 11)
+ggsave("../../output/mult-pop-heat/03-TTR-analysis/figures/time-to-right-by-genotype.pdf", height = 8.5, width = 11)
 ```
 
 ## Multipanel plot
