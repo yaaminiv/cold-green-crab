@@ -498,7 +498,7 @@ head(modTTR) #Confirm modifications
 ### Binomial model
 
 ```{r}
-TTRthreshModel <- glmer(I(TTRthresh == 1) ~ treatment + as.factor(timepoint) + treatment:as.factor(timepoint) +
+TTRthreshModel <- glmer(I(TTRthresh == 1) ~ treatment + timepoint + treatment:timepoint +
                           as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                           (1|crab.ID), 
                         family = binomial(), 
@@ -507,7 +507,7 @@ summary(TTRthreshModel)
 ```
 
 ```{r}
-TTRthreshNullTreatment <- glmer(I(TTRthresh == 1) ~ as.factor(timepoint) +
+TTRthreshNullTreatment <- glmer(I(TTRthresh == 1) ~ timepoint +
                                   as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                                   (1|crab.ID), 
                                 family = binomial(), 
@@ -525,7 +525,7 @@ anova(TTRthreshNullTimepoint, TTRthreshModel) #Compare models
 ```
 
 ```{r}
-TTRthreshNullInteraction <- glmer(I(TTRthresh == 1) ~ treatment + as.factor(timepoint) +
+TTRthreshNullInteraction <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
                                     as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                                     (1|crab.ID), 
                                   family = binomial(), 
@@ -548,7 +548,7 @@ TTRthreshModelComparisons %>%
 Alright, there are significant impacts of treatment and time on righting, but no impact of their interaction. Now I want to test the impact of genotype and population source on binary righting response. 
 
 ```{r}
-TTRthreshModelRevised <- glmer(I(TTRthresh == 1) ~ treatment + as.factor(timepoint) +
+TTRthreshModelRevised <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
                                  as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                                  (1|crab.ID), 
                                family = binomial(), 
@@ -559,17 +559,17 @@ summary(TTRthreshModelRevised)
 Before I look at genotype, I want to look at sex. Coyle et al. (2014) found sex-specific differences in failure to right at cold temperatures.
 
 ```{r}
-TTRthreshNullSex <- glmer(I(TTRthresh == 1) ~ treatment + as.factor(timepoint) +
+TTRthreshNullSex <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
                              integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                              as.factor(genotype) +
                              (1|crab.ID), 
                            family = binomial(), 
                            data = modTTR) #Create null model without sex
-anova(TTRthreshNullSex, TTRthreshModelRevised) #Compare models. No significant impact of sex on failure to right.
+anova(TTRthreshNullSex, TTRthreshModelRevised) #Compare models. Marginally significant impact of sex on failure to right.
 ```
 
 ```{r}
-TTRthreshGenotype <- glmer(I(TTRthresh == 1) ~ treatment + as.factor(timepoint) +
+TTRthreshGenotype <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
                              as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                              as.factor(genotype) +
                              (1|crab.ID), 
@@ -579,7 +579,7 @@ anova(TTRthreshModelRevised, TTRthreshGenotype) #Compare models
 ```
 
 ```{r}
-TTRthreshpresenceC <- glmer(I(TTRthresh == 1) ~ treatment + as.factor(timepoint) +
+TTRthreshpresenceC <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
                               as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                               as.factor(presenceC) +
                               (1|crab.ID), 
@@ -589,7 +589,7 @@ anova(TTRthreshModelRevised, TTRthreshpresenceC) #Compare models
 ```
 
 ```{r}
-TTRthreshpresenceT <- glmer(I(TTRthresh == 1) ~ treatment + as.factor(timepoint) +
+TTRthreshpresenceT <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
                               as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                               as.factor(presenceT) +
                               (1|crab.ID), 
@@ -599,7 +599,7 @@ anova(TTRthreshModelRevised, TTRthreshpresenceT) #Compare models
 ```
 
 ```{r}
-TTRthreshSource <- glmer(I(TTRthresh == 1) ~ treatment + as.factor(timepoint) +
+TTRthreshSource <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
                            as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                            as.factor(source) +
                            (1|crab.ID), 
@@ -630,6 +630,8 @@ write.csv(TTRthreshModelComparisons, "ttr-binomial-model-comparison-output.csv",
 ```
 
 The impacts of presence of the T allele and source population on whether or not a crab righted itself are no longer significant after multiple correction. I'll include genotype-specific information in the final figure since there was a trend.
+
+#### Posthoc tests for significant predictors
 
 ### Calculate proportions for righting
 
