@@ -184,6 +184,7 @@ TTRmodel_treatment$`pairwise differences of treatment | day` %>%
   broom::tidy(.) %>%
   dplyr::rename(treatment = "2") %>%
   write.csv("tukey-test-output-treatment.csv", quote = FALSE, row.names = FALSE)
+#Significant effects on day 5 between control and treatment
 ```
 
 ```{r}
@@ -191,6 +192,7 @@ TTRmodel_treatment$`pairwise differences of day | treatment` %>%
   broom::tidy(.) %>%
   dplyr::rename(day = "2") %>%
   write.csv("tukey-test-output-day.csv", quote = FALSE, row.names = FALSE)
+#Significant effects for no pulse between day 1 and 5 and day 2 and 5
 ```
 
 ```{r}
@@ -288,7 +290,6 @@ modTTR %>%
   summarize(., mean = mean(TTRavg), sd = sd(TTRavg)) %>%
   filter(., day == 5)
 ```
-
 
 My next step is to understand how the difference in TTR is impacted by treatment, time, and genotype.
 
@@ -578,6 +579,25 @@ ggsave("figures/difference-TTR-boxplot-treatTswimmer.pdf", height = 8.5, width =
 ### Modify plots for multipanel
 
 ```{r}
+mainPlot.stat.test <- rbind(TTRmodel_treatment$`pairwise differences of treatment | day` %>%
+  broom::tidy(.) %>%
+  dplyr::rename(constant = "day") %>%
+  dplyr::rename(contrast = "2"),
+  TTRmodel_treatment$`pairwise differences of day | treatment` %>%
+  broom::tidy(.) %>%
+  dplyr::rename(constant = "treatment") %>%
+  dplyr::rename(contrast = "2") %>%
+  dplyr::rename(p.value = "adj.p.value")) %>%
+  filter(., p.value < 0.05) %>%
+  mutate(., p.sig = c("**", "**", "****")) %>%
+  mutate(., group1 = c("No Pulse", "day1", "day2"),
+         group2 = c("Pulse", "day5", "day5")) %>%
+  dplyr::select(., constant, term, group1, group2, statistic, p.value, p.sig)
+  #Combine significant effects and use similar column names. Add a column for asterisk notation of significant effects. Rename contrast column for group 1 and group 2
+mainPlot.stat.test
+```
+
+```{r}
 mainPlotMultipanel <- modTTR %>%
   dplyr::select(., c(day, treatment, TTRavg, presenceT)) %>%
   filter(., is.na(TTRavg) == FALSE) %>%
@@ -593,10 +613,23 @@ mainPlotMultipanel <- modTTR %>%
            xmin = 2.62, xmax = 3.38, 
            ymin = 0, ymax = 15, 
            alpha = 0.2, fill = plotColors[1]) +
+  geom_segment(aes(x = 0.82, xend = 2.8,
+                   y = 15.3, yend = 15.3),
+               color = "black", linewidth = 0.2) + #Add significance bar for day 1 vs. day 5
+  annotate("text", x = (0.82+2.8)/2, y = 15.5, label = "**") + #Add significance asterisks for day 1 vs. day 5
+  geom_segment(aes(x = 1.82, xend = 2.8,
+                   y = 16, yend = 16),
+               color = "black", linewidth = 0.2) + #Add significance bar for day 2 vs. day 5
+  annotate("text", x = (1.82+2.8)/2, y = 16.2, label = "****") + #Add significance asterisks for day 2 vs. day 5
+  geom_segment(aes(x = 2.8, xend = 3.2,
+                   y = 16.7, yend = 16.7),
+               color = "black", linewidth = 0.2) + #Add significance bar for treatment
+  annotate("text", x = 3, y = 16.9, label = "**") + #Add significance asterisks for treatment
   scale_x_discrete(name = "",
                    labels = c("0", "1", "4")) +
   scale_y_continuous(name = "Average Time-to-Right (s)",
-                     breaks = c(0:5, 10, 15)) +
+                     breaks = c(0:5, 10, 15),
+                     limits = c(0,17)) +
   scale_color_manual(guide = "none",
                      values = c(plotColors[2], plotColors[1]),
                      labels = c("Control", "Treatment")) +
@@ -631,7 +664,7 @@ insetPlotMultipanel <-  modTTR %>%
 
 plotWithInsetMultipanel <- ggdraw() +
   draw_plot(mainPlotMultipanel) +
-  draw_plot(insetPlotMultipanel, x = 0.075, y = 0.485, width = 0.44, height = 0.4) #Add inset to the plot
+  draw_plot(insetPlotMultipanel, x = 0.075, y = 0.33, width = 0.44, height = 0.4) #Add inset to the plot
 
 plotWithInsetMultipanel #Plot the full plot with inset
 ```
@@ -655,6 +688,7 @@ genotypeMultipanel <- modTTR %>%
   theme_classic(base_size = 15) + theme(strip.background = element_rect(color = "white"),
                                         strip.text.y = element_blank(),
                                         legend.position = "bottom")
+genotypeMultipanel
 ```
 
 
