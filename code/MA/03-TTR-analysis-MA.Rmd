@@ -25,7 +25,9 @@ getwd()
 #install.packages("plotrix")
 #install.packages("RColorBrewer")
 #install.packages("lme4")
-#install.packages("emmeans")
+# install.packages("emmeans")
+# install.packages("multcompView")
+# install.packages("multcomp")
 #install.packages("ggpubr")
 #install.packages("patchwork")
 #install.packages("respirometry")
@@ -34,6 +36,8 @@ require(plotrix)
 require(RColorBrewer)
 require(lme4)
 require(emmeans)
+require(multcompView)
+require(multcomp)
 require(ggpubr)
 require(patchwork)
 require(respirometry)
@@ -422,7 +426,7 @@ TTRmodel_factor <- lmer(log(TTRavg) ~ treatment + timepoint_factor + treatment:t
                  data = (modTTR %>% filter(., is.na(TTRavg) == FALSE)), REML = FALSE) #Run the original model, but use timepoint as a factor
 TTRmodel_time <- emmeans(TTRmodel_factor, pairwise ~ timepoint_factor | treatment, adjust = "tukey", data = modTTR) #Rerun emmeans using timepoint as a factor
 pairs(TTRmodel_time) %>% broom::tidy(.) #Use the pairs function to look at pairwise output. Clean output using broom.
-pairs(TTRmodel_time) %>% 
+pairs(TTRmodel_time) %>%
   broom::tidy(.) %>%
   write.csv("tukey-test-time.csv", quote = FALSE, row.names = FALSE) #Save output as a csv.
 ```
@@ -703,8 +707,8 @@ modTTR %>%
 ## Threshold analysis plot
 
 ```{r}
-treatment_labels <- c("0C" = "1.7ºC",
-                      "5C" = "5.4ºC") #Modify facet labels for treatment
+treatment_labels <- c("0C" = "1.5ºC",
+                      "5C" = "5ºC") #Modify facet labels for treatment
 timepoint_labels <- c("0" = "0",
                       "1" = "4",
                       "2" = "22",
@@ -926,6 +930,26 @@ ggsave("figures/time-to-right-noFlips-timeSourceT.pdf", height = 8.5, width = 11
 
 ## Multipanel plot
 
+I want to add significance information to the plot. Since treatments were significantly different from eachother at all timepoints except hour 0, I don't think that contrast is as interesting as understanding within-treatment differences by time.
+
+```{r}
+time_letters <- cld(TTRmodel_time[[1]], Letters = letters) #Use cld from multcomp package to get letter groupings to highlight which groups are significantly differnt from eachother.
+time_letters_plot <- time_letters %>% 
+  broom::tidy(.) %>%
+  dplyr::rename(timepoint = "timepoint_factor") %>%
+  mutate(.group = case_when(treatment == "5C" ~ str_to_upper(.group),
+                            treatment == "0C" ~ .group)) %>% 
+  arrange(timepoint, treatment) %>% 
+  mutate(label_y = c(8, 8,
+                     25, 8,
+                     88, 35,
+                     68, 28,
+                     55, 21,
+                     58, 15))
+  #Take lettering and tidy using broom. Rename the timepoint column to match plotting data. Convert the lettering for 5C to uppercase, since 5C and 1C are different from eachother. Arrange by timepoint and treatment. Manually add label height for placing letters above the boxes.
+time_letters_plot #Confirm changes
+```
+
 ```{r}
 averageTTRMA <- modTTR %>%
   dplyr::select(., c(timepoint, treatment, TTRavg)) %>%
@@ -934,6 +958,10 @@ averageTTRMA <- modTTR %>%
   ggplot(mapping = aes(x = as.character(timepoint), y = TTRavg, color = treatment, shape = treatment)) +
   geom_boxplot(outlier.shape = NA) + 
   geom_jitter(position = position_dodge(width = 0.75)) +
+  geom_text(data = time_letters_plot,
+            aes(x = timepoint, y = label_y, label = .group, group = treatment, color = treatment),
+            position = position_dodge(width = 0.75),
+            inherit.aes = FALSE, show.legend = FALSE) +
   scale_y_continuous(name = "Average Time-to-Right (s)",
                      breaks = c(seq(0, 20, 5), seq(20, 100, 20))) +
   scale_x_discrete(name = "Exposure Time (Hours)",
@@ -942,13 +970,14 @@ averageTTRMA <- modTTR %>%
   scale_color_manual(values = c(plotColors[1], plotColors[2]),
                      name = "Temperature (ºC)",
                      breaks = c("0C", "5C"),
-                     labels = c("1.7", "5.4")) +
+                     labels = c("1.5", "5")) +
   scale_shape_manual(values = c(15, 19),
                      name = "Temperature (ºC)",
                      breaks = c("0C", "5C"),
-                     labels = c("1.7", "5.4")) +
+                     labels = c("1.5", "5")) +
   ggtitle("A. Righting Response for MA Crabs") +
   theme_classic(base_size = 15) + theme(legend.position = "bottom") #Select unique timepoint, treatment, and TTRavg data, and remove rows where TTRavg = NA. Plot average TTR for each crab in a boxplot. Do not show outliers with the OG boxplot, but add them in with geom_jitter. Assign colors and shapes to each treatment. Increase base font size.
+averageTTRMA
 ```
 
 ```{r}
