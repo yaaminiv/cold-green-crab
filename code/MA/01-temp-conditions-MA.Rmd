@@ -293,7 +293,7 @@ plotColors <- c(brewer.pal(9, "Blues")[9],
 ```
 
 ```{r}
-cbind(tank1a, tank1b,
+dataTempPlotMA <- cbind(tank1a, tank1b,
       tank2a, tank2b,
       tank3a, tank3b,
       tank5a, tank5b,
@@ -312,14 +312,25 @@ cbind(tank1a, tank1b,
                                 temp3a, temp3b)),
          coldTemp = mean(c(temp5a, temp5b,
                            temp6a, temp6b,
-                           temp7a, temp7b))) %>%
+                           temp7a, temp7b))) #Create dataframe to use for plotting
+head(dataTempPlotMA) #Confirm changes
+dataTempPlotMA$dateTime[88] #Date-time for start of experimental period
+dataTempPlotMA$dateTime[413] #Date-time for end of experimental period
+```
+
+```{r}
+dataTempPlotMA %>%
   ggplot(., aes(x = dateTime, y = colderTemp)) +
   geom_line(color = plotColors[1]) +
-  geom_ribbon(aes(x = dateTime, y = coldMeanMA, ymin = coldMeanMA - coldSDMA, ymax = coldMeanMA + coldSDMA), fill = plotColors[2], alpha = 0.15) +
-  geom_hline(yintercept = coldMeanMA, colour = plotColors[2], linetype = 3) +
+  geom_ribbon(data = dataTempPlotMA[88:413,], aes(x = dateTime, y = coldMeanMA, ymin = coldMeanMA - coldSDMA, ymax = coldMeanMA + coldSDMA), fill = plotColors[2], alpha = 0.15) + #Start SE ribbon at the right place
+  geom_segment(x = as.POSIXct(ymd_hms("2024-06-25 06:00:00")), xend = as.POSIXct(ymd_hms("2024-06-28 09:51:00")),
+               y = coldMeanMA, yend = coldMeanMA, 
+               colour = plotColors[2], linetype = 3) + #Start average line at the right place
   geom_line(aes(x = dateTime, y = coldTemp), color = plotColors[2]) +
-  geom_ribbon(aes(x = dateTime, y = colderMeanMA, ymin = colderMeanMA - colderSDMA, ymax = colderMeanMA + colderSDMA), fill = plotColors[1], alpha = 0.15) +
-  geom_hline(yintercept = colderMeanMA, colour = plotColors[1], linetype = 3) +
+  geom_ribbon(data = dataTempPlotMA[88:413,], aes(x = dateTime, y = colderMeanMA, ymin = colderMeanMA - colderSDMA, ymax = colderMeanMA + colderSDMA), fill = plotColors[1], alpha = 0.15) + #Start SE ribbon at the right place
+  geom_segment(x = as.POSIXct(ymd_hms("2024-06-25 06:00:00")), xend = as.POSIXct(ymd_hms("2024-06-28 09:51:00")),
+               y = colderMeanMA, yend = colderMeanMA,
+               colour = plotColors[1], linetype = 3) + #Start average line at the right place
   geom_vline(xintercept = as.POSIXct(ymd_hms("2024-06-24 07:30:00")), linetype = 3, color = "black") + #Hour 0 TTR
   geom_vline(xintercept = as.POSIXct(ymd_hms("2024-06-24 18:00:00")), linetype = 3, color = "black") + #Hour 4 TTR
   geom_vline(xintercept = as.POSIXct(ymd_hms("2024-06-25 09:00:00")), linetype = 3, color = "black") + #Hour 22 TTR
@@ -335,33 +346,18 @@ ggsave("figures/exp-temp.pdf", height = 8.5, width = 11)
 ```
 
 ```{r}
-MAconditions <- cbind(tank1a, tank1b,
-                      tank2a, tank2b,
-                      tank3a, tank3b,
-                      tank5a, tank5b,
-                      tank6a, tank6b,
-                      tank7a, tank7b) %>%
-  dplyr::select(., c(1, 4, 
-                     2, 6, 
-                     10, 14, 
-                     18, 22,
-                     26, 30,
-                     34, 38,
-                     42, 46)) %>%
-  rowwise() %>%
-  mutate(., colderTemp = mean(c(temp1a, temp1b,
-                                temp2a, temp2b,
-                                temp3a, temp3b)),
-         coldTemp = mean(c(temp5a, temp5b,
-                           temp6a, temp6b,
-                           temp7a, temp7b))) %>%
+MAconditions <- dataTempPlotMA %>%
   ggplot(., aes(x = dateTime, y = colderTemp)) +
   geom_line(color = plotColors[1]) +
-  geom_ribbon(aes(x = dateTime, y = coldMeanMA, ymin = coldMeanMA - coldSDMA, ymax = coldMeanMA + coldSDMA), fill = plotColors[2], alpha = 0.15) +
-  geom_hline(yintercept = coldMeanMA, colour = plotColors[2], linetype = 3) +
+  geom_ribbon(data = dataTempPlotMA[88:413,], aes(x = dateTime, y = coldMeanMA, ymin = coldMeanMA - coldSDMA, ymax = coldMeanMA + coldSDMA), fill = plotColors[2], alpha = 0.15) + #Start SE ribbon at the right place
+  geom_segment(x = as.POSIXct(ymd_hms("2024-06-25 06:00:00")), xend = as.POSIXct(ymd_hms("2024-06-28 09:51:00")),
+               y = coldMeanMA, yend = coldMeanMA, 
+               colour = plotColors[2], linetype = 3) + #Start average line at the right place
   geom_line(aes(x = dateTime, y = coldTemp), color = plotColors[2]) +
-  geom_ribbon(aes(x = dateTime, y = colderMeanMA, ymin = colderMeanMA - colderSDMA, ymax = colderMeanMA + colderSDMA), fill = plotColors[1], alpha = 0.15) +
-  geom_hline(yintercept = colderMeanMA, colour = plotColors[1], linetype = 3) +
+  geom_ribbon(data = dataTempPlotMA[88:413,], aes(x = dateTime, y = colderMeanMA, ymin = colderMeanMA - colderSDMA, ymax = colderMeanMA + colderSDMA), fill = plotColors[1], alpha = 0.15) + #Start SE ribbon at the right place
+  geom_segment(x = as.POSIXct(ymd_hms("2024-06-25 06:00:00")), xend = as.POSIXct(ymd_hms("2024-06-28 09:51:00")),
+               y = colderMeanMA, yend = colderMeanMA,
+               colour = plotColors[1], linetype = 3) + #Start average line at the right place
   geom_vline(xintercept = as.POSIXct(ymd_hms("2024-06-24 07:30:00")), linetype = 3, color = "black") + #Hour 0 TTR
   geom_vline(xintercept = as.POSIXct(ymd_hms("2024-06-24 18:00:00")), linetype = 3, color = "black") + #Hour 4 TTR
   geom_vline(xintercept = as.POSIXct(ymd_hms("2024-06-25 09:00:00")), linetype = 3, color = "black") + #Hour 22 TTR

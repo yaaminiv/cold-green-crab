@@ -219,7 +219,7 @@ write.csv(treatmentTempStats, "temp-mean-sd.csv", quote = FALSE)
 
 ```{r}
 #Colder: Mean = 2.137014, SD = 0.3486562
-colderMean <- mean(rbind(hobos[[1]][,2][115:length(hobos[[1]][,2])],
+colderMeanWA <- mean(rbind(hobos[[1]][,2][115:length(hobos[[1]][,2])],
                          hobos[[2]][,2][1:length(hobos[[2]][,2])],
                          hobos[[3]][,2][115:length(hobos[[3]][,2])],
                          hobos[[4]][,2][115:length(hobos[[4]][,2])],
@@ -228,7 +228,7 @@ colderMean <- mean(rbind(hobos[[1]][,2][115:length(hobos[[1]][,2])],
                          hobos[[11]][,2][115:length(hobos[[11]][,2])],
                          hobos[[12]][,2][115:length(hobos[[11]][,2])]),
                    na.rm = TRUE)
-colderSD <- sd(rbind(hobos[[1]][,2][115:length(hobos[[1]][,2])],
+colderSDWA <- sd(rbind(hobos[[1]][,2][115:length(hobos[[1]][,2])],
                      hobos[[2]][,2][1:length(hobos[[2]][,2])],
                      hobos[[3]][,2][115:length(hobos[[3]][,2])],
                      hobos[[4]][,2][115:length(hobos[[4]][,2])],
@@ -237,13 +237,13 @@ colderSD <- sd(rbind(hobos[[1]][,2][115:length(hobos[[1]][,2])],
                      hobos[[11]][,2][115:length(hobos[[11]][,2])],
                      hobos[[12]][,2][115:length(hobos[[11]][,2])]),
                na.rm = TRUE)
-colderMean
-colderSD
+colderMeanWA
+colderSDWA
 ```
 
 ```{r}
 #Cold: Mean = 5.199698, SD = 0.2157631
-coldMean <- mean(rbind(hobos[[5]][,2][1:length(hobos[[5]][,2])],
+coldMeanWA <- mean(rbind(hobos[[5]][,2][1:length(hobos[[5]][,2])],
                        hobos[[6]][,2][115:length(hobos[[6]][,2])],
                        hobos[[7]][,2][115:length(hobos[[7]][,2])],
                        hobos[[8]][,2][115:length(hobos[[8]][,2])],
@@ -252,7 +252,7 @@ coldMean <- mean(rbind(hobos[[5]][,2][1:length(hobos[[5]][,2])],
                        hobos[[15]][,2][115:length(hobos[[15]][,2])],
                        hobos[[16]][,2][1:length(hobos[[16]][,2])]),
                  na.rm = TRUE)
-coldSD <- sd(rbind(hobos[[5]][,2][1:length(hobos[[5]][,2])],
+coldSDWA <- sd(rbind(hobos[[5]][,2][1:length(hobos[[5]][,2])],
                    hobos[[6]][,2][115:length(hobos[[6]][,2])],
                    hobos[[7]][,2][115:length(hobos[[7]][,2])],
                    hobos[[8]][,2][115:length(hobos[[8]][,2])],
@@ -261,8 +261,8 @@ coldSD <- sd(rbind(hobos[[5]][,2][1:length(hobos[[5]][,2])],
                    hobos[[15]][,2][115:length(hobos[[15]][,2])],
                    hobos[[16]][,2][1:length(hobos[[16]][,2])]),
              na.rm = TRUE)
-coldMean
-coldSD
+coldMeanWA
+coldSDWA
 ```
 
 # Statistical test
@@ -374,7 +374,7 @@ temp2 #Confirm changes
 ```
 
 ```{r}
-temp2 %>%
+dataTempPlotWA <- temp2 %>%
   dplyr::select(dateTime, 
                 temp1a, temp1b,
                 temp2a, temp2b,
@@ -392,17 +392,30 @@ temp2 %>%
          coldTemp = mean(c(temp5a, temp5b,
                            temp6a, temp6b,
                            temp7a, temp7b,
-                           temp8a, temp8b), na.rm = TRUE)) %>%
+                           temp8a, temp8b), na.rm = TRUE)) #Create a dataframe for plotting
+head(dataTempPlotWA) #Confirm dataframe creation
+dataTempPlotWA$dateTime[115] #Start of experimental exposure
+dataTempPlotWA$dateTime[413] #End of experimental exposure
+```
+
+
+
+```{r}
+dataTempPlotWA %>%
   ggplot(., aes(x = dateTime, y = colderTemp)) +
   geom_line(color = plotColors[1]) +
-  geom_ribbon(aes(x = dateTime, y = coldMean, ymin = coldMean - coldSD, ymax = coldMean + coldSD), fill = plotColors[2], alpha = 0.15) +
-  geom_hline(yintercept = coldMean, colour = plotColors[2], linetype = 3) +
+  geom_ribbon(data = dataTempPlotWA[115:413,], aes(x = dateTime, y = coldMeanWA, ymin = coldMeanWA - coldSDWA, ymax = coldMeanWA + coldSDWA), fill = plotColors[2], alpha = 0.15) + #Start ribbon at the correct place
+  geom_segment(x = as.POSIXct(ymd_hms("2024-07-23 11:00:00")), xend = as.POSIXct(ymd_hms("2024-07-26 14:00:00")),
+               y = coldMeanWA, yend = coldMeanWA, 
+               colour = plotColors[2], linetype = 3) + #Start average line at the right place
   geom_line(aes(x = dateTime, y = coldTemp), color = plotColors[2]) +
-  geom_ribbon(aes(x = dateTime, y = colderMean, ymin = colderMean - colderSD, ymax = colderMean + colderSD), fill = plotColors[1], alpha = 0.15) +
-  geom_hline(yintercept = colderMean, colour = plotColors[1], linetype = 3) +
+  geom_ribbon(data = dataTempPlotWA[115:413,], aes(x = dateTime, y = colderMeanWA, ymin = colderMeanWA - colderSDWA, ymax = colderMeanWA + colderSDWA), fill = plotColors[1], alpha = 0.15) + #Start ribbon at the correct place
+  geom_segment(x = as.POSIXct(ymd_hms("2024-07-23 11:00:00")), xend = as.POSIXct(ymd_hms("2024-07-26 14:00:00")),
+               y = colderMeanWA, yend = colderMeanWA, 
+               colour = plotColors[1], linetype = 3) + #Start average line at the right place
   geom_vline(xintercept = as.POSIXct(ymd_hms("2024-07-22 08:00:00")), linetype = 3, color = "black") + #Hour 0 TTR
   geom_vline(xintercept = as.POSIXct(ymd_hms("2024-07-22 19:00:00")), linetype = 3, color = "black") + #Hour 4 TTR
-  geom_vline(xintercept = as.POSIXct(ymd_hms("2024-07-23 10:00:00")), linetype = 3, color = "black") + #Hour 22 TTR
+  geom_vline(xintercept = as.POSIXct(ymd_hms("2024-07-23 11:00:00")), linetype = 3, color = "black") + #Hour 22 TTR
   geom_vline(xintercept = as.POSIXct(ymd_hms("2024-07-23 18:00:00")), linetype = 3, color = "black") + #Hour 28 TTR
   geom_vline(xintercept = as.POSIXct(ymd_hms("2024-07-24 10:00:00")), linetype = 3, color = "black") + #Hour 46 TTR
   geom_vline(xintercept = as.POSIXct(ymd_hms("2024-07-26 10:00:00")), linetype = 3, color = "black") + #Hour 96 TTR
@@ -415,35 +428,21 @@ ggsave("figures/exp-temp.pdf", height = 8.5, width = 11)
 ```
 
 ```{r}
-WAconditions <- temp2 %>%
-  dplyr::select(dateTime, 
-                temp1a, temp1b,
-                temp2a, temp2b,
-                temp3a, temp3b, 
-                temp4a, temp4b,
-                temp5a, temp5b,
-                temp6a, temp6b,
-                temp7a, temp7b,
-                temp8a, temp8b) %>%
-  rowwise() %>%
-  mutate(., colderTemp = mean(c(temp1a, temp1b,
-                                temp2a, temp2b,
-                                temp3a, temp3b,
-                                temp4a, temp4b), na.rm = TRUE),
-         coldTemp = mean(c(temp5a, temp5b,
-                           temp6a, temp6b,
-                           temp7a, temp7b,
-                           temp8a, temp8b), na.rm = TRUE)) %>%
+WAconditions <- dataTempPlotWA %>%
   ggplot(., aes(x = dateTime, y = colderTemp)) +
   geom_line(color = plotColors[1]) +
-  geom_ribbon(aes(x = dateTime, y = coldMean, ymin = coldMean - coldSD, ymax = coldMean + coldSD), fill = plotColors[2], alpha = 0.15) +
-  geom_hline(yintercept = coldMean, colour = plotColors[2], linetype = 3) +
+  geom_ribbon(data = dataTempPlotWA[115:413,], aes(x = dateTime, y = coldMeanWA, ymin = coldMeanWA - coldSDWA, ymax = coldMeanWA + coldSDWA), fill = plotColors[2], alpha = 0.15) + #Start ribbon at the correct place
+  geom_segment(x = as.POSIXct(ymd_hms("2024-07-23 11:00:00")), xend = as.POSIXct(ymd_hms("2024-07-26 14:00:00")),
+               y = coldMeanWA, yend = coldMeanWA, 
+               colour = plotColors[2], linetype = 3) + #Start average line at the right place
   geom_line(aes(x = dateTime, y = coldTemp), color = plotColors[2]) +
-  geom_ribbon(aes(x = dateTime, y = colderMean, ymin = colderMean - colderSD, ymax = colderMean + colderSD), fill = plotColors[1], alpha = 0.15) +
-  geom_hline(yintercept = colderMean, colour = plotColors[1], linetype = 3) +
+  geom_ribbon(data = dataTempPlotWA[115:413,], aes(x = dateTime, y = colderMeanWA, ymin = colderMeanWA - colderSDWA, ymax = colderMeanWA + colderSDWA), fill = plotColors[1], alpha = 0.15) + #Start ribbon at the correct place
+  geom_segment(x = as.POSIXct(ymd_hms("2024-07-23 11:00:00")), xend = as.POSIXct(ymd_hms("2024-07-26 14:00:00")),
+               y = colderMeanWA, yend = colderMeanWA, 
+               colour = plotColors[1], linetype = 3) + #Start average line at the right place
   geom_vline(xintercept = as.POSIXct(ymd_hms("2024-07-22 08:00:00")), linetype = 3, color = "black") + #Hour 0 TTR
   geom_vline(xintercept = as.POSIXct(ymd_hms("2024-07-22 19:00:00")), linetype = 3, color = "black") + #Hour 4 TTR
-  geom_vline(xintercept = as.POSIXct(ymd_hms("2024-07-23 10:00:00")), linetype = 3, color = "black") + #Hour 22 TTR
+  geom_vline(xintercept = as.POSIXct(ymd_hms("2024-07-23 11:00:00")), linetype = 3, color = "black") + #Hour 22 TTR
   geom_vline(xintercept = as.POSIXct(ymd_hms("2024-07-23 18:00:00")), linetype = 3, color = "black") + #Hour 28 TTR
   geom_vline(xintercept = as.POSIXct(ymd_hms("2024-07-24 10:00:00")), linetype = 3, color = "black") + #Hour 46 TTR
   geom_vline(xintercept = as.POSIXct(ymd_hms("2024-07-26 10:00:00")), linetype = 3, color = "black") + #Hour 96 TTR
@@ -453,6 +452,7 @@ WAconditions <- temp2 %>%
   ggtitle("B. WA Temperature Conditions") +
   theme_classic(base_size = 15)
 #Combine data from all dataframes and select columns of interest. Use rowwise operations to calculate average temperature for each treatment at each timepoint. Plot colder temepratures for each timepoint. Add a ribbon with the overall average colder temperature and SD. Add a line for the overall average colder temperature. Repeat with the cold temperature. Modify x-axis label. Modify y-axis.
+WAconditions
 ```
 
 
