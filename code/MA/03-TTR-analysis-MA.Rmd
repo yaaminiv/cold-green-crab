@@ -25,6 +25,7 @@ getwd()
 #install.packages("plotrix")
 #install.packages("RColorBrewer")
 #install.packages("lme4")
+#install.packages("lsmeans")
 #install.packages("ggpubr")
 #install.packages("patchwork")
 #install.packages("respirometry")
@@ -32,6 +33,7 @@ require(tidyverse)
 require(plotrix)
 require(RColorBrewer)
 require(lme4)
+require(lsmeans)
 require(ggpubr)
 require(patchwork)
 require(respirometry)
@@ -341,7 +343,7 @@ hist(x = log(modTTR$TTRavg)) #Log transformation helps normalize data
 ```
 
 ```{r}
-TTRmodel <- lmer(log(TTRavg) ~ treatment + timepoint + treatment:timepoint + 
+TTRmodel <- lmer(log(TTRavg) ~ treatment + as.factor(timepoint) + treatment:as.factor(timepoint) + 
                    as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                    (1|crab.ID), 
                  data = (modTTR %>% filter(., is.na(TTRavg) == FALSE)), REML = FALSE) #Run model with treatment, timepoint, their interaction, sex, integument color, carapace width, weight, and missing swimmer information as fixed effects, and individual as a random effect. Change the likelihood estimator (REML = FALSE) to compare models with LRT later. Use data without rows with NAs
@@ -350,15 +352,15 @@ summary(TTRmodel) #Look at model output.
 ```
 
 ```{r}
-var.lmer <- c(0.04731, 0.39013) #Save variances of random effects as a new vector (crab ID, residual)
+var.lmer <- c(0.06529, 0.25870) #Save variances of random effects as a new vector (crab ID, residual)
 percentvar.lmer <- (100*var.lmer)/sum(var.lmer) #Calculate percent variances
-percentvar.lmer[1] #Crab ID accounts for 10.8152% of variance
+percentvar.lmer[1] #Crab ID accounts for 20.15186% of variance
 ```
 
 Now that I've run the full model, I want to test the importance of treatment, timepoint, and their interaction as predictors. I'll include all other factors in the null model to account for any variation they may contribute.
 
 ```{r}
-TTRnullTreatment <- lmer(log(TTRavg) ~ timepoint + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID), data = (modTTR %>% filter(., is.na(TTRavg) == FALSE)), REML = FALSE) #Run null model without treatment to identify significance of predictor
+TTRnullTreatment <- lmer(log(TTRavg) ~ as.factor(timepoint) + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID), data = (modTTR %>% filter(., is.na(TTRavg) == FALSE)), REML = FALSE) #Run null model without treatment to identify significance of predictor
 anova(TTRnullTreatment, TTRmodel) #Treatment is a significant predictor
 ```
 
@@ -368,9 +370,34 @@ anova(TTRnullTimepoint, TTRmodel) #Timepoint is a significant predictor
 ```
 
 ```{r}
-TTRnullInteraction <- lmer(log(TTRavg) ~ treatment + timepoint + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID), data = (modTTR %>% filter(., is.na(TTRavg) == FALSE)), REML = FALSE) #Run model without interaction to identify significance of predictor. The full model constructed does not include an interaction
+TTRnullInteraction <- lmer(log(TTRavg) ~ as.character(treatment) + as.factor(timepoint) + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID), data = (modTTR %>% filter(., is.na(TTRavg) == FALSE)), REML = FALSE) #Run model without interaction to identify significance of predictor. The full model constructed does not include an interaction
 anova(TTRnullInteraction, TTRmodel) #Timepoint is a significant predictor
 ```
+
+```{r}
+TTRmodel_treatment <- lsmeans(TTRmodel, 
+                              list(pairwise ~ treatment|as.factor(timepoint), 
+                                   pairwise ~ as.factor(timepoint)|treatment),
+                              adjust = "tukey",
+                              data = modTTR) #Pairwise tukey test for timepoint and treatment accounting for the interaction
+```
+
+```{r}
+TTRmodel_treatment$`pairwise differences of treatment | timepoint` %>%
+  broom::tidy(.) %>%
+  dplyr::rename(treatment = "2") %>%
+  write.csv("tukey-test-treatment.csv")
+#Significant differences between 1.5 and 5 at all timepoints except for hour 0
+```
+
+```{r}
+TTRmodel_treatment$`pairwise differences of timepoint | treatment` %>%
+  broom::tidy(.) %>%
+  dplyr::rename(day = "2") %>%
+  write.csv("tukey-test-timepoint.csv")
+#Lots of significant pairwise differences
+```
+
 
 ```{r}
 TTRModelComparisons<- rbind(broom::tidy(anova(TTRnullTreatment, TTRmodel)),
