@@ -228,17 +228,26 @@ abline(h = 0, lty = 2, col = "grey")
 Now that I know treatment, time, and their interaction significantly impact TTR, I want to add in genotype and sourcing information.
 
 ```{r}
-TTRfullGenotype <- lmer(log(TTRavg) ~ as.factor(treatment) + day + as.factor(treatment):day + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + as.factor(genotype) + (1|crab.ID) + (1|tank), data = modTTR, REML = FALSE) #Run model with genotype to identify4 significance of predictor
+TTRfullGenotype <- lmer(log(TTRavg) ~ as.factor(treatment) + as.factor(day) + as.factor(treatment):as.factor(day) + 
+                          as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
+                          as.factor(genotype) + 
+                          (1|crab.ID) + (1|tank), data = modTTR, REML = FALSE) #Run model with genotype to identify4 significance of predictor
 anova(TTRmodel, TTRfullGenotype) #No significant impact of genotype
 ```
 
 ```{r}
-TTRpresenceC <- lmer(log(TTRavg) ~ as.factor(treatment) + day + as.factor(treatment):day + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + as.factor(presenceC) + (1|crab.ID) + (1|tank), data = modTTR, REML = FALSE) #Run model with genotype to identify significance of predictor
+TTRpresenceC <- lmer(log(TTRavg) ~ as.factor(treatment) + as.factor(day) + as.factor(treatment):as.factor(day) +
+                       as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
+                       as.factor(presenceC) + 
+                       (1|crab.ID) + (1|tank), data = modTTR, REML = FALSE) #Run model with genotype to identify significance of predictor
 anova(TTRmodel, TTRpresenceC) #No significant impact of C allele
 ```
 
 ```{r}
-TTRpresenceT <- lmer(log(TTRavg) ~ as.factor(treatment) + day + as.factor(treatment):day + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + as.factor(presenceT) + (1|crab.ID) + (1|tank), data = modTTR, REML = FALSE) #Run model with genotype to identify significance of predictor
+TTRpresenceT <- lmer(log(TTRavg) ~ as.factor(treatment) + as.factor(day) + as.factor(treatment):as.factor(day) + 
+                       as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
+                       as.factor(presenceT) + 
+                       (1|crab.ID) + (1|tank), data = modTTR, REML = FALSE) #Run model with genotype to identify significance of predictor
 anova(TTRmodel, TTRpresenceT) #Marginal impact of T allele
 ```
 
