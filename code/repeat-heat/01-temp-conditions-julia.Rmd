@@ -440,12 +440,21 @@ tempClean[4:395,] %>%
                   ymin = treatmentTempStatsOverall$meanTempPulse2[1] - treatmentTempStatsOverall$sdTempPulse2[1], 
                   ymax = treatmentTempStatsOverall$meanTempPulse2[1] + treatmentTempStatsOverall$sdTempPulse2[1]), 
               fill = plotColors[2], alpha = 0.15) + #Pulse 2 treatment ribbon
-  geom_vline(xintercept = as.POSIXct(ymd_hms("2023-07-31 16:00:00")), linetype = 3, color = "black") + #Pre-exposure TTR timepoint
-  geom_vline(xintercept = as.POSIXct(ymd_hms("2023-08-01 16:50:00")), linetype = 3, color = "black") + #Pulse 1 TTR timepoint
-  geom_vline(xintercept = as.POSIXct(ymd_hms("2023-08-04 16:00:00")), linetype = 3, color = "black") + #Pulse 2 TTR timepoint
+  geom_segment(x = as.POSIXct(ymd_hms("2023-07-31 16:00:00")), xend =  as.POSIXct(ymd_hms("2023-07-31 16:00:00")),
+               y = 14.9, yend = 32.7,
+               linetype = 3, color = "black") + #Pre-exposure TTR timepoint
+  annotate("text", x = as.POSIXct(ymd_hms("2023-07-31 16:00:00")), y = 33.5, label = "Day 0") +
+ geom_segment(x = as.POSIXct(ymd_hms("2023-08-01 16:50:00")), xend =  as.POSIXct(ymd_hms("2023-08-01 16:50:00")),
+               y = 14.9, yend = 32.7,
+               linetype = 3, color = "black") + #Pulse 1 TTR timepoint
+  annotate("text", x = as.POSIXct(ymd_hms("2023-08-01 16:50:00")), y = 33.5, label = "Day 1") +
+  geom_segment(x = as.POSIXct(ymd_hms("2023-08-04 16:00:00")), xend =  as.POSIXct(ymd_hms("2023-08-04 16:00:00")),
+               y = 14.9, yend = 32.7,
+               linetype = 3, color = "black") + #Pulse 2 TTR timepoint
+  annotate("text", x = as.POSIXct(ymd_hms("2023-08-04 16:00:00")), y = 33.5, label = "Day 4") +
   scale_x_datetime(name = "") +
   scale_y_continuous(name = "Temperature (ºC)",
-                     limits = c(14.9,33),
+                     limits = c(14.9,34),
                      breaks = c(seq(15,30,5), seq(31,33,1))) +
   theme_classic(base_size = 15)
 #Combine data from all dataframes and select columns of interest. Use rowwise operations to calculate average temperature for each treatment at each timepoint. Plot colder temepratures for each timepoint. Add a ribbon with the overall average colder temperature and SD. Add a line for the overall average colder temperature. Repeat with the cold temperature. Modify x-axis label. Modify y-axis.
@@ -503,12 +512,21 @@ mainPlot <- tempClean[4:395,] %>%
                   ymin = treatmentTempStatsOverall$meanTempPulse2[1] - treatmentTempStatsOverall$sdTempPulse2[1], 
                   ymax = treatmentTempStatsOverall$meanTempPulse2[1] + treatmentTempStatsOverall$sdTempPulse2[1]), 
               fill = plotColors[2], alpha = 0.25) + #Pulse 2 control ribbon
-  geom_vline(xintercept = as.POSIXct(ymd_hms("2023-07-31 16:00:00")), linetype = 3, color = "black") + #Pre-exposure TTR timepoint
-  geom_vline(xintercept = as.POSIXct(ymd_hms("2023-08-01 16:50:00")), linetype = 3, color = "black") + #Pulse 1 TTR timepoint
-  geom_vline(xintercept = as.POSIXct(ymd_hms("2023-08-04 16:00:00")), linetype = 3, color = "black") + #Pulse 2 TTR timepoint
+    geom_segment(x = as.POSIXct(ymd_hms("2023-07-31 16:00:00")), xend =  as.POSIXct(ymd_hms("2023-07-31 16:00:00")),
+               y = 14.9, yend = 32.7,
+               linetype = 3, color = "black") + #Pre-exposure TTR timepoint
+  annotate("text", x = as.POSIXct(ymd_hms("2023-07-31 16:00:00")), y = 33.5, label = "Day 0") +
+ geom_segment(x = as.POSIXct(ymd_hms("2023-08-01 16:50:00")), xend =  as.POSIXct(ymd_hms("2023-08-01 16:50:00")),
+               y = 14.9, yend = 32.7,
+               linetype = 3, color = "black") + #Pulse 1 TTR timepoint
+  annotate("text", x = as.POSIXct(ymd_hms("2023-08-01 16:50:00")), y = 33.5, label = "Day 1") +
+  geom_segment(x = as.POSIXct(ymd_hms("2023-08-04 16:00:00")), xend =  as.POSIXct(ymd_hms("2023-08-04 16:00:00")),
+               y = 14.9, yend = 32.7,
+               linetype = 3, color = "black") + #Pulse 2 TTR timepoint
+  annotate("text", x = as.POSIXct(ymd_hms("2023-08-04 16:00:00")), y = 33.5, label = "Day 4") +
   scale_x_datetime(name = "") +
   scale_y_continuous(name = "Temperature (ºC)",
-                     limits = c(14.9,33),
+                     limits = c(14.9,34),
                      breaks = c(seq(15,30,5), seq(31,33,1))) +
   ggtitle("A. Overall Experimental Temperature") +
   theme_classic(base_size = 15)
