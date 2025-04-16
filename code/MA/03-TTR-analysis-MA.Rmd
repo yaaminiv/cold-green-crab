@@ -631,8 +631,6 @@ write.csv(TTRthreshModelComparisons, "ttr-binomial-model-comparison-output.csv",
 
 The impacts of presence of the T allele and source population on whether or not a crab righted itself are no longer significant after multiple correction. I'll include genotype-specific information in the final figure since there was a trend.
 
-#### Posthoc tests for significant predictors
-
 ### Calculate proportions for righting
 
 ```{r}
