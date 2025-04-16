@@ -23,7 +23,8 @@ getwd()
 #install.packages("tidyverse")
 #install.packages("plotrix")
 #install.packages("RColorBrewer")
-#install.packages(lme4)
+#install.packages("lme4")
+#install.packages("lsmeans")
 #install.packages("ggpubr")
 #install.packages("ggrain")
 #install.packages("cowplot")
@@ -31,6 +32,7 @@ require(tidyverse)
 require(plotrix)
 require(RColorBrewer)
 require(lme4)
+require(lsmeans)
 require(ggpubr)
 require(ggrain)
 require(cowplot)
@@ -138,7 +140,7 @@ hist(x = log(modTTR$TTRavg)) #Log transformation helps normalize data
 ```
 
 ```{r}
-TTRmodel <- lmer(log(TTRavg) ~ as.factor(treatment) + day + as.factor(treatment):day + 
+TTRmodel <- lmer(log(TTRavg) ~ as.factor(treatment) + as.factor(day) + as.factor(treatment):as.factor(day) + 
                    as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                    (1|crab.ID) + (1|tank), 
                  data = modTTR, REML = FALSE) #Run model with treatment, timepoint, their interaction, sex, integument color, carapace width, weight, and missing swimmer information as fixed effects, and individual as a random effect. Change the likelihood estimator (REML = FALSE) to compare models with LRT later. Use data without rows with NAs
@@ -147,16 +149,16 @@ summary(TTRmodel) #Look at model output.
 ```
 
 ```{r}
-var.lmer <- c(0.02054, 0, 0.22874) #Save variances of random effects as a new vector (crab ID, tank, residuals)
+var.lmer <- c(0.02907, 0, 0.20532) #Save variances of random effects as a new vector (crab ID, tank, residuals)
 percentvar.lmer <- (100*var.lmer)/sum(var.lmer) #Calculate percent variances
-percentvar.lmer[1] #Crab ID accounts for 8.23973% of variance
+percentvar.lmer[1] #Crab ID accounts for 12.40241% of variance
 percentvar.lmer[2] #Tank accounts for 0% of the variance!
 ```
 
 Now that I've run the full model, I want to test the importance of treatment, day, and their interaction as predictors. I'll include all other factors in the null model to account for any variation they may contribute.
 
 ```{r}
-TTRnullTreatment <- lmer(log(TTRavg) ~ day + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID) + (1|tank), data = modTTR, REML = FALSE) #Run null model without treatment to identify significance of predictor
+TTRnullTreatment <- lmer(log(TTRavg) ~ as.factor(day) + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID) + (1|tank), data = modTTR, REML = FALSE) #Run null model without treatment to identify significance of predictor
 anova(TTRnullTreatment, TTRmodel) #Treatment is a significant predictor
 ```
 
@@ -166,8 +168,29 @@ anova(TTRnullDay, TTRmodel) #Day is a significant predictor
 ```
 
 ```{r}
-TTRnullInteraction <- lmer(log(TTRavg) ~ as.factor(treatment) + day + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID) + (1|tank), data = modTTR, REML = FALSE) #Run model without interaction to identify significance of predictor. The full model constructed does not include an interaction
+TTRnullInteraction <- lmer(log(TTRavg) ~ as.factor(treatment) + as.factor(day) + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID) + (1|tank), data = modTTR, REML = FALSE) #Run model without interaction to identify significance of predictor. The full model constructed does not include an interaction
 anova(TTRnullInteraction, TTRmodel) #Interaction is a significant predictor
+```
+
+```{r}
+TTRmodel_treatment <- lsmeans(TTRmodel, 
+                              list(pairwise ~ as.factor(treatment)|as.factor(day), 
+                                   pairwise ~ as.factor(day)|as.factor(treatment)),
+                              adjust = "tukey") #Pairwise tukey test for timepoint and day accounting for the interaction
+```
+
+```{r}
+TTRmodel_treatment$`pairwise differences of treatment | day` %>%
+  broom::tidy(.) %>%
+  dplyr::rename(treatment = "2") %>%
+  write.csv("tukey-test-output-treatment.csv", quote = FALSE, row.names = FALSE)
+```
+
+```{r}
+TTRmodel_treatment$`pairwise differences of day | treatment` %>%
+  broom::tidy(.) %>%
+  dplyr::rename(day = "2") %>%
+  write.csv("tukey-test-output-day.csv", quote = FALSE, row.names = FALSE)
 ```
 
 ```{r}
