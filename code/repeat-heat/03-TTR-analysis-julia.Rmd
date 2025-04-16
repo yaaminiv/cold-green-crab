@@ -664,7 +664,7 @@ insetPlotMultipanel <-  modTTR %>%
 
 plotWithInsetMultipanel <- ggdraw() +
   draw_plot(mainPlotMultipanel) +
-  draw_plot(insetPlotMultipanel, x = 0.075, y = 0.33, width = 0.44, height = 0.4) #Add inset to the plot
+  draw_plot(insetPlotMultipanel, x = 0.084, y = 0.37, width = 0.4, height = 0.25) #Add inset to the plot
 
 plotWithInsetMultipanel #Plot the full plot with inset
 ```
