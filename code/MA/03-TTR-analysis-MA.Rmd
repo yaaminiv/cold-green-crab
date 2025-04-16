@@ -25,7 +25,7 @@ getwd()
 #install.packages("plotrix")
 #install.packages("RColorBrewer")
 #install.packages("lme4")
-#install.packages("lsmeans")
+#install.packages("emmeans")
 #install.packages("ggpubr")
 #install.packages("patchwork")
 #install.packages("respirometry")
@@ -33,7 +33,7 @@ require(tidyverse)
 require(plotrix)
 require(RColorBrewer)
 require(lme4)
-require(lsmeans)
+require(emmeans)
 require(ggpubr)
 require(patchwork)
 require(respirometry)
@@ -375,6 +375,15 @@ anova(TTRnullInteraction, TTRmodel) #Timepoint is a significant predictor
 ```
 
 ```{r}
+TTRmodel_treatment <- emmeans(TTRmodel, pairwise ~ treatment | timepoint, at = list(time = c(0:5)), data = modTTR) #Use emmeans to obtain pairwise treatment differences at the timepoints listed. 
+pairs(TTRmodel_treatment) %>% broom::tidy(.) #Use the pairs function to look at pairwise test output. Clean output using broom.
+pairs(TTRmodel_treatment) %>% 
+  broom::tidy(.) %>%
+  write.csv("tukey-test-treatment.csv", quote = FALSE, row.names = FALSE) #Save output as a csv.
+```
+
+
+```{r}
 TTRmodel_treatment <- lsmeans(TTRmodel, 
                               list(pairwise ~ treatment|as.factor(timepoint), 
                                    pairwise ~ as.factor(timepoint)|treatment),
@@ -532,7 +541,7 @@ TTRthreshModelComparisons %>%
 Alright, there are significant impacts of treatment and time on righting, but no impact of their interaction. Now I want to test the impact of genotype and population source on binary righting response. 
 
 ```{r}
-TTRthreshModelRevised <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
+TTRthreshModelRevised <- glmer(I(TTRthresh == 1) ~ treatment + as.factor(timepoint) +
                                  as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                                  (1|crab.ID), 
                                family = binomial(), 
@@ -540,38 +549,50 @@ TTRthreshModelRevised <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
 summary(TTRthreshModelRevised)
 ```
 
+Before I look at genotype, I want to look at sex. Coyle et al. (2014) found sex-specific differences in failure to right at cold temperatures.
+
 ```{r}
-TTRthreshGenotype <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
+TTRthreshNullSex <- glmer(I(TTRthresh == 1) ~ treatment + as.factor(timepoint) +
+                             integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
+                             as.factor(genotype) +
+                             (1|crab.ID), 
+                           family = binomial(), 
+                           data = modTTR) #Create null model without sex
+anova(TTRthreshNullSex, TTRthreshModelRevised) #Compare models. No significant impact of sex on failure to right.
+```
+
+```{r}
+TTRthreshGenotype <- glmer(I(TTRthresh == 1) ~ treatment + as.factor(timepoint) +
                              as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                              as.factor(genotype) +
                              (1|crab.ID), 
                            family = binomial(), 
-                           data = modTTR) #Create null model without interaction
+                           data = modTTR) #Create model with genotype
 anova(TTRthreshModelRevised, TTRthreshGenotype) #Compare models
 ```
 
 ```{r}
-TTRthreshpresenceC <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
+TTRthreshpresenceC <- glmer(I(TTRthresh == 1) ~ treatment + as.factor(timepoint) +
                               as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                               as.factor(presenceC) +
                               (1|crab.ID), 
                             family = binomial(), 
-                            data = modTTR) #Create null model without interaction
+                            data = modTTR) #Create model with presenceC
 anova(TTRthreshModelRevised, TTRthreshpresenceC) #Compare models
 ```
 
 ```{r}
-TTRthreshpresenceT <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
+TTRthreshpresenceT <- glmer(I(TTRthresh == 1) ~ treatment + as.factor(timepoint) +
                               as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                               as.factor(presenceT) +
                               (1|crab.ID), 
                             family = binomial(), 
-                            data = modTTR) #Create null model without interaction
+                            data = modTTR) #Create model with presenceT
 anova(TTRthreshModelRevised, TTRthreshpresenceT) #Compare models
 ```
 
 ```{r}
-TTRthreshSource <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
+TTRthreshSource <- glmer(I(TTRthresh == 1) ~ treatment + as.factor(timepoint) +
                            as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                            as.factor(source) +
                            (1|crab.ID), 
@@ -584,6 +605,7 @@ anova(TTRthreshModelRevised, TTRthreshSource) #Compare models
 TTRthreshModelComparisons <- rbind(broom::tidy(anova(TTRthreshNullTreatment, TTRthreshModel)),
                                    broom::tidy(anova(TTRthreshNullTimepoint, TTRthreshModel)),
                                    broom::tidy(anova(TTRthreshNullInteraction, TTRthreshModel)),
+                                   broom::tidy(anova(TTRthreshNullSex, TTRthreshModelRevised)),
                                    broom::tidy(anova(TTRthreshModelRevised, TTRthreshGenotype)),
                                    broom::tidy(anova(TTRthreshModelRevised, TTRthreshpresenceC)),
                                    broom::tidy(anova(TTRthreshModelRevised, TTRthreshpresenceT)),
