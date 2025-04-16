@@ -427,22 +427,22 @@ modTTR %>%
 Now that I know treatment, time, and their interaction significantly impact TTR, I want to add in genotype and sourcing information.
 
 ```{r}
-TTRfullGenotype <- lmer(log(TTRavg) ~ treatment + timepoint + treatment:timepoint + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + as.factor(genotype) + (1|crab.ID), data = (modTTR %>% filter(., is.na(TTRavg) == FALSE)), REML = FALSE) #Run model with genotype to identify significance of predictor
+TTRfullGenotype <- lmer(log(TTRavg) ~ treatment + as.factor(timepoint) + treatment:as.factor(timepoint) + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + as.factor(genotype) + (1|crab.ID), data = (modTTR %>% filter(., is.na(TTRavg) == FALSE)), REML = FALSE) #Run model with genotype to identify significance of predictor
 anova(TTRmodel, TTRfullGenotype) #No significant impact of genotype
 ```
 
 ```{r}
-TTRpresenceC <- lmer(log(TTRavg) ~ treatment + timepoint + treatment:timepoint + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + as.factor(presenceC) + (1|crab.ID), data = (modTTR %>% filter(., is.na(TTRavg) == FALSE)), REML = FALSE) #Run model with genotype to identify significance of predictor
+TTRpresenceC <- lmer(log(TTRavg) ~ treatment + as.factor(timepoint) + treatment:as.factor(timepoint) + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + as.factor(presenceC) + (1|crab.ID), data = (modTTR %>% filter(., is.na(TTRavg) == FALSE)), REML = FALSE) #Run model with genotype to identify significance of predictor
 anova(TTRmodel, TTRpresenceC) #No significant impact of C allele
 ```
 
 ```{r}
-TTRpresenceT <- lmer(log(TTRavg) ~ treatment + timepoint + treatment:timepoint + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + as.factor(presenceT) + (1|crab.ID), data = (modTTR %>% filter(., is.na(TTRavg) == FALSE)), REML = FALSE) #Run model with genotype to identify significance of predictor
+TTRpresenceT <- lmer(log(TTRavg) ~ treatment + as.factor(timepoint) + treatment:as.factor(timepoint) + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + as.factor(presenceT) + (1|crab.ID), data = (modTTR %>% filter(., is.na(TTRavg) == FALSE)), REML = FALSE) #Run model with genotype to identify significance of predictor
 anova(TTRmodel, TTRpresenceT) #No significant impact of T allele
 ```
 
 ```{r}
-TTRsource <- lmer(log(TTRavg) ~ treatment + timepoint + treatment:timepoint + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + as.factor(source) + (1|crab.ID), data = (modTTR %>% filter(., is.na(TTRavg) == FALSE)), REML = FALSE) #Run model with genotype to identify significance of predictor
+TTRsource <- lmer(log(TTRavg) ~ treatment + as.factor(timepoint) + treatment:as.factor(timepoint) + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + as.factor(source) + (1|crab.ID), data = (modTTR %>% filter(., is.na(TTRavg) == FALSE)), REML = FALSE) #Run model with genotype to identify significance of predictor
 anova(TTRmodel, TTRsource) #No significant impact of source on TTR
 ```
 
@@ -482,7 +482,7 @@ head(modTTR) #Confirm modifications
 ### Binomial model
 
 ```{r}
-TTRthreshModel <- glmer(I(TTRthresh == 1) ~ treatment + timepoint + treatment:timepoint +
+TTRthreshModel <- glmer(I(TTRthresh == 1) ~ treatment + as.factor(timepoint) + treatment:as.factor(timepoint) +
                           as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                           (1|crab.ID), 
                         family = binomial(), 
@@ -491,7 +491,7 @@ summary(TTRthreshModel)
 ```
 
 ```{r}
-TTRthreshNullTreatment <- glmer(I(TTRthresh == 1) ~ timepoint +
+TTRthreshNullTreatment <- glmer(I(TTRthresh == 1) ~ as.factor(timepoint) +
                                   as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                                   (1|crab.ID), 
                                 family = binomial(), 
@@ -509,7 +509,7 @@ anova(TTRthreshNullTimepoint, TTRthreshModel) #Compare models
 ```
 
 ```{r}
-TTRthreshNullInteraction <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
+TTRthreshNullInteraction <- glmer(I(TTRthresh == 1) ~ treatment + as.factor(timepoint) +
                                     as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                                     (1|crab.ID), 
                                   family = binomial(), 
