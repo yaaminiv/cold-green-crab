@@ -440,7 +440,7 @@ modTTR %>%
   write.csv("average-TTR-calculations.csv", quote = FALSE, row.names = FALSE)
 ```
 
-# Effect of genotype and population source.
+# Effect of genotype and population source
 
 ## Impact on average TTR
 
