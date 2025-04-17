@@ -428,7 +428,7 @@ TTRmodel_time <- emmeans(TTRmodel_factor, pairwise ~ timepoint_factor | treatmen
 pairs(TTRmodel_time) %>% broom::tidy(.) #Use the pairs function to look at pairwise output. Clean output using broom.
 pairs(TTRmodel_time) %>%
   broom::tidy(.) %>%
-  write.csv("tukey-test-time.csv", quote = FALSE, row.names = FALSE) #Save output as a csv.
+  write.csv("tukey-test-timepoint.csv", quote = FALSE, row.names = FALSE) #Save output as a csv.
 ```
 
 ## Calculate average values
