@@ -28,6 +28,7 @@ getwd()
 #install.packages("multcompView")
 #install.packages("multcomp")
 #install.packages("ggpubr")
+#install.packages("cowplot")
 #install.packages("patchwork")
 #install.packages("respirometry")
 require(tidyverse)
@@ -38,6 +39,7 @@ require(emmeans)
 require(multcompView)
 require(multcomp)
 require(ggpubr)
+require(cowplot)
 require(patchwork)
 require(respirometry)
 ```
@@ -256,7 +258,7 @@ abline(h = 0, lty = 2, col = "grey")
 Now that I know treatment, time, and their interaction significantly impact TTR, I want to add in genotype and sourcing information.
 
 ```{r}
-TTRfullGenotype <- lmer(log(TTRavg) ~ as.factor(treatment) + as.factor(day) + as.factor(treatment):as.factor(day) + 
+TTRfullGenotype <- lmer(log(TTRavg) ~ as.factor(treatment) + day + as.factor(treatment):day + 
                           as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                           as.factor(genotype) + 
                           (1|crab.ID) + (1|tank), data = modTTR, REML = FALSE) #Run model with genotype to identify4 significance of predictor
@@ -264,7 +266,7 @@ anova(TTRmodel, TTRfullGenotype) #No significant impact of genotype
 ```
 
 ```{r}
-TTRpresenceC <- lmer(log(TTRavg) ~ as.factor(treatment) + as.factor(day) + as.factor(treatment):as.factor(day) +
+TTRpresenceC <- lmer(log(TTRavg) ~ as.factor(treatment) + day + as.factor(treatment):day +
                        as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                        as.factor(presenceC) + 
                        (1|crab.ID) + (1|tank), data = modTTR, REML = FALSE) #Run model with genotype to identify significance of predictor
@@ -272,7 +274,7 @@ anova(TTRmodel, TTRpresenceC) #No significant impact of C allele
 ```
 
 ```{r}
-TTRpresenceT <- lmer(log(TTRavg) ~ as.factor(treatment) + as.factor(day) + as.factor(treatment):as.factor(day) + 
+TTRpresenceT <- lmer(log(TTRavg) ~ as.factor(treatment) + day + as.factor(treatment):day + 
                        as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                        as.factor(presenceT) + 
                        (1|crab.ID) + (1|tank), data = modTTR, REML = FALSE) #Run model with genotype to identify significance of predictor
@@ -300,7 +302,6 @@ write.csv(TTRModelComparisons, "ttr-model-comparison-stat-output.csv", quote = F
 ```
 
 The marginally significant impact of the T allele on average TTR is no longer significant after p-value correction. However, I'll still include this information in a plot since there is a trend. 
-
 ### Calculate average TTR
 
 ```{r}
@@ -604,23 +605,21 @@ ggsave("figures/difference-TTR-boxplot-treatTswimmer.pdf", height = 8.5, width =
 
 ### Modify plots for multipanel
 
+I want to add significance information to the plot. Since treatments were only significantly different from eachother at day 4, I don't think that contrast is as interesting as understanding within-treatment differences by time.
+
 ```{r}
-mainPlot.stat.test <- rbind(TTRmodel_treatment$`pairwise differences of treatment | day` %>%
+day_letters <- cld(TTRmodel_day[[1]], Letters = letters) #Use cld from multcomp package to get letter groupings to highlight which groups are significantly differnt from eachother.
+day_letters_plot <- day_letters %>% 
   broom::tidy(.) %>%
-  dplyr::rename(constant = "day") %>%
-  dplyr::rename(contrast = "2"),
-  TTRmodel_treatment$`pairwise differences of day | treatment` %>%
-  broom::tidy(.) %>%
-  dplyr::rename(constant = "treatment") %>%
-  dplyr::rename(contrast = "2") %>%
-  dplyr::rename(p.value = "adj.p.value")) %>%
-  filter(., p.value < 0.05) %>%
-  mutate(., p.sig = c("**", "**", "****")) %>%
-  mutate(., group1 = c("No Pulse", "day1", "day2"),
-         group2 = c("Pulse", "day5", "day5")) %>%
-  dplyr::select(., constant, term, group1, group2, statistic, p.value, p.sig)
-  #Combine significant effects and use similar column names. Add a column for asterisk notation of significant effects. Rename contrast column for group 1 and group 2
-mainPlot.stat.test
+  dplyr::rename(day = "day_factor") %>%
+  mutate(.group = case_when(treatment == "No Pulse" ~ str_to_upper(.group),
+                            treatment == "Pulse" ~ .group)) %>% 
+  arrange(day, treatment) %>% 
+  mutate(label_y = c(4, 4, 
+                     4, 4, 
+                     16, 4))
+#Take lettering and tidy using broom. Rename the timepoint column to match plotting data. Convert the lettering for 5C to uppercase, since 5C and 1C are different from eachother. Arrange by timepoint and treatment. Manually add label height for placing letters above the boxes.
+day_letters_plot #Confirm changes
 ```
 
 ```{r}
@@ -639,23 +638,15 @@ mainPlotMultipanel <- modTTR %>%
            xmin = 2.62, xmax = 3.38, 
            ymin = 0, ymax = 15, 
            alpha = 0.2, fill = plotColors[1]) +
-  geom_segment(aes(x = 0.82, xend = 2.8,
-                   y = 15.3, yend = 15.3),
-               color = "black", linewidth = 0.2) + #Add significance bar for day 1 vs. day 5
-  annotate("text", x = (0.82+2.8)/2, y = 15.5, label = "**") + #Add significance asterisks for day 1 vs. day 5
-  geom_segment(aes(x = 1.82, xend = 2.8,
-                   y = 16, yend = 16),
-               color = "black", linewidth = 0.2) + #Add significance bar for day 2 vs. day 5
-  annotate("text", x = (1.82+2.8)/2, y = 16.2, label = "****") + #Add significance asterisks for day 2 vs. day 5
-  geom_segment(aes(x = 2.8, xend = 3.2,
-                   y = 16.7, yend = 16.7),
-               color = "black", linewidth = 0.2) + #Add significance bar for treatment
-  annotate("text", x = 3, y = 16.9, label = "**") + #Add significance asterisks for treatment
+  geom_text(data = day_letters_plot,
+            aes(x = day, y = label_y, label = .group, group = treatment, color = treatment),
+            position = position_dodge(width = 0.75),
+            inherit.aes = FALSE, show.legend = FALSE) +
   scale_x_discrete(name = "",
                    labels = c("0", "1", "4")) +
   scale_y_continuous(name = "Average Time-to-Right (s)",
                      breaks = c(0:5, 10, 15),
-                     limits = c(0,17)) +
+                     limits = c(0,16.2)) +
   scale_color_manual(guide = "none",
                      values = c(plotColors[2], plotColors[1]),
                      labels = c("Control", "Treatment")) +
@@ -673,7 +664,7 @@ insetPlotMultipanel <-  modTTR %>%
   geom_boxplot(outlier.shape = NA) + 
   geom_jitter(position = position_dodge(width = 0.75)) +
   ylab("") +
-  scale_x_discrete(name = "Day",
+  scale_x_discrete(name = "",
                    labels = c("0", "1", "4")) +
   scale_color_manual(guide = "none",
                      values = c(plotColors[2], plotColors[1]),
@@ -690,7 +681,7 @@ insetPlotMultipanel <-  modTTR %>%
 
 plotWithInsetMultipanel <- ggdraw() +
   draw_plot(mainPlotMultipanel) +
-  draw_plot(insetPlotMultipanel, x = 0.084, y = 0.37, width = 0.4, height = 0.25) #Add inset to the plot
+  draw_plot(insetPlotMultipanel, x = 0.084, y = 0.62, width = 0.4, height = 0.25) #Add inset to the plot
 
 plotWithInsetMultipanel #Plot the full plot with inset
 ```
@@ -716,7 +707,6 @@ genotypeMultipanel <- modTTR %>%
                                         legend.position = "bottom")
 genotypeMultipanel
 ```
-
 
 ```{r}
 plot_grid(plotWithInsetMultipanel, genotypeMultipanel, ncol = 1) #Use plot_grid from cowplot, not patchwork, to create a multipanel due to the inset being a cowplot object. Align vertically by using 1 column
