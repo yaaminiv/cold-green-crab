@@ -25,6 +25,9 @@ getwd()
 #install.packages("plotrix")
 #install.packages("RColorBrewer")
 #install.packages("lme4")
+# install.packages("emmeans")
+# install.packages("multcompView")
+# install.packages("multcomp")
 #install.packages("ggpubr")
 #install.packages("patchwork")
 #install.packages("respirometry")
@@ -32,6 +35,9 @@ require(tidyverse)
 require(plotrix)
 require(RColorBrewer)
 require(lme4)
+require(emmeans)
+require(multcompView)
+require(multcomp)
 require(ggpubr)
 require(patchwork)
 require(respirometry)
@@ -336,7 +342,49 @@ TTRModelComparisons %>%
   mutate(., p.adj = p.adjust(p.value, method = "bonferroni")) #Adjust p-values
 ```
 
-### Calculate average values
+## Posthoc tests for significant predictors
+
+There were significant impacts of treatment, timepoint, and their interaction on average righting response! I will investigate these effects using post-hoc tests with `emmeans`.
+
+### Treatment
+
+The first thing I will do is explore pairwise differences between treatment. Since time was also significant, I'll need to look at treatment differences at ech timepoint.
+
+```{r}
+TTRmodel_treatment <- emmeans(TTRmodel, pairwise ~ treatment | timepoint, at = list(timepoint = c(0, 1, 2, 3, 4, 5)), adjust = "tukey", data = modTTR) #Use emmeans to obtain pairwise treatment differences at the timepoints listed. 
+pairs(TTRmodel_treatment$emmeans) %>% broom::tidy(.) #Use the pairs function to look at pairwise test output. Clean output using broom.
+pairs(TTRmodel_treatment$emmeans) %>% 
+  broom::tidy(.) %>%
+  write.csv("tukey-test-treatment.csv", quote = FALSE, row.names = FALSE) #Save output as a csv.
+```
+
+Interactions can also be investigated by looking at differences in linear model slopes. I will estimate simple slopes to understand how average TTR changes over time for each treatment.
+
+```{r}
+TTRmodel_treatment_slope <- emtrends(TTRmodel, pairwise ~ treatment, var = "timepoint", data = modTTR) #Obtain simple slopes for the interaction between each temperature and time. Test if the effect of time significantly differs between the two treatments
+TTRmodel_treatment_slope$emtrends #Different slopes for each temperature (makes sense because there was an interaction)
+TTRmodel_treatment_slope$contrasts #Significance test for the different slopes.
+```
+
+### Timepoint
+
+I want to understand how TTR varied by timepoint within different treatments. There is no way to do this with my original model since timepoint was (rightfully) coded as a continuous variable. In order to get pairwise estimates, I will need to refactor time as a categorical variable, rerun the model, and then use `emmeans` on this revised model.
+
+```{r}
+modTTR$timepoint_factor <- as.factor(modTTR$timepoint) #Code timepoint as a factor
+TTRmodel_factor <- lmer(log(TTRavg) ~ treatment + timepoint_factor + treatment:timepoint_factor + 
+                   as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
+                   (1|crab.ID), 
+                 data = (modTTR %>% filter(., is.na(TTRavg) == FALSE)), REML = FALSE) #Run the original model, but use timepoint as a factor
+TTRmodel_time <- emmeans(TTRmodel_factor, pairwise ~ timepoint_factor | treatment, adjust = "tukey", data = modTTR) #Rerun emmeans using timepoint as a factor
+pairs(TTRmodel_time) %>% broom::tidy(.) #Use the pairs function to look at pairwise output. Clean output using broom.
+pairs(TTRmodel_time) %>%
+  broom::tidy(.) %>%
+  write.csv("tukey-test-timepoint.csv", quote = FALSE, row.names = FALSE) #Save output as a csv.
+```
+
+
+## Calculate average values
 
 ```{r}
 modTTR %>%
