@@ -377,12 +377,11 @@ TTRmodel_factor <- lmer(log(TTRavg) ~ treatment + timepoint_factor + treatment:t
                    (1|crab.ID), 
                  data = (modTTR %>% filter(., is.na(TTRavg) == FALSE)), REML = FALSE) #Run the original model, but use timepoint as a factor
 TTRmodel_time <- emmeans(TTRmodel_factor, pairwise ~ timepoint_factor | treatment, adjust = "tukey", data = modTTR) #Rerun emmeans using timepoint as a factor
-pairs(TTRmodel_time) %>% broom::tidy(.) #Use the pairs function to look at pairwise output. Clean output using broom.
-pairs(TTRmodel_time) %>%
+pairs(TTRmodel_time$emmeans) %>% broom::tidy(.) #Use the pairs function to look at pairwise output. Clean output using broom.
+pairs(TTRmodel_time$emmeans) %>%
   broom::tidy(.) %>%
   write.csv("tukey-test-timepoint.csv", quote = FALSE, row.names = FALSE) #Save output as a csv.
 ```
-
 
 ## Calculate average values
 
