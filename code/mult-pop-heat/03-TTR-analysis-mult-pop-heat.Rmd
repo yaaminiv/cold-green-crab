@@ -30,14 +30,14 @@ getwd()
 #install.packages("plotrix")
 #install.packages("RColorBrewer")
 #install.packages("lme4")
-#install.packages("lsmeans")
+#install.packages("emmeans")
 #install.packages("ggpubr")
 #install.packages("patchwork")
 require(tidyverse)
 require(plotrix)
 require(RColorBrewer)
 require(lme4)
-require(lsmeans)
+require(emmeans)
 require(ggpubr)
 require(patchwork)
 ```
@@ -698,7 +698,7 @@ hist(x = log(modTTRWA$TTRavg)) #Log transformation helps normalize data
 ```
 
 ```{r}
-TTRmodelWA <- lmer(log(TTRavg) ~ timepoint + 
+TTRmodelWA <- lmer(log(TTRavg) ~ as.factor(timepoint) + 
                      as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                      (1|crab.ID), 
                    data = modTTRWA, REML = FALSE) #Run model with timepoint, integument color, carapace width, weight, and missing swimmer information as fixed effects, and individual as a random effect. Change the likelihood estimator (REML = FALSE) to compare models with LRT later.
@@ -720,7 +720,7 @@ anova(TTRnullTimepointWA, TTRmodelWA) #Timepoint is a significant predictor
 ```
 
 ```{r}
-TTRmodelWA_timepoint <- lsmeans(TTRmodelWA, pairwise~timepoint, adjust = "tukey") #Pairwise tukey test for timepoint
+TTRmodelWA_timepoint <- emmeans(TTRmodelWA, pairwise~timepoint, adjust = "tukey") #Pairwise tukey test for timepoint
 TTRmodelWA_timepoint$contrasts #t = -5.020, p <.0001 
 ```
 
@@ -732,7 +732,7 @@ hist(x = log(modTTRME$TTRavg)) #Log transformation helps normalize data
 ```
 
 ```{r}
-TTRmodelME <- lmer(log(TTRavg) ~ timepoint + 
+TTRmodelME <- lmer(log(TTRavg) ~ as.factor(timepoint) + 
                      as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                      meta_Intensity +
                      (1|crab.ID), 
@@ -753,12 +753,12 @@ anova(TTRnullTimepointME, TTRmodelME) #Timepoint is a significant predictor
 ```
 
 ```{r}
-TTRmodelME_timepoint <- lsmeans(TTRmodelME, pairwise~timepoint, adjust = "tukey") #Pairwise tukey test for timepoint
+TTRmodelME_timepoint <- emmeans(TTRmodelME, pairwise~timepoint, adjust = "tukey") #Pairwise tukey test for timepoint
 TTRmodelME_timepoint$contrasts #t = -5.093, p <.0001 
 ```
 
 ```{r}
-TTRnullIntensityME <- lmer(log(TTRavg) ~ timepoint + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID), data = modTTRME, REML = FALSE) #Run null model without timepoint to identify significance of predictor
+TTRnullIntensityME <- lmer(log(TTRavg) ~ as.factor(timepoint) + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID), data = modTTRME, REML = FALSE) #Run null model without timepoint to identify significance of predictor
 anova(TTRnullIntensityME, TTRmodelME) #Parasite intensity is not a significant predictor
 ```
 
@@ -799,7 +799,7 @@ Now that I understand the factors that impact TTR in each population, I can dete
 There was a significant impact of time on average TTR in WA.
 
 ```{r}
-TTRfullGenotypeWA <- lmer(log(TTRavg) ~ timepoint + 
+TTRfullGenotypeWA <- lmer(log(TTRavg) ~ as.factor(timepoint) + 
                             as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                             as.factor(genotype) + 
                             (1|crab.ID), 
@@ -808,7 +808,7 @@ anova(TTRmodelWA, TTRfullGenotypeWA) #No significant impact of genotype
 ```
 
 ```{r}
-TTRpresenceCWA <- lmer(log(TTRavg) ~ timepoint + 
+TTRpresenceCWA <- lmer(log(TTRavg) ~ as.factor(timepoint) + 
                          as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                          as.factor(presenceC) + 
                          (1|crab.ID), 
@@ -817,7 +817,7 @@ anova(TTRmodelWA, TTRpresenceCWA) #No significant impact of C allele
 ```
 
 ```{r}
-TTRpresenceTWA <- lmer(log(TTRavg) ~ timepoint + 
+TTRpresenceTWA <- lmer(log(TTRavg) ~ as.factor(timepoint) + 
                          as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                          as.factor(presenceT) + 
                          (1|crab.ID), 
@@ -830,7 +830,7 @@ anova(TTRmodelWA, TTRpresenceTWA) #No significant impact of T allele
 There was a significant impact of time, but not parasite intensity, on average TTR in ME.
 
 ```{r}
-TTRmodelMERevised <- lmer(log(TTRavg) ~ timepoint + 
+TTRmodelMERevised <- lmer(log(TTRavg) ~ as.factor(timepoint) + 
                             as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                             (1|crab.ID), 
                           data = modTTRME, REML = FALSE) #Run model with timepoint, integument color, carapace width, weight, and missing swimmer information as fixed effects, and individual as a random effect. Also include parasite intensity. Change the likelihood estimator (REML = FALSE) to compare models with LRT later.
@@ -841,7 +841,7 @@ summary(TTRmodelMERevised) #Look at model output.
 I'll look at full genotype only. Since there were no TT crabs tested, C is present in every crab, so I can't test the significance of the presence of the C allele! Testing for the presence of the T allele will just duplicate the full genotype contrast.
 
 ```{r}
-TTRfullGenotypeME <- lmer(log(TTRavg) ~ timepoint + 
+TTRfullGenotypeME <- lmer(log(TTRavg) ~ as.factor(timepoint) + 
                             as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                             as.factor(genotype) + 
                             (1|crab.ID), 
@@ -850,7 +850,7 @@ anova(TTRmodelMERevised, TTRfullGenotypeME) #Significant impact of genotype
 ```
 
 ```{r}
-TTRmodelME_genotype <- lsmeans(TTRfullGenotypeME, pairwise~as.factor(genotype), adjust = "tukey") #Pairwise tukey test for genotype
+TTRmodelME_genotype <- emmeans(TTRfullGenotypeME, pairwise~as.factor(genotype), adjust = "tukey") #Pairwise tukey test for genotype
 TTRmodelME_genotype$contrasts #t = 2.786, p = 0.0082
 ```
 
@@ -886,7 +886,7 @@ summary(TTRfullGenotypeNH) #Significant impact of genotype. t = 3.536, p = 0.007
 ```
 
 ```{r}
-TTRmodelNH_genotype <- lsmeans(TTRfullGenotypeNH, pairwise~as.factor(genotype), adjust = "tukey") #Pairwise tukey test for genotype
+TTRmodelNH_genotype <- emmeans(TTRfullGenotypeNH, pairwise~as.factor(genotype), adjust = "tukey") #Pairwise tukey test for genotype
 TTRmodelNH_genotype$contrasts #t = -3.536, p = 0.0077
 ```
 
