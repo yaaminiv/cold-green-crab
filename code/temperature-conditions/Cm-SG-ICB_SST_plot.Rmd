@@ -1,0 +1,81 @@
+---
+title: "SST-plot"
+author: "Yaamini Venkataraman"
+date: "4/2/2025"
+output: html_document
+---
+
+In this script, I will create a SST plot using data and code from C. Tepolt. I will then overlay this information onto a map of sampling sites.
+
+# Set up R Markdown document
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = normalizePath("../../output/temperature-conditions/")) #Set root directory
+```
+
+```{r}
+getwd()
+```
+
+#Install packages
+
+```{r}
+#install.packages("tidyverse")
+#install.packages("data.table)
+#install.packages("RColorBrewer")
+#install.packages("patchwork")
+require(tidyverse)
+require(data.table)
+require(RColorBrewer)
+require(patchwork)
+```
+
+```{r}
+sessionInfo()
+```
+
+# SST plot
+
+This code was written by C. Tepolt. Modifications and annotations were made by me.
+
+## Import and format data
+
+```{r}
+data = fread("../../data/Cm-SG-ICB_2021-2024.csv") #Import SST data
+head(data) #Confirm import
+```
+
+```{r}
+dat = data[,.(mean=mean(Mean), min = min(Mean), max = max(Mean)), by = .(Site, Month)] #Calculate mean, min, and max by site and month over the multiple years of data used
+head(dat) #Confirm formatting
+```
+
+```{r}
+#Reformat variables as needed for plotting
+dat$Month = as.character(dat$Month)
+dat$Month = ordered(dat$Month, levels = c("1","2","3","4","5","6","7","8","9","10","11","12"), labels = c("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"))
+dat$Site = ordered(dat$Site, levels = c("WA", "MA", "ME"), labels = c("Willapa Bay, WA", "Buzzards Bay, MA", "Harpswell Sound, ME"))
+head(dat) #Confirm changes
+```
+
+## Create plot
+
+```{r}
+site_cols <- c(brewer.pal(9, "Purples")[7],
+               brewer.pal(9, "Blues")[7],
+               brewer.pal(9, "Greens")[7]) #Create color scheme: WA, MA, ME
+```
+
+```{r}
+ggplot(dat, aes(x = Month, y = mean, group = Site)) +
+  geom_path(aes(color = Site), linewidth = 2) +
+  geom_ribbon(aes(x = Month, ymin = min, ymax = max, fill = Site), alpha = 0.5) +
+  ylab("Temperature (°C)") +
+  ylim(c(0, 25)) +
+  scale_color_manual(values = site_cols) +
+  scale_fill_manual(values = site_cols) +
+  theme_classic(base_size = 15) #Plot SST temperature
+ggsave("SST-figure.pdf", height = 8.5, width = 11)
+```
+
