@@ -31,20 +31,10 @@ getwd()
 #if ("RColorBrewer" %in% rownames(installed.packages()) == 'FALSE') install.packages("RColorBrewer")
 #if ("lubridate" %in% rownames(installed.packages()) == 'FALSE') install.packages("lubridate")
 #if ("respirometry" %in% rownames(installed.packages()) == 'FALSE') install.packages("respirometry")
-#if ("gridExtra" %in% rownames(installed.packages()) == 'FALSE') install.packages("gridExtra")
-#if ("broom" %in% rownames(installed.packages()) == 'FALSE') install.packages("broom")
-# if ("patchwork" %in% rownames(installed.packages()) == 'FALSE') install.packages("patchwork")
-# if ("grid" %in% rownames(installed.packages()) == 'FALSE') install.packages('grid')
-# if ("plotrix" %in% rownames(installed.packages()) == 'FALSE') install.packages('plotrix')
 require(tidyverse)
 require(RColorBrewer)
 require(lubridate)
 require(respirometry)
-require(gridExtra)
-require(broom)
-require(patchwork)
-require(grid)
-require(plotrix)
 ```
 
 ```{r}
@@ -398,9 +388,6 @@ dat20230804_MO2_slopes_blanks_results <- dat20230804_MO2_slopes_blanks %>%
   mutate(r.squared = (dat20230804_MO2_glance_blanks$r.squared)) #Get the regression information for dt_s and not the intercept. Creates new a variable for respiration rate as nmol_per_hour (slope_nmol_hr). Select treatment, tank, probe number, slope over the hour, and p-value. Add the r-squared information from glance.
 dat20230804_MO2_slopes_blanks_results #Confirm dataframe creation
 ```
-```{r}
-head(dat20230804_MO2_slope_results)
-```
 
 ```{r}
 dat20230804_MO2_all_slope_results <- dat20230804_MO2_slope_results %>%
@@ -430,7 +417,7 @@ lm20230804_treatment <- lm((slope_nmol_hr_corrected * -1) ~ as.factor(treatment)
 summary(lm20230804_treatment)
 ```
 
-No significant impact of treatment on oxygen consumption.
+No significant impact of treatment on oxygen consumption (t = -1.679, p = 0.131728).
 
 ```{r}
 hist(residuals(lm20230804_treatment)) #Residuals normally distributed
