@@ -419,11 +419,25 @@ summary(lm20230804_treatment)
 
 No significant impact of treatment on oxygen consumption (t = -1.679, p = 0.131728).
 
+### Check assumptions
+
 ```{r}
 hist(residuals(lm20230804_treatment)) #Residuals normally distributed
 
 plot(fitted(lm20230804_treatment), residuals(lm20230804_treatment)) #Lack of dispersion across x-axis is likely related to discrete variables
 abline(h = 0, lty = 2, col = "grey")
+```
+
+### Calculate average oxygen consumption rate
+
+```{r}
+dat20230804_MO2_all_slope_results %>%
+  group_by(treatment) %>%
+  summarise(mean_nmol_hr = mean(-slope_nmol_hr_corrected),
+            sd_nmol_hr = sd(slope_nmol_hr_corrected)) #Calculate average values
+
+# No_Pulse: 15394.546 ± 8506.365
+# Pulse: 7475.603 ± 4671.497
 ```
 
 # Plot
