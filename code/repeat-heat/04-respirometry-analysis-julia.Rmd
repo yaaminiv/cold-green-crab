@@ -53,6 +53,28 @@ sessionInfo()
 
 # Import Data
 
+## Genotype
+
+```{r}
+genotypeData <- read.csv("../../../data/repeat-heat/time-to-right-genotype-julia.csv", header = TRUE) %>%
+  filter(., is.na(probe.number) == FALSE) %>%
+  mutate(., treatment = case_when(tank == "10" | tank == "12" ~ "No_Pulse",
+                                  tank == "11" | tank == "13" ~ "Pulse")) %>%
+  mutate(., tank = case_when(tank == 10 ~ "tank10",
+                             tank == 11 ~ "tank11", 
+                             tank == 12 ~ "tank12",
+                             tank == 13 ~ "tank13")) %>%
+  mutate(., probe_num = as.character(probe.number)) %>%
+  mutate(., presenceC = case_when(genotype == "CC" ~ "Y",
+                                  genotype == "CT" ~ "Y",
+                                  genotype == "TT" ~ "N")) %>%
+  mutate(., presenceT = case_when(genotype == "CC" ~ "N",
+                                  genotype == "CT" ~ "Y",
+                                  genotype == "TT" ~ "Y")) %>%
+  dplyr::select(date, treatment, tank, probe_num, crab.ID, genotype, presenceC, presenceT) #Import and format genotype data
+head(genotypeData) #Confirm changes
+```
+
 ## 2023-08-01
 
 ```{r}
@@ -129,8 +151,8 @@ dat20230801mod <- dat20230801 %>%
   arrange(., .by_group = TRUE) %>%
   ungroup(.) %>%
   pivot_longer(., cols = c(perc_air_sat_2, perc_air_sat_3, perc_air_sat_4), names_to = "og_perc", values_to = "perc_air_sat") %>%
-    mutate(., og_perc = gsub("perc_air_sat_", replacement = "", x = og_perc)) %>%
-    dplyr::rename(., probe_num = og_perc)
+  mutate(., og_perc = gsub("perc_air_sat_", replacement = "", x = og_perc)) %>%
+  dplyr::rename(., probe_num = og_perc)
 head(dat20230801mod)
 ```
 
@@ -147,8 +169,8 @@ dat20230804mod <- dat20230804 %>%
   arrange(., .by_group = TRUE) %>%
   ungroup(.) %>%
   pivot_longer(., cols = c(perc_air_sat_2, perc_air_sat_3, perc_air_sat_4), names_to = "og_perc", values_to = "perc_air_sat") %>%
-    mutate(., og_perc = gsub("perc_air_sat_", replacement = "", x = og_perc)) %>%
-    dplyr::rename(., probe_num = og_perc)
+  mutate(., og_perc = gsub("perc_air_sat_", replacement = "", x = og_perc)) %>%
+  dplyr::rename(., probe_num = og_perc)
 head(dat20230804mod)
 ```
 
@@ -392,7 +414,9 @@ dat20230804_MO2_all_slope_results
 write.csv(dat20230804_MO2_all_slope_results, "20230804-MO2-slope-results.csv", quote = FALSE, row.names = FALSE) #Save results with uncorrected, blank, and corrected slopes
 ```
 
-# Compare blank-corrected oxygen consumption across treatment
+# Compare blank-corrected oxygen consumption by treatment
+
+Given the small sample size, I will not run a statistical test for genotype.
 
 ```{r}
 hist(dat20230804_MO2_all_slope_results$slope_nmol_hr_corrected * -1)
@@ -400,19 +424,18 @@ hist(x = log(dat20230804_MO2_all_slope_results$slope_nmol_hr_corrected * -1)) #L
 hist(x = sqrt(dat20230804_MO2_all_slope_results$slope_nmol_hr_corrected * -1)) #sqrt transformation does nothing
 ```
 
-
 ```{r}
-lm20230804 <- lm((slope_nmol_hr_corrected * -1) ~ as.factor(treatment),
-                 data = dat20230804_MO2_all_slope_results) #Mixed effects model examining treatment imapct on oxygen consumption. Include tank as a random effect due to tank temperature differences
-summary(lm20230804)
+lm20230804_treatment <- lm((slope_nmol_hr_corrected * -1) ~ as.factor(treatment),
+                           data = dat20230804_MO2_all_slope_results) #Mixed effects model examining treatment imapct on oxygen consumption. Include tank as a random effect due to tank temperature differences
+summary(lm20230804_treatment)
 ```
 
-## Check assumptions
+No significant impact of treatment on oxygen consumption.
 
 ```{r}
-hist(residuals(lm20230804)) #Residuals normally distributed
+hist(residuals(lm20230804_treatment)) #Residuals normally distributed
 
-plot(fitted(lm20230804), residuals(lm20230804)) #Lack of dispersion across x-axis is likely related to discrete variables
+plot(fitted(lm20230804_treatment), residuals(lm20230804_treatment)) #Lack of dispersion across x-axis is likely related to discrete variables
 abline(h = 0, lty = 2, col = "grey")
 ```
 
@@ -428,17 +451,24 @@ plotColors <- c(brewer.pal(9, "Reds")[7],
 ```
 
 ```{r}
+dat20230804_MO2_all_slope_results
+```
+
+```{r}
 dat20230804_MO2_all_slope_results %>%
-  ggplot(., aes(x = treatment, y = -slope_nmol_hr_corrected, color = treatment, shape = treatment)) + 
-  geom_boxplot() + geom_point(size = 2) +
+  left_join(x = ., y = genotypeData %>%
+              filter(., date == "8/4/23") %>%
+              dplyr::select(treatment, tank, probe_num, genotype, presenceC, presenceT)) %>%
+  ggplot(., aes(x = treatment, y = -slope_nmol_hr_corrected, color = treatment)) + 
+  geom_boxplot() + geom_point(aes(shape = genotype), size = 2) +
   xlab("") + ylab("Oxygen Consumption (nmol/hr)") +
   scale_x_discrete(labels = c("Control", "Treatment")) +
   scale_color_manual(guide = "none",
                      values = c(plotColors[2], plotColors[1]),
                      labels = c("Control", "Treatment")) +
-  scale_shape_manual(guide = "none",
-                     values = c(15, 19),
-                     labels = c("Control", "Treatment")) +
+  scale_shape_manual(name = "Genotype",
+                     values = c(15, 17, 19),
+                     labels = c("CC", "CT", "TT")) +
   theme_classic(base_size = 15)
 ggsave("figures/2023-08-04-oxygen-consumption-nmolhr-corrected.pdf", width = 11, height = 8.5) #Create a boxplot for oxygen consumption (µmol/hr). Use -slope_nmol_hr so the larger the slope, the faster the oxygen consumption over the hour. 
 ```
