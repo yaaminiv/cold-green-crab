@@ -24,10 +24,16 @@ getwd()
 #install.packages("tidyverse")
 #install.packages("data.table)
 #install.packages("RColorBrewer")
+#install.packages("sf")
+# install.packages("rnaturalearth")
+# install.packages("rnaturalearthdata")
 #install.packages("patchwork")
 require(tidyverse)
 require(data.table)
 require(RColorBrewer)
+require(sf)
+require(rnaturalearth)
+require(rnaturalearthdata)
 require(patchwork)
 ```
 
@@ -78,4 +84,75 @@ ggplot(dat, aes(x = Month, y = mean, group = Site)) +
   theme_classic(base_size = 15) #Plot SST temperature
 ggsave("SST-figure.pdf", height = 8.5, width = 11)
 ```
+
+# Map
+
+Code pulled from this tutorial: https://r-spatial.org/r/2018/10/25/ggplot2-sf-2.html
+
+Willapa Bay, WA: 46.657330704 -124.006333308
+Buzzards Bay, MA: 41.5666644 -70.7666636
+Harpswell, ME: 43.80175, -69.98421
+
+```{r}
+collectionSites <- data.frame(lat = c(46.657330704, 41.5666644, 43.80175),
+                              long = c(-124.006333308, -70.7666636, -69.98421)) #Create dataframe with lat and long information for each site
+```
+
+```{r}
+us_map <- ne_countries(country = "United States of America", scale = "medium", returnclass = "sf") #Create map data for the US only
+```
+
+```{r}
+ggplot(data = us_map) +
+    geom_sf() +
+    geom_point(data = collectionSites, 
+               aes(x = long, y = lat), 
+               size = 3, shape = 23, fill = site_cols) +
+  coord_sf(xlim = c(-126, -66),
+           ylim = c(24, 50), expand = FALSE) +
+  scale_x_continuous(name = "Longitude") +
+  scale_y_continuous(name = "Latitude") +
+  theme_bw(base_size = 15) #Create a map of the US with collection sites indicated.
+ggsave("map-figure.pdf", height = 8.5, width = 11)
+```
+
+# Multipanel plot
+
+```{r}
+mapPlot <- ggplot(data = us_map) +
+    geom_sf() +
+    geom_point(data = collectionSites, 
+               aes(x = long, y = lat), 
+               size = 3, shape = 23, fill = site_cols) +
+  coord_sf(xlim = c(-126, -66),
+           ylim = c(24, 50), expand = FALSE) +
+  scale_x_continuous(name = "Longitude") +
+  scale_y_continuous(name = "Latitude") +
+  ggtitle("A. Collection Sites") +
+  theme_bw(base_size = 15) #Create a map of the US with collection sites indicated.
+mapPlot
+```
+
+```{r}
+sstPlot <- ggplot(dat, aes(x = Month, y = mean, group = Site)) +
+  geom_path(aes(color = Site), linewidth = 2) +
+  geom_ribbon(aes(x = Month, ymin = min, ymax = max, fill = Site), alpha = 0.5) +
+  ylab("Temperature (°C)") +
+  ylim(c(0, 25)) +
+  scale_color_manual(values = site_cols,
+                     name = "") +
+  scale_fill_manual(values = site_cols,
+                    name = "") +
+  ggtitle("B. Average SST (2021-2024)") +
+  theme_classic(base_size = 15) + theme(legend.position = c(0.2, 0.9),
+                                        legend.background = element_rect(color = NA)) #Plot SST temperature
+sstPlot
+```
+
+```{r}
+mapPlot + sstPlot +
+  plot_layout(ncol = 1)
+ggsave("multipanel-SST-map-plot.pdf", width = 8.5, height = 11)
+```
+
 
