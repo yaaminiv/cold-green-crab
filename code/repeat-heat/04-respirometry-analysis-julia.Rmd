@@ -404,20 +404,27 @@ write.csv(dat20230804_MO2_all_slope_results, "20230804-MO2-slope-results.csv", q
 
 # Plot
 
-```{r}
-
+```{bash}
+mkdir figures
 ```
 
+```{r}
+plotColors <- c(brewer.pal(9, "Reds")[7],
+                brewer.pal(9, "Greys")[7]) #Create color scheme
+```
 
 ```{r}
 dat20230804_MO2_all_slope_results %>%
   ggplot(., aes(x = treatment, y = -slope_nmol_hr_corrected, color = treatment)) + 
   geom_boxplot() + geom_point(size = 2) +
-  xlab("Temperature (ºC)") + ylab("Oxygen Consumption (nmol/hr)") +
-  scale_x_discrete(breaks = c("15C", "25C", "5C"),
-                   labels = c("15", "25", "5")) +
-  scale_color_manual(values = c(plotColors[2], plotColors[1], plotColors[3]), 
-                     guide = "none") +
+  xlab("") + ylab("Oxygen Consumption (nmol/hr)") +
+  scale_x_discrete(labels = c("Control", "Treatment")) +
+  scale_color_manual(guide = "none",
+                     values = c(plotColors[2], plotColors[1]),
+                     labels = c("Control", "Treatment")) +
+  scale_shape_manual(guide = "none",
+                     values = c(15, 19),
+                     labels = c("Control", "Treatment")) +
   theme_classic(base_size = 15)
 ggsave("figures/2023-08-04-oxygen-consumption-nmolhr-corrected.pdf", width = 11, height = 8.5) #Create a boxplot for oxygen consumption (µmol/hr). Use -slope_nmol_hr so the larger the slope, the faster the oxygen consumption over the hour. 
 ```
