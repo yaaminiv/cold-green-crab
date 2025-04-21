@@ -146,7 +146,7 @@ hist(x = log(modTTR$TTRavg)) #Log transformation helps normalize data
 ```
 
 ```{r}
-TTRmodel <- lmer(log(TTRavg) ~ as.factor(treatment) + day + as.factor(treatment):day + 
+TTRmodel <- lmer(log(TTRavg) ~ as.factor(treatment) + as.factor(day) + as.factor(treatment):as.factor(day) + 
                    as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                    (1|crab.ID) + (1|tank), 
                  data = modTTR, REML = FALSE) #Run model with treatment, timepoint, their interaction, sex, integument color, carapace width, weight, and missing swimmer information as fixed effects, and individual as a random effect. Change the likelihood estimator (REML = FALSE) to compare models with LRT later. Use data without rows with NAs
@@ -155,16 +155,16 @@ summary(TTRmodel) #Look at model output.
 ```
 
 ```{r}
-var.lmer <- c(0.02054, 0, 0.22874) #Save variances of random effects as a new vector (crab ID, tank, residuals)
+var.lmer <- c(0.02907, 0, 0.20532) #Save variances of random effects as a new vector (crab ID, tank, residuals)
 percentvar.lmer <- (100*var.lmer)/sum(var.lmer) #Calculate percent variances
-percentvar.lmer[1] #Crab ID accounts for 8.23973% of variance
+percentvar.lmer[1] #Crab ID accounts for 12.40241% of variance
 percentvar.lmer[2] #Tank accounts for 0% of the variance!
 ```
 
 Now that I've run the full model, I want to test the importance of treatment, day, and their interaction as predictors. I'll include all other factors in the null model to account for any variation they may contribute.
 
 ```{r}
-TTRnullTreatment <- lmer(log(TTRavg) ~ day + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID) + (1|tank), data = modTTR, REML = FALSE) #Run null model without treatment to identify significance of predictor
+TTRnullTreatment <- lmer(log(TTRavg) ~ as.factor(day) + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID) + (1|tank), data = modTTR, REML = FALSE) #Run null model without treatment to identify significance of predictor
 anova(TTRnullTreatment, TTRmodel) #Treatment is a significant predictor
 ```
 
@@ -174,7 +174,7 @@ anova(TTRnullDay, TTRmodel) #Day is a significant predictor
 ```
 
 ```{r}
-TTRnullInteraction <- lmer(log(TTRavg) ~ as.factor(treatment) + day + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID) + (1|tank), data = modTTR, REML = FALSE) #Run model without interaction to identify significance of predictor. The full model constructed does not include an interaction
+TTRnullInteraction <- lmer(log(TTRavg) ~ as.factor(treatment) + as.factor(day) + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID) + (1|tank), data = modTTR, REML = FALSE) #Run model without interaction to identify significance of predictor. The full model constructed does not include an interaction
 anova(TTRnullInteraction, TTRmodel) #Interaction is a significant predictor
 ```
 
@@ -223,12 +223,7 @@ TTRmodel_treatment_slope$contrasts #Significance test for the different slopes.
 I want to understand how TTR varied by timepoint within different treatments. There is no way to do this with my original model since timepoint was (rightfully) coded as a continuous variable. In order to get pairwise estimates, I will need to refactor time as a categorical variable, rerun the model, and then use `emmeans` on this revised model.
 
 ```{r}
-modTTR$day_factor <- as.factor(modTTR$day) #Code day as a factor
-TTRmodel_factor <- lmer(log(TTRavg) ~ treatment + day_factor + treatment:day_factor + 
-                          as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
-                          (1|crab.ID), 
-                        data = (modTTR %>% filter(., is.na(TTRavg) == FALSE)), REML = FALSE) #Run the original model, but use timepoint as a factor
-TTRmodel_day <- emmeans(TTRmodel_factor, pairwise ~ day_factor | treatment, adjust = "tukey", data = modTTR) #Rerun emmeans using timepoint as a factor
+TTRmodel_day <- emmeans(TTRmodel, pairwise ~ as.factor(day) | treatment, adjust = "tukey", data = modTTR) #Rerun emmeans using timepoint as a factor
 pairs(TTRmodel_day$emmeans) %>% broom::tidy(.) #Use the pairs function to look at pairwise output. Clean output using broom.
 pairs(TTRmodel_day$emmeans) %>%
   broom::tidy(.) %>%
@@ -258,7 +253,7 @@ abline(h = 0, lty = 2, col = "grey")
 Now that I know treatment, time, and their interaction significantly impact TTR, I want to add in genotype and sourcing information.
 
 ```{r}
-TTRfullGenotype <- lmer(log(TTRavg) ~ as.factor(treatment) + day + as.factor(treatment):day + 
+TTRfullGenotype <- lmer(log(TTRavg) ~ as.factor(treatment) + as.factor(day) + as.factor(treatment):as.factor(day) + 
                           as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                           as.factor(genotype) + 
                           (1|crab.ID) + (1|tank), data = modTTR, REML = FALSE) #Run model with genotype to identify4 significance of predictor
@@ -266,7 +261,7 @@ anova(TTRmodel, TTRfullGenotype) #No significant impact of genotype
 ```
 
 ```{r}
-TTRpresenceC <- lmer(log(TTRavg) ~ as.factor(treatment) + day + as.factor(treatment):day +
+TTRpresenceC <- lmer(log(TTRavg) ~ as.factor(treatment) + as.factor(day) + as.factor(treatment):as.factor(day) +
                        as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                        as.factor(presenceC) + 
                        (1|crab.ID) + (1|tank), data = modTTR, REML = FALSE) #Run model with genotype to identify significance of predictor
@@ -274,7 +269,7 @@ anova(TTRmodel, TTRpresenceC) #No significant impact of C allele
 ```
 
 ```{r}
-TTRpresenceT <- lmer(log(TTRavg) ~ as.factor(treatment) + day + as.factor(treatment):day + 
+TTRpresenceT <- lmer(log(TTRavg) ~ as.factor(treatment) + as.factor(day) + as.factor(treatment):as.factor(day) + 
                        as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                        as.factor(presenceT) + 
                        (1|crab.ID) + (1|tank), data = modTTR, REML = FALSE) #Run model with genotype to identify significance of predictor
@@ -302,6 +297,7 @@ write.csv(TTRModelComparisons, "ttr-model-comparison-stat-output.csv", quote = F
 ```
 
 The marginally significant impact of the T allele on average TTR is no longer significant after p-value correction. However, I'll still include this information in a plot since there is a trend. 
+
 ### Calculate average TTR
 
 ```{r}
@@ -611,7 +607,6 @@ I want to add significance information to the plot. Since treatments were only s
 day_letters <- cld(TTRmodel_day[[1]], Letters = letters) #Use cld from multcomp package to get letter groupings to highlight which groups are significantly differnt from eachother.
 day_letters_plot <- day_letters %>% 
   broom::tidy(.) %>%
-  dplyr::rename(day = "day_factor") %>%
   mutate(.group = case_when(treatment == "No Pulse" ~ str_to_upper(.group),
                             treatment == "Pulse" ~ .group)) %>% 
   arrange(day, treatment) %>% 
@@ -639,10 +634,10 @@ mainPlotMultipanel <- modTTR %>%
            ymin = 0, ymax = 15, 
            alpha = 0.2, fill = plotColors[1]) +
   geom_text(data = day_letters_plot,
-            aes(x = day, y = label_y, label = .group, group = treatment, color = treatment),
+            aes(x = as.character(day), y = label_y, label = .group, group = treatment, color = treatment),
             position = position_dodge(width = 0.75),
             inherit.aes = FALSE, show.legend = FALSE) +
-  scale_x_discrete(name = "",
+  scale_x_discrete(name = "Day",
                    labels = c("0", "1", "4")) +
   scale_y_continuous(name = "Average Time-to-Right (s)",
                      breaks = c(0:5, 10, 15),
@@ -681,36 +676,56 @@ insetPlotMultipanel <-  modTTR %>%
 
 plotWithInsetMultipanel <- ggdraw() +
   draw_plot(mainPlotMultipanel) +
-  draw_plot(insetPlotMultipanel, x = 0.084, y = 0.62, width = 0.4, height = 0.25) #Add inset to the plot
+  draw_plot(insetPlotMultipanel, x = 0.11, y = 0.52, width = 0.4, height = 0.25) #Add inset to the plot
 
 plotWithInsetMultipanel #Plot the full plot with inset
 ```
 
 ```{r}
 genotypeMultipanel <- modTTR %>%
-  ggplot(mapping = aes(x = as.factor(day), y = TTRavg, color = treatment)) +
-  geom_boxplot(outlier.shape = NA) + 
-  geom_jitter(aes(shape = treatment), position = position_dodge(width = 0.1)) +
-  facet_grid(treatment~presenceT, scale = "free_y", labeller = labeller(presenceT = presenceT_labels)) +
+  mutate(., presenceTtemp = case_when(presenceT == "Y" & treatment == "No Pulse" ~ "1_Y_NP",
+                                      presenceT == "N" & treatment == "No Pulse" ~ "2_N_NP",
+                                      presenceT == "Y" & treatment == "Pulse" ~ "3_Y_Pulse",
+                                      presenceT == "N" & treatment == "Pulse" ~ "4_N_Pulse")) %>%
+  ggplot(mapping = aes(x = as.character(day), y = TTRavg, color = presenceTtemp, shape = presenceTtemp, fill = presenceTtemp)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.5) + 
+  geom_jitter(position = position_dodge(width = 0.75)) +
   scale_x_discrete(name = "Day",
                    labels = c(0, 1, 4)) +
-  scale_y_continuous(name = "Average Time-to-Right (s)") +
-  scale_color_manual(name = "",
-                     values = c(plotColors[2], plotColors[1]),
-                     labels = c("Control", "Treatment")) +
-  scale_shape_manual(name = "",
-                     values = c(15, 19),
-                     labels = c("Control", "Treatment")) +
+  scale_y_continuous(name = "",
+                     breaks = c(0:5, 10, 15),
+                     limits = c(0,16.2)) +
+  scale_color_manual(values = c(plotColors[2], plotColors[2],
+                                plotColors[1], plotColors[1]),
+                     labels = c("Control, CT or TT",
+                                "Control, CC",
+                                "Treatment, CT or TT",
+                                "Treatment, CC"),
+                     name = "") +
+  scale_shape_manual(values = c(15, 15,
+                                19, 19),
+                     labels = c("Control, CT or TT",
+                                "Control, CC",
+                                "Treatment, CT or TT",
+                                "Treatment, CC"),
+                     name = "") +
+  scale_fill_manual(values = c(plotColors[2], "NA",
+                               plotColors[1], "NA"),
+                    labels = c("Control, CT or TT",
+                               "Control, CC",
+                               "Treatment, CT or TT",
+                               "Treatment, CC"),
+                    name = "") +
   ggtitle("B. Righting Response by Genotype") +
   theme_classic(base_size = 15) + theme(strip.background = element_rect(color = "white"),
                                         strip.text.y = element_blank(),
-                                        legend.position = "bottom")
+                                        legend.position = c(0.25, 0.9))
 genotypeMultipanel
 ```
 
 ```{r}
-plot_grid(plotWithInsetMultipanel, genotypeMultipanel, ncol = 1) #Use plot_grid from cowplot, not patchwork, to create a multipanel due to the inset being a cowplot object. Align vertically by using 1 column
-ggsave("figures/multipanel-TTR-plot.pdf", height = 11, width = 8.5) #Save multipanel plot
+plot_grid(plotWithInsetMultipanel, genotypeMultipanel, nrow = 1) #Use plot_grid from cowplot, not patchwork, to create a multipanel due to the inset being a cowplot object. Align vertically by using 1 column
+ggsave("figures/multipanel-TTR-plot.pdf", width = 11, height = 8.5) #Save multipanel plot
 ```
 
 
