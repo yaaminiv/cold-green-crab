@@ -1189,16 +1189,14 @@ modTTRNH %>%
   dplyr::select(., c(timepoint, TTRavg, genotype, population)) %>%
   filter(., is.na(TTRavg) == FALSE) %>%
   distinct(.) %>%
-  ggplot(mapping = aes(x = as.character(timepoint), y = TTRavg, color = population, shape = population)) +
-  geom_boxplot(outlier.shape = NA) + 
-  geom_jitter(position = position_dodge(width = 0.75)) +
-  facet_wrap(~genotype, scale = "free_y") +
+  ggplot(mapping = aes(x = as.character(genotype), y = TTRavg, shape = genotype)) +
+  geom_boxplot(outlier.shape = NA, color = plotColors[2]) + 
+  geom_jitter(position = position_dodge(width = 0.75), color = plotColors[2]) +
+  # facet_wrap(~genotype) +
   scale_y_continuous(name = "Average Time-to-Right (s)") +
-  scale_x_discrete(name = "Exposure Time (Hours)") +
-  scale_color_manual(values = plotColors[2],
-                     guide = "none") +
-  scale_shape_manual(values = 15,
-                     guide = "none") +
+  scale_x_discrete(name = "") +
+  scale_shape_manual(name = "Genotype",
+                     values = c(15, 19)) +
   theme_classic(base_size = 15) + theme(strip.background = element_rect(color = "white"),
                                         strip.text.y = element_blank(),
                                         axis.text.x = element_blank(),
