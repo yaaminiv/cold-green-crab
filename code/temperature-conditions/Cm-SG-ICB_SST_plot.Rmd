@@ -20,7 +20,7 @@ getwd()
 
 #Install packages
 
-```{r}
+```{r, warnings = FALSE}
 #install.packages("tidyverse")
 #install.packages("data.table)
 #install.packages("RColorBrewer")
@@ -107,7 +107,7 @@ ggplot(data = us_map) +
     geom_sf() +
     geom_point(data = collectionSites, 
                aes(x = long, y = lat), 
-               size = 3, shape = 23, fill = site_cols) +
+               size = 5, shape = 23, fill = site_cols) +
   coord_sf(xlim = c(-126, -66),
            ylim = c(24, 50), expand = FALSE) +
   scale_x_continuous(name = "Longitude") +
@@ -123,7 +123,7 @@ mapPlot <- ggplot(data = us_map) +
     geom_sf() +
     geom_point(data = collectionSites, 
                aes(x = long, y = lat), 
-               size = 3, shape = 23, fill = site_cols) +
+               size = 5, shape = c(23, 24, 22), fill = site_cols) +
   coord_sf(xlim = c(-126, -66),
            ylim = c(24, 50), expand = FALSE) +
   scale_x_continuous(name = "Longitude") +
@@ -135,7 +135,7 @@ mapPlot
 
 ```{r}
 sstPlot <- ggplot(dat, aes(x = Month, y = mean, group = Site)) +
-  geom_path(aes(color = Site), linewidth = 2) +
+  geom_path(aes(color = Site, linetype = Site), linewidth = 2) +
   geom_ribbon(aes(x = Month, ymin = min, ymax = max, fill = Site), alpha = 0.5) +
   ylab("Temperature (°C)") +
   ylim(c(0, 25)) +
@@ -143,9 +143,12 @@ sstPlot <- ggplot(dat, aes(x = Month, y = mean, group = Site)) +
                      name = "") +
   scale_fill_manual(values = site_cols,
                     name = "") +
+  scale_linetype_manual(values = 1:3,
+                        name = "") +
   ggtitle("B. Average SST (2021-2024)") +
-  theme_classic(base_size = 15) + theme(legend.position = c(0.2, 0.9),
-                                        legend.background = element_rect(color = NA)) #Plot SST temperature
+  theme_classic(base_size = 15) + theme(legend.position = c(0.25, 0.9),
+                                        legend.background = element_rect(color = NA),
+                                        legend.key.width = unit(2, "line")) #Plot SST temperature
 sstPlot
 ```
 
