@@ -879,8 +879,8 @@ anova(TTRnullSwimmerME, TTRmodelMEDV) #Missing swimmer is not significant
 
 ```{r}
 TTRnullMetaME <- lmer(log(TTRavg) ~ as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) +
-                           (1|crab.ID), 
-                         data = modTTRME, REML = FALSE) #Run model without variable of interest to identify significance
+                        (1|crab.ID), 
+                      data = modTTRME, REML = FALSE) #Run model without variable of interest to identify significance
 anova(TTRnullMetaME, TTRmodelMEDV) #Meta intensity is not significant
 ```
 
@@ -947,6 +947,30 @@ TTRModelComparisonsME #Confirm modifications
 write.csv(TTRModelComparisonsME, "ttr-model-comparison-stat-output-ME.csv", quote = FALSE, row.names = FALSE) #Save statistical output
 ```
 
+## NH
+
+I only have one timepoint for the NH experiment (no 22 hour heat stress), so I didn't include NH in the time analysis above. I will examine genotype's impact on TTR in these crabs using a GLM (no repeated measurements).
+
+Since I'm using a GLM, I can put everything into the model and use stepwise backwards deletion to retain only significant variables.
+
+```{r}
+TTRparasiteNHDV <- glm(log(TTRavg) ~ as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
+                       meta_Intensity + acanth_Intensity, 
+                     data = modTTRNH) #Create model with all potential explanatory variables
+summary(TTRparasiteNHDV) #No demographic variable is significant
+```
+
+```{r}
+TTRfullGenotypeNH <- glm(log(TTRavg) ~ as.factor(genotype),
+                          data = modTTRNH) #Run model with just genotype
+summary(TTRfullGenotypeNH) #Genotype significantly impacts TTR
+```
+
+```{r}
+TTRmodelNH_genotype <- emmeans(TTRfullGenotypeNH, pairwise~as.factor(genotype), adjust = "tukey") #Pairwise tukey test for genotype
+TTRmodelNH_genotype$contrasts #t = -3.651, p = 0.0029
+```
+
 ## Save Tukey Test output
 
 ```{r}
@@ -955,7 +979,9 @@ rbind(broom::tidy(TTRmodelWA_timepoint$contrasts) %>%
       broom::tidy(TTRmodelME_timepoint$contrasts) %>%
         mutate(., population = "ME"),
       broom::tidy(TTRmodelME_genotype$contrasts) %>%
-        mutate(., population = "ME")) %>%
+        mutate(., population = "ME"),
+      broom::tidy(TTRmodelNH_genotype$contrasts) %>%
+        mutate(., population = "NH")) %>%
   write.csv(., "tukey-test-output.csv", quote = FALSE, row.names = FALSE)
 ```
 
@@ -984,56 +1010,6 @@ rbind(modTTRWA %>%
         mutate(., population = "ME")) %>%
   write.csv("average-TTR-calculations-genotype.csv", quote = FALSE, row.names = FALSE) #Calculate mean and SD for TTR at each time point and by genotype for populations. Save as a csv
 ```
-
-# NH
-
-I only have one timepoint for the NH experiment (no 22 hour heat stress), so I didn't include NH in the time analysis above. I will examine genotype's impact on TTR in these crabs using a GLM (no repeated measurements).
-
-First, I will see if parasite terms need to be included in the model.
-
-```{r}
-TTRparasiteNH <- glm(log(TTRavg) ~ as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
-                       meta_Intensity + acanth_Intensity, 
-                     data = modTTRNH) #Run model with parasite intensity information
-summary(TTRparasiteNH) #Parasite intensity is not significant
-```
-
-
-```{r}
-TTRfullGenotypeNH <- glm(log(TTRavg) ~ as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
-                           as.factor(genotype), 
-                         data = modTTRNH) #Run model with genotype to identify significance of predictor
-summary(TTRfullGenotypeNH) #Significant impact of genotype. t = 3.536, p = 0.00767
-```
-
-```{r}
-TTRmodelNH_genotype <- emmeans(TTRfullGenotypeNH, pairwise~as.factor(genotype), adjust = "tukey") #Pairwise tukey test for genotype
-TTRmodelNH_genotype$contrasts #t = -3.536, p = 0.0077
-```
-
-## Save model output
-
-```{r}
-TTRModelComparisons <- rbind(broom::tidy(anova(TTRnullTimepointWA, TTRmodelWA)),
-                             broom::tidy(anova(TTRmodelWA, TTRfullGenotypeWA)),
-                             broom::tidy(anova(TTRmodelWA, TTRpresenceCWA)),
-                             broom::tidy(anova(TTRmodelWA, TTRpresenceTWA)),
-                             broom::tidy(anova(TTRnullTimepointME, TTRmodelME)),
-                             broom::tidy(anova(TTRnullIntensityME, TTRmodelME)), 
-                             broom::tidy(anova(TTRmodelMERevised, TTRfullGenotypeME))) %>%
-  mutate(., p.adj = p.adjust(p.value, method = "bonferroni")) #Create table for model comparison output. Adjust for multiple comparisons.
-TTRModelComparisons #Confirm modifications
-```
-
-There is no significant impact of genotype on average TTR in WA, but there is a significant impact of genotype in ME and NH populations!
-
-```{r}
-write.csv(TTRModelComparisons, "ttr-model-comparison-stat-output.csv", quote = FALSE, row.names = FALSE) #Save statistical output
-```
-
-## Calculate average values
-
-
 
 ```{r}
 modTTRNH %>%
