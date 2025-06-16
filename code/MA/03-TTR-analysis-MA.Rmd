@@ -543,7 +543,7 @@ modTTR %>%
 
 # Threshold analysis
 
-### Define threshold
+## Define threshold
 
 ```{r}
 modTTR <- modTTR %>%
@@ -552,82 +552,101 @@ modTTR <- modTTR %>%
 head(modTTR) #Confirm modifications
 ```
 
-### Binomial model
+## Assess importance of demographic variables
 
 ```{r}
-TTRthreshModel <- glmer(I(TTRthresh == 1) ~ treatment + timepoint + treatment:timepoint +
-                          as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
+TTRthreshModelDV <- glmer(I(TTRthresh == 1) ~ as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
+                          (1|crab.ID), 
+                        family = binomial(), 
+                        data = modTTR) #Create a binomial model, where 1 = success of righting within the defined threshold
+```
+
+```{r}
+TTRthreshSex <- glmer(I(TTRthresh == 1) ~ integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
+                          (1|crab.ID), 
+                        family = binomial(), 
+                        data = modTTR)
+anova(TTRthreshSex, TTRthreshModelDV) #No significant influence of sex
+```
+
+```{r}
+TTRthreshIntegument <- glmer(I(TTRthresh == 1) ~ as.factor(sex) + carapace.width + weight + as.factor(missing.swimmer) + 
                           (1|crab.ID), 
                         family = binomial(), 
                         data = modTTR) #Create a binomial model, where 1 = success of righting wihtin the defined threshold
-summary(TTRthreshModel)
+anova(TTRthreshIntegument, TTRthreshModelDV) #Integument color not significant
+```
+
+```{r}
+TTRthreshCW <- glmer(I(TTRthresh == 1) ~ as.factor(sex) + integument.cont + weight + as.factor(missing.swimmer) + 
+                          (1|crab.ID), 
+                        family = binomial(), 
+                        data = modTTR) #Create a binomial model, where 1 = success of righting wihtin the defined threshold
+anova(TTRthreshCW, TTRthreshModelDV) #CW not significant
+```
+
+```{r}
+TTRthreshModelWeight <- glmer(I(TTRthresh == 1) ~ as.factor(sex) + integument.cont + carapace.width + as.factor(missing.swimmer) + 
+                          (1|crab.ID), 
+                        family = binomial(), 
+                        data = modTTR) #Create a binomial model, where 1 = success of righting wihtin the defined threshold
+anova(TTRthreshModelWeight, TTRthreshModelDV) #Weight not significant
+```
+
+```{r}
+TTRthreshModelSwimmer <- glmer(I(TTRthresh == 1) ~ as.factor(sex) + integument.cont + carapace.width + weight +
+                          (1|crab.ID), 
+                        family = binomial(), 
+                        data = modTTR) #Create a binomial model, where 1 = success of righting within the defined threshold
+anova(TTRthreshModelSwimmer, TTRthreshModelDV) #Missing swimmer not significant
+```
+
+## Assess importance of explanatory variables
+
+```{r}
+TTRthreshModelEV <- glmer(I(TTRthresh == 1) ~ treatment + timepoint + treatment:timepoint +
+                          (1|crab.ID), 
+                        family = binomial(), 
+                        data = modTTR) #Create a binomial model, where 1 = success of righting within the defined threshold
 ```
 
 ```{r}
 TTRthreshNullTreatment <- glmer(I(TTRthresh == 1) ~ timepoint +
-                                  as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                                   (1|crab.ID), 
                                 family = binomial(), 
                                 data = modTTR) #Create null model without treatment
-anova(TTRthreshNullTreatment, TTRthreshModel) #Compare models
+anova(TTRthreshNullTreatment, TTRthreshModelEV) #Compare models
 ```
 
 ```{r}
 TTRthreshNullTimepoint <- glmer(I(TTRthresh == 1) ~ treatment +
-                                  as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                                   (1|crab.ID), 
                                 family = binomial(), 
                                 data = modTTR) #Create null model without timepoint
-anova(TTRthreshNullTimepoint, TTRthreshModel) #Compare models
+anova(TTRthreshNullTimepoint, TTRthreshModelEV) #Compare models
 ```
 
 ```{r}
 TTRthreshNullInteraction <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
-                                    as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                                     (1|crab.ID), 
                                   family = binomial(), 
                                   data = modTTR) #Create null model without interaction
-anova(TTRthreshNullInteraction, TTRthreshModel) #Compare models
+anova(TTRthreshNullInteraction, TTRthreshModelEV) #Compare models
 ```
 
-```{r}
-TTRthreshModelComparisons <- rbind(broom::tidy(anova(TTRthreshNullTreatment, TTRthreshModel)),
-                                   broom::tidy(anova(TTRthreshNullTimepoint, TTRthreshModel)),
-                                   broom::tidy(anova(TTRthreshNullInteraction, TTRthreshModel))) #Create a table of model comparison output
-TTRthreshModelComparisons
-```
-
-```{r}
-TTRthreshModelComparisons %>%
-  mutate(p.adj = p.adjust(p.value, method = "bonferroni")) #Adjust p-values
-```
+## Assess importance of genotype
 
 Alright, there are significant impacts of treatment and time on righting, but no impact of their interaction. Now I want to test the impact of genotype and population source on binary righting response. 
 
 ```{r}
 TTRthreshModelRevised <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
-                                 as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                                  (1|crab.ID), 
                                family = binomial(), 
                                data = modTTR) #Create a binomial model, where 1 = success of righting wihtin the defined threshold
-summary(TTRthreshModelRevised)
-```
-
-Before I look at genotype, I want to look at sex. Coyle et al. (2014) found sex-specific differences in failure to right at cold temperatures.
-
-```{r}
-TTRthreshNullSex <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
-                            integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
-                            as.factor(genotype) +
-                            (1|crab.ID), 
-                          family = binomial(), 
-                          data = modTTR) #Create null model without sex
-anova(TTRthreshNullSex, TTRthreshModelRevised) #Compare models. Marginally significant impact of sex on failure to right.
 ```
 
 ```{r}
 TTRthreshGenotype <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
-                             as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                              as.factor(genotype) +
                              (1|crab.ID), 
                            family = binomial(), 
@@ -637,7 +656,6 @@ anova(TTRthreshModelRevised, TTRthreshGenotype) #Compare models
 
 ```{r}
 TTRthreshpresenceC <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
-                              as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                               as.factor(presenceC) +
                               (1|crab.ID), 
                             family = binomial(), 
@@ -647,7 +665,6 @@ anova(TTRthreshModelRevised, TTRthreshpresenceC) #Compare models
 
 ```{r}
 TTRthreshpresenceT <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
-                              as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                               as.factor(presenceT) +
                               (1|crab.ID), 
                             family = binomial(), 
@@ -657,7 +674,6 @@ anova(TTRthreshModelRevised, TTRthreshpresenceT) #Compare models
 
 ```{r}
 TTRthreshSource <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
-                           as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
                            as.factor(source) +
                            (1|crab.ID), 
                          family = binomial(), 
@@ -665,21 +681,29 @@ TTRthreshSource <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
 anova(TTRthreshModelRevised, TTRthreshSource) #Compare models
 ```
 
+## Final model
+
 ```{r}
-TTRthreshModelComparisons <- rbind(broom::tidy(anova(TTRthreshNullTreatment, TTRthreshModel)),
-                                   broom::tidy(anova(TTRthreshNullTimepoint, TTRthreshModel)),
-                                   broom::tidy(anova(TTRthreshNullInteraction, TTRthreshModel)),
-                                   broom::tidy(anova(TTRthreshNullSex, TTRthreshModelRevised)),
+summary(TTRthreshModelEV)
+```
+
+## Save model output
+
+```{r}
+TTRthreshModelComparisons <- rbind(broom::tidy(anova(TTRthreshSex, TTRthreshModelDV)),
+                                   broom::tidy(anova(TTRthreshIntegument, TTRthreshModelDV)),
+                                   broom::tidy(anova(TTRthreshCW, TTRthreshModelDV)),
+                                   broom::tidy(anova(TTRthreshModelWeight, TTRthreshModelDV)),
+                                   broom::tidy(anova(TTRthreshModelSwimmer, TTRthreshModelDV)),
+                                   broom::tidy(anova(TTRthreshNullTreatment, TTRthreshModelEV)),
+                                   broom::tidy(anova(TTRthreshNullTimepoint, TTRthreshModelEV)),
+                                   broom::tidy(anova(TTRthreshNullInteraction, TTRthreshModelEV)),
                                    broom::tidy(anova(TTRthreshModelRevised, TTRthreshGenotype)),
                                    broom::tidy(anova(TTRthreshModelRevised, TTRthreshpresenceC)),
                                    broom::tidy(anova(TTRthreshModelRevised, TTRthreshpresenceT)),
-                                   broom::tidy(anova(TTRthreshModelRevised, TTRthreshSource))) #Create a table of model comparison output
+                                   broom::tidy(anova(TTRthreshModelRevised, TTRthreshSource))) %>%
+  mutate(p.adj = p.adjust(p.value, method = "bonferroni")) #Create a table of model comparison output. Adjust p-values.
 TTRthreshModelComparisons
-```
-
-```{r}
-TTRthreshModelComparisons <- TTRthreshModelComparisons %>%
-  mutate(p.adj = p.adjust(p.value, method = "bonferroni")) #Adjust p-values
 ```
 
 ```{r}
@@ -688,7 +712,7 @@ write.csv(TTRthreshModelComparisons, "ttr-binomial-model-comparison-output.csv",
 
 The impacts of presence of the T allele and source population on whether or not a crab righted itself are no longer significant after multiple correction. I'll include genotype-specific information in the final figure since there was a trend.
 
-### Calculate proportions for righting
+## Calculate proportions for righting
 
 ```{r}
 modTTR %>%
