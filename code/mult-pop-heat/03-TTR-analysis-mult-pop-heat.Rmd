@@ -920,13 +920,13 @@ TTRmodelME_genotype$contrasts #t = 2.408, p = 0.0219
 ### Final model
 
 ```{r}
-summary(TTRmodelTimepointME) #The final model has timepoint but not genotype
+summary(TTRfullGenotypeME) #The final model has timepoint but not genotype
 ```
 
 ```{r}
-var.lmerME <- c(0.07166, 0.16365) #Save variances of random effects as a new vector (crab ID, residuals)
+var.lmerME <- c(0.04533, 0.16365) #Save variances of random effects as a new vector (crab ID, residuals)
 percentvar.lmerME <- (100*var.lmerME)/sum(var.lmerME) #Calculate percent variances
-percentvar.lmerME[1] #Crab ID accounts for 0.16365% of variance
+percentvar.lmerME[1] #Crab ID accounts for 21.69107% of variance
 ```
 
 ### Save model output
@@ -1192,10 +1192,6 @@ mainPlot
 ```
 
 ```{r}
-broom::tidy(TTRmodelME_genotype$contrasts)
-```
-
-```{r}
 genotypePlot <- rbind(modTTRWA %>%
                         mutate(., population = "WA",
                                Meta = 0,
@@ -1214,10 +1210,10 @@ genotypePlot <- rbind(modTTRWA %>%
   ggplot(mapping = aes(x = as.character(timepoint), y = TTRavg, color = presenceTpop, shape = presenceTpop, fill = presenceTpop)) +
   geom_boxplot(outlier.shape = NA, alpha = 0.5) + 
   geom_jitter(position = position_dodge(width = 0.75)) +
-  geom_segment(aes(x = 1.7, xend = 1.9, 
-                   y = 15, yend = 15),
-               color = "black", linewidth = 0.2) + #Add significance bar
-  annotate("text", x = 1.8, y = 15.2, label = "***") + #Add significance asterisks
+  # geom_segment(aes(x = 1.7, xend = 1.9, 
+  #                  y = 15, yend = 15),
+  #              color = "black", linewidth = 0.2) + #Add significance bar
+  # annotate("text", x = 1.8, y = 15.2, label = "***") + #Add significance asterisks
   scale_y_continuous(name = "") +
   scale_x_discrete(name = "Exposure Time (Hours)",
                    labels = c(0, 22)) +
@@ -1248,6 +1244,7 @@ genotypePlot <- rbind(modTTRWA %>%
                                         legend.position = c(0.2, 0.9)) #Plot average TTR for each crab in a boxplot. Do not show outliers with the OG boxplot, but add them in with geom_jitter. Assign colors and shapes to each treatment. Move legend to the inside of the plot. Increase base font size.
 genotypePlot
 ```
+
 ### Combine plots
 
 ```{r}
