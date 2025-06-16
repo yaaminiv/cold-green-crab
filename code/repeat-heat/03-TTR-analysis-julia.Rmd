@@ -24,9 +24,9 @@ getwd()
 #install.packages("plotrix")
 #install.packages("RColorBrewer")
 #install.packages("lme4")
-#install.packages("emmeans")
-#install.packages("multcompView")
-#install.packages("multcomp")
+# install.packages("emmeans")
+# install.packages("multcompView")
+# install.packages("multcomp")
 #install.packages("ggpubr")
 #install.packages("cowplot")
 #install.packages("patchwork")
@@ -136,58 +136,158 @@ This population is in Hardy-Weinberg equilibrium!
 
 # Assess differences in average TTR
 
-## Mixed effects model
-
-In addition to crab ID, I will need to include tank as a random effect since there were significant differences in tank temperatures during the second pulse.
-
 ```{r}
 hist(modTTR$TTRavg)
 hist(x = log(modTTR$TTRavg)) #Log transformation helps normalize data
 ```
 
+## Assess impact of demographic variables
+
+In addition to crab ID, I will need to include tank as a random effect since there were significant differences in tank temperatures during the second pulse.
+
 ```{r}
-TTRmodel <- lmer(log(TTRavg) ~ as.factor(treatment) + as.factor(day) + as.factor(treatment):as.factor(day) + 
-                   as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
-                   (1|crab.ID) + (1|tank), 
-                 data = modTTR, REML = FALSE) #Run model with treatment, timepoint, their interaction, sex, integument color, carapace width, weight, and missing swimmer information as fixed effects, and individual as a random effect. Change the likelihood estimator (REML = FALSE) to compare models with LRT later. Use data without rows with NAs
-summary(TTRmodel) #Look at model output.
-#Residuals explain more random effect variation than crab ID, crab ID explains very little variation
+TTRmodelDV <- lmer(log(TTRavg) ~ as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
+                     (1|crab.ID) + (1|tank), 
+                   data = modTTR, REML = FALSE) #Run model with sex, integument color, carapace width, weight, and missing swimmer information as fixed effects, and individual as a random effect. Change the likelihood estimator (REML = FALSE) to compare models with LRT later. Use data without rows with NAs
 ```
 
 ```{r}
-var.lmer <- c(0.02907, 0, 0.20532) #Save variances of random effects as a new vector (crab ID, tank, residuals)
+TTRnullSex <- lmer(log(TTRavg) ~ integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
+                     (1|crab.ID) + (1|tank), 
+                   data = modTTR, REML = FALSE) #Run model without variable of interest to identify significance
+anova(TTRnullSex, TTRmodelDV) #Sex is not significant
+```
+
+```{r}
+TTRnullIntegument <- lmer(log(TTRavg) ~ as.factor(sex) + carapace.width + weight + as.factor(missing.swimmer) + 
+                            (1|crab.ID) + (1|tank), 
+                          data = modTTR, REML = FALSE) #Run model without variable of interest to identify significance
+anova(TTRnullIntegument, TTRmodelDV) #Integument color is not significant
+```
+
+```{r}
+TTRnullCW <- lmer(log(TTRavg) ~ as.factor(sex) + integument.cont + weight + as.factor(missing.swimmer) + 
+                    (1|crab.ID) + (1|tank), 
+                  data = modTTR, REML = FALSE) #Run model without variable of interest to identify significance
+anova(TTRnullCW, TTRmodelDV) #CW is not significant
+```
+
+```{r}
+TTRnullWeight <- lmer(log(TTRavg) ~ as.factor(sex) + integument.cont + carapace.width + as.factor(missing.swimmer) + 
+                        (1|crab.ID) + (1|tank), 
+                      data = modTTR, REML = FALSE) #Run model without variable of interest to identify significance
+anova(TTRnullWeight, TTRmodelDV) #Weight is not significant
+```
+
+```{r}
+TTRnullSwimmer <- lmer(log(TTRavg) ~ as.factor(sex) + integument.cont + carapace.width + weight +
+                         (1|crab.ID) + (1|tank), 
+                       data = modTTR, REML = FALSE) #Run model without variable of interest to identify significance
+anova(TTRnullSwimmer, TTRmodelDV) #Missing swimmer is significant, but will not be significant when corrected for multiple comparisons
+```
+
+## Assess impact of explanatory variables
+
+Now that I've run the full model, I want to test the importance of treatment, day, and their interaction as predictors. No demographic variables were significant so I will not include them.
+
+```{r}
+TTRmodelEV <- lmer(log(TTRavg) ~ as.factor(treatment) + as.factor(day) + as.factor(treatment):as.factor(day) +
+                     (1|crab.ID) + (1|tank), 
+                   data = modTTR, REML = FALSE) #Full model with all explanatory variables and random effects
+```
+
+```{r}
+TTRnullTreatment <- lmer(log(TTRavg) ~ as.factor(day) + as.factor(sex) + 
+                           (1|crab.ID) + (1|tank), 
+                         data = modTTR, REML = FALSE) #Run null model without treatment to identify significance of predictor
+anova(TTRnullTreatment, TTRmodelEV) #Treatment is a significant predictor
+```
+
+```{r}
+TTRnullDay <- lmer(log(TTRavg) ~ as.factor(treatment) + 
+                     (1|crab.ID) + (1|tank), 
+                   data = modTTR, REML = FALSE) #Run null model without day to identify significance of predictor
+anova(TTRnullDay, TTRmodelEV) #Day is a significant predictor
+```
+
+```{r}
+TTRnullInteraction <- lmer(log(TTRavg) ~ as.factor(treatment) + as.factor(day) + 
+                             (1|crab.ID) + (1|tank),
+                           data = modTTR, REML = FALSE) #Run model without interaction to identify significance of predictor. The full model constructed does not include an interaction
+anova(TTRnullInteraction, TTRmodelEV) #Interaction is a significant predictor
+```
+
+Treatment, time, and their interaction are significant.
+
+## Assess impact of genotype
+
+Now that I know treatment, time, and their interaction significantly impact TTR, I want to add in genotype.
+
+```{r}
+TTRfullGenotype <- lmer(log(TTRavg) ~ as.factor(treatment) + as.factor(day) + as.factor(treatment):as.factor(day) + 
+                          as.factor(genotype) + 
+                          (1|crab.ID) + (1|tank),
+                        data = modTTR, REML = FALSE) #Run model with genotype to identify4 significance of predictor
+anova(TTRmodelEV, TTRfullGenotype) #No significant impact of genotype
+```
+
+```{r}
+TTRpresenceC <- lmer(log(TTRavg) ~ as.factor(treatment) + as.factor(day) + as.factor(treatment):as.factor(day) +
+                       as.factor(presenceC) + 
+                       (1|crab.ID) + (1|tank),
+                     data = modTTR, REML = FALSE) #Run model with genotype to identify significance of predictor
+anova(TTRmodelEV, TTRpresenceC) #No significant impact of C allele
+```
+
+```{r}
+TTRpresenceT <- lmer(log(TTRavg) ~ as.factor(treatment) + as.factor(day) + as.factor(treatment):as.factor(day) + 
+                       as.factor(presenceT) + 
+                       (1|crab.ID) + (1|tank),
+                     data = modTTR, REML = FALSE) #Run model with genotype to identify significance of predictor
+anova(TTRmodelEV, TTRpresenceT) #Marginal impact of T allele, but this will go away after multiple test correction.
+```
+
+## Final model
+
+```{r}
+summary(TTRmodelEV) #Final model has temperature, day, and their interaction.
+```
+
+```{r}
+var.lmer <- c(0.06187, 0, 0.20237) #Save variances of random effects as a new vector (crab ID, tank, residuals)
 percentvar.lmer <- (100*var.lmer)/sum(var.lmer) #Calculate percent variances
-percentvar.lmer[1] #Crab ID accounts for 12.40241% of variance
+percentvar.lmer[1] #Crab ID accounts for 23.41432% of variance
 percentvar.lmer[2] #Tank accounts for 0% of the variance!
 ```
 
-Now that I've run the full model, I want to test the importance of treatment, day, and their interaction as predictors. I'll include all other factors in the null model to account for any variation they may contribute.
+## Check assumptions
 
 ```{r}
-TTRnullTreatment <- lmer(log(TTRavg) ~ as.factor(day) + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID) + (1|tank), data = modTTR, REML = FALSE) #Run null model without treatment to identify significance of predictor
-anova(TTRnullTreatment, TTRmodel) #Treatment is a significant predictor
+hist(residuals(TTRmodelEV)) #Residuals normally distributed
+
+plot(fitted(TTRmodelEV), residuals(TTRmodelEV)) #Borderline heteroskedastic but probably okay? Dispersion across x-axis is likely related to discrete variables
+abline(h = 0, lty = 2, col = "grey")
 ```
 
-```{r}
-TTRnullDay <- lmer(log(TTRavg) ~ as.factor(treatment) + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID) + (1|tank), data = modTTR, REML = FALSE) #Run null model without day to identify significance of predictor
-anova(TTRnullDay, TTRmodel) #Day is a significant predictor
-```
+## Save model output
 
 ```{r}
-TTRnullInteraction <- lmer(log(TTRavg) ~ as.factor(treatment) + as.factor(day) + as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + (1|crab.ID) + (1|tank), data = modTTR, REML = FALSE) #Run model without interaction to identify significance of predictor. The full model constructed does not include an interaction
-anova(TTRnullInteraction, TTRmodel) #Interaction is a significant predictor
+TTRModelComparisons <- rbind(broom::tidy(anova(TTRnullSex, TTRmodelDV)),
+                             broom::tidy(anova(TTRnullIntegument, TTRmodelDV)),
+                             broom::tidy(anova(TTRnullCW, TTRmodelDV)),
+                             broom::tidy(anova(TTRnullWeight, TTRmodelDV)),
+                             broom::tidy(anova(TTRnullSwimmer, TTRmodelDV)),
+                             broom::tidy(anova(TTRnullTreatment, TTRmodelEV)),
+                             broom::tidy(anova(TTRnullDay, TTRmodelEV)),
+                             broom::tidy(anova(TTRnullInteraction, TTRmodelEV)),
+                             broom::tidy(anova(TTRmodelEV, TTRfullGenotype)),
+                             broom::tidy(anova(TTRmodelEV, TTRpresenceC)),
+                             broom::tidy(anova(TTRmodelEV, TTRpresenceT))) %>%
+  mutate(., p.adj = p.adjust(p.value, method = "bonferroni")) #Create table for model comparison output. Adjust for multiple comparisons.
+TTRModelComparisons #Confirm modifications
 ```
-
 ```{r}
-TTRModelComparisons<- rbind(broom::tidy(anova(TTRnullTreatment, TTRmodel)),
-                            broom::tidy(anova(TTRnullDay, TTRmodel)),
-                            broom::tidy(anova(TTRnullInteraction, TTRmodel))) #Create table for model comparison output
-TTRModelComparisons
-```
-
-```{r}
-TTRModelComparisons %>%
-  mutate(., p.adj = p.adjust(p.value, method = "bonferroni")) #Perform bonferroni adjustment for multiple comparisons
+write.csv(TTRModelComparisons, "ttr-model-comparison-stat-output.csv", quote = FALSE, row.names = FALSE) #Save statistical output
 ```
 
 ## Posthoc tests for significant predictors
@@ -203,7 +303,7 @@ modTTR$day %>% unique(.)
 ```
 
 ```{r}
-TTRmodel_treatment <- emmeans(TTRmodel, pairwise ~ treatment | day, at = list(day = c(1, 2, 5)), adjust = "tukey", data = modTTR) #Use emmeans to obtain pairwise treatment differences at the timepoints listed. 
+TTRmodel_treatment <- emmeans(TTRmodelEV, pairwise ~ treatment | day, at = list(day = c(1, 2, 5)), adjust = "tukey", data = modTTR) #Use emmeans to obtain pairwise treatment differences at the timepoints listed. 
 pairs(TTRmodel_treatment$emmeans) %>% broom::tidy(.) #Use the pairs function to look at pairwise test output. Clean output using broom.
 pairs(TTRmodel_treatment$emmeans) %>%
   broom::tidy(.) %>%
@@ -213,7 +313,7 @@ pairs(TTRmodel_treatment$emmeans) %>%
 Interactions can also be investigated by looking at differences in linear model slopes. I will estimate simple slopes to understand how average TTR changes over time for each treatment.
 
 ```{r}
-TTRmodel_treatment_slope <- emtrends(TTRmodel, pairwise ~ treatment, var = "day", data = modTTR) #Obtain simple slopes for the interaction between each temperature and time. Test if the effect of time significantly differs between the two treatments
+TTRmodel_treatment_slope <- emtrends(TTRmodelEV, pairwise ~ treatment, var = "day", data = modTTR) #Obtain simple slopes for the interaction between each temperature and time. Test if the effect of time significantly differs between the two treatments
 TTRmodel_treatment_slope$emtrends #Different slopes for each temperature (makes sense because there was an interaction)
 TTRmodel_treatment_slope$contrasts #Significance test for the different slopes.
 ```
@@ -223,7 +323,7 @@ TTRmodel_treatment_slope$contrasts #Significance test for the different slopes.
 I want to understand how TTR varied by timepoint within different treatments. There is no way to do this with my original model since timepoint was (rightfully) coded as a continuous variable. In order to get pairwise estimates, I will need to refactor time as a categorical variable, rerun the model, and then use `emmeans` on this revised model.
 
 ```{r}
-TTRmodel_day <- emmeans(TTRmodel, pairwise ~ as.factor(day) | treatment, adjust = "tukey", data = modTTR) #Rerun emmeans using timepoint as a factor
+TTRmodel_day <- emmeans(TTRmodelEV, pairwise ~ as.factor(day) | treatment, adjust = "tukey", data = modTTR) #Rerun emmeans using timepoint as a factor
 pairs(TTRmodel_day$emmeans) %>% broom::tidy(.) #Use the pairs function to look at pairwise output. Clean output using broom.
 pairs(TTRmodel_day$emmeans) %>%
   broom::tidy(.) %>%
@@ -239,67 +339,6 @@ modTTR %>%
   write.csv("average-TTR-calculations.csv", quote = FALSE, row.names = FALSE) #Take TTR data and group by treatment and day. Calculate mean and standard deviation. Save as a csv file.
 ```
 
-## Check assumptions
-
-```{r}
-hist(residuals(TTRmodel)) #Residuals normally distributed
-
-plot(fitted(TTRmodel), residuals(TTRmodel)) #Borderline heteroskedastic but probably okay? Dispersion across x-axis is likely related to discrete variables
-abline(h = 0, lty = 2, col = "grey")
-```
-
-## Effect of genotype
-
-Now that I know treatment, time, and their interaction significantly impact TTR, I want to add in genotype and sourcing information.
-
-```{r}
-TTRfullGenotype <- lmer(log(TTRavg) ~ as.factor(treatment) + as.factor(day) + as.factor(treatment):as.factor(day) + 
-                          as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
-                          as.factor(genotype) + 
-                          (1|crab.ID) + (1|tank), data = modTTR, REML = FALSE) #Run model with genotype to identify4 significance of predictor
-anova(TTRmodel, TTRfullGenotype) #No significant impact of genotype
-```
-
-```{r}
-TTRpresenceC <- lmer(log(TTRavg) ~ as.factor(treatment) + as.factor(day) + as.factor(treatment):as.factor(day) +
-                       as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
-                       as.factor(presenceC) + 
-                       (1|crab.ID) + (1|tank), data = modTTR, REML = FALSE) #Run model with genotype to identify significance of predictor
-anova(TTRmodel, TTRpresenceC) #No significant impact of C allele
-```
-
-```{r}
-TTRpresenceT <- lmer(log(TTRavg) ~ as.factor(treatment) + as.factor(day) + as.factor(treatment):as.factor(day) + 
-                       as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
-                       as.factor(presenceT) + 
-                       (1|crab.ID) + (1|tank), data = modTTR, REML = FALSE) #Run model with genotype to identify significance of predictor
-anova(TTRmodel, TTRpresenceT) #Marginal impact of T allele
-```
-
-```{r}
-TTRModelComparisons<- rbind(broom::tidy(anova(TTRnullTreatment, TTRmodel)),
-                            broom::tidy(anova(TTRnullDay, TTRmodel)),
-                            broom::tidy(anova(TTRnullInteraction, TTRmodel)),
-                            broom::tidy(anova(TTRmodel, TTRfullGenotype)),
-                            broom::tidy(anova(TTRmodel, TTRpresenceC)),
-                            broom::tidy(anova(TTRmodel, TTRpresenceT))) #Create table for model comparison output
-TTRModelComparisons
-```
-
-```{r}
-TTRModelComparisons <- TTRModelComparisons %>%
-  mutate(p.adj = p.adjust(p.value, method = "bonferroni")) #Perform p-value corrections
-TTRModelComparisons
-```
-
-```{r}
-write.csv(TTRModelComparisons, "ttr-model-comparison-stat-output.csv", quote = FALSE, row.names = FALSE) #Save model output
-```
-
-The marginally significant impact of the T allele on average TTR is no longer significant after p-value correction. However, I'll still include this information in a plot since there is a trend. 
-
-### Calculate average TTR
-
 ```{r}
 modTTR %>%
   group_by(., treatment, day, presenceT) %>%
@@ -314,11 +353,9 @@ modTTR %>%
   filter(., day == 5)
 ```
 
-My next step is to understand how the difference in TTR is impacted by treatment, time, and genotype.
-
 # Assess impacts on differences in TTR
 
-To understand how various factors impact the difference in TTR, I need to reformat my dataframe.
+My next step is to understand how the difference in TTR is impacted by treatment, time, and genotype. To understand how various factors impact the difference in TTR, I need to reformat my dataframe.
 
 ```{r}
 modTTRWide <- modTTR %>%
