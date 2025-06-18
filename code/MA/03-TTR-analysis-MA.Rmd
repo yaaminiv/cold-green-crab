@@ -556,48 +556,48 @@ head(modTTR) #Confirm modifications
 
 ```{r}
 TTRthreshModelDV <- glmer(I(TTRthresh == 1) ~ as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
-                          (1|crab.ID), 
-                        family = binomial(), 
-                        data = modTTR) #Create a binomial model, where 1 = success of righting within the defined threshold
+                            (1|crab.ID), 
+                          family = binomial(), 
+                          data = modTTR) #Create a binomial model, where 1 = success of righting within the defined threshold
 ```
 
 ```{r}
 TTRthreshSex <- glmer(I(TTRthresh == 1) ~ integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
-                          (1|crab.ID), 
-                        family = binomial(), 
-                        data = modTTR)
+                        (1|crab.ID), 
+                      family = binomial(), 
+                      data = modTTR)
 anova(TTRthreshSex, TTRthreshModelDV) #No significant influence of sex
 ```
 
 ```{r}
 TTRthreshIntegument <- glmer(I(TTRthresh == 1) ~ as.factor(sex) + carapace.width + weight + as.factor(missing.swimmer) + 
-                          (1|crab.ID), 
-                        family = binomial(), 
-                        data = modTTR) #Create a binomial model, where 1 = success of righting wihtin the defined threshold
+                               (1|crab.ID), 
+                             family = binomial(), 
+                             data = modTTR) #Create a binomial model, where 1 = success of righting wihtin the defined threshold
 anova(TTRthreshIntegument, TTRthreshModelDV) #Integument color not significant
 ```
 
 ```{r}
 TTRthreshCW <- glmer(I(TTRthresh == 1) ~ as.factor(sex) + integument.cont + weight + as.factor(missing.swimmer) + 
-                          (1|crab.ID), 
-                        family = binomial(), 
-                        data = modTTR) #Create a binomial model, where 1 = success of righting wihtin the defined threshold
+                       (1|crab.ID), 
+                     family = binomial(), 
+                     data = modTTR) #Create a binomial model, where 1 = success of righting wihtin the defined threshold
 anova(TTRthreshCW, TTRthreshModelDV) #CW not significant
 ```
 
 ```{r}
 TTRthreshModelWeight <- glmer(I(TTRthresh == 1) ~ as.factor(sex) + integument.cont + carapace.width + as.factor(missing.swimmer) + 
-                          (1|crab.ID), 
-                        family = binomial(), 
-                        data = modTTR) #Create a binomial model, where 1 = success of righting wihtin the defined threshold
+                                (1|crab.ID), 
+                              family = binomial(), 
+                              data = modTTR) #Create a binomial model, where 1 = success of righting wihtin the defined threshold
 anova(TTRthreshModelWeight, TTRthreshModelDV) #Weight not significant
 ```
 
 ```{r}
 TTRthreshModelSwimmer <- glmer(I(TTRthresh == 1) ~ as.factor(sex) + integument.cont + carapace.width + weight +
-                          (1|crab.ID), 
-                        family = binomial(), 
-                        data = modTTR) #Create a binomial model, where 1 = success of righting within the defined threshold
+                                 (1|crab.ID), 
+                               family = binomial(), 
+                               data = modTTR) #Create a binomial model, where 1 = success of righting within the defined threshold
 anova(TTRthreshModelSwimmer, TTRthreshModelDV) #Missing swimmer not significant
 ```
 
@@ -605,9 +605,9 @@ anova(TTRthreshModelSwimmer, TTRthreshModelDV) #Missing swimmer not significant
 
 ```{r}
 TTRthreshModelEV <- glmer(I(TTRthresh == 1) ~ treatment + timepoint + treatment:timepoint +
-                          (1|crab.ID), 
-                        family = binomial(), 
-                        data = modTTR) #Create a binomial model, where 1 = success of righting within the defined threshold
+                            (1|crab.ID), 
+                          family = binomial(), 
+                          data = modTTR) #Create a binomial model, where 1 = success of righting within the defined threshold
 ```
 
 ```{r}
@@ -1005,7 +1005,7 @@ ggsave("figures/time-to-right-noFlips-timeSourceT.pdf", height = 8.5, width = 11
 #Take TTR data and group by timepoint. Count the number of crabs that did not right within 90 seconds during each trial. Subtract that value from the total to get the number of crabs that did right within 90 seconds. Pivot the data longer. Create a trial column based on the condition column. Remove trial information from the text in the condition column. Pipe modified data into ggplot to create a stacked barplot. Facet by treatment and timepoint using facet labels. Relabel axes. Modify fill scale. Use specific base size with classic theme. For facet labels, use a white border (no border).
 ```
 
-## Multipanel plot
+## Multipanel plots
 
 I want to add significance information to the plot. Since treatments were significantly different from eachother at all timepoints except hour 0, I don't think that contrast is as interesting as understanding within-treatment differences by time.
 
@@ -1017,12 +1017,12 @@ time_letters_plot <- time_letters %>%
   mutate(.group = case_when(treatment == "5C" ~ str_to_upper(.group),
                             treatment == "0C" ~ .group)) %>% 
   arrange(timepoint, treatment) %>% 
-  mutate(label_y = c(8, 8,
-                     25, 8,
-                     88, 35,
-                     68, 28,
-                     55, 21,
-                     58, 15))
+  mutate(label_y = c(9, 9,
+                     26, 9,
+                     89, 36,
+                     69, 29,
+                     56, 22,
+                     59, 16))
 #Take lettering and tidy using broom. Rename the timepoint column to match plotting data. Convert the lettering for 5C to uppercase, since 5C and 1C are different from eachother. Arrange by timepoint and treatment. Manually add label height for placing letters above the boxes.
 time_letters_plot #Confirm changes
 ```
@@ -1040,21 +1040,68 @@ averageTTRMA <- modTTR %>%
             position = position_dodge(width = 0.75),
             inherit.aes = FALSE, show.legend = FALSE) +
   scale_y_continuous(name = "Average Time-to-Right (s)",
-                     breaks = c(seq(0, 20, 5), seq(20, 100, 20))) +
-  scale_x_discrete(name = "Exposure Time (Hours)",
+                     breaks = c(seq(0, 20, 10), seq(20, 100, 20))) +
+  scale_x_discrete(name = "",
                    breaks = unique(modTTR$timepoint),
                    labels = c(0, 4, 22, 28, 46, 94)) +
   scale_color_manual(values = c(plotColors[1], plotColors[2]),
-                     name = "Temperature (ºC)",
+                     name = "",
                      breaks = c("0C", "5C"),
-                     labels = c("1.5", "5")) +
+                     labels = c("1.5ºC", "5ºC")) +
   scale_shape_manual(values = c(15, 19),
-                     name = "Temperature (ºC)",
+                     name = "",
                      breaks = c("0C", "5C"),
-                     labels = c("1.5", "5")) +
+                     labels = c("1.5ºC", "5ºC")) +
   ggtitle("A. Righting Response for MA Crabs") +
-  theme_classic(base_size = 15) + theme(legend.position = "bottom") #Select unique timepoint, treatment, and TTRavg data, and remove rows where TTRavg = NA. Plot average TTR for each crab in a boxplot. Do not show outliers with the OG boxplot, but add them in with geom_jitter. Assign colors and shapes to each treatment. Increase base font size.
+  theme_classic(base_size = 15) + theme(strip.background = element_rect(color = "white"),
+                                        strip.text.y = element_blank(),
+                                        legend.position = c(0.08, 0.9)) #Select unique timepoint, treatment, and TTRavg data, and remove rows where TTRavg = NA. Plot average TTR for each crab in a boxplot. Do not show outliers with the OG boxplot, but add them in with geom_jitter. Assign colors and shapes to each treatment. Increase base font size.
 averageTTRMA
+```
+
+```{r}
+averageTTRMAGenotype <- modTTR %>%
+  dplyr::select(., c(timepoint, treatment, presenceT, TTRavg)) %>%
+  filter(., is.na(TTRavg) == FALSE) %>%
+  distinct(.) %>%
+  mutate(., presenceTtreat = case_when(presenceT == "Y" & treatment == "0C" ~ "1_Y_0C",
+                                       presenceT == "N" & treatment == "0C" ~ "2_N_0C",
+                                       presenceT == "Y" & treatment == "5C" ~ "3_Y_5C",
+                                       presenceT == "N" & treatment == "5C" ~ "4_N_5C")) %>%
+  ggplot(mapping = aes(x = as.character(timepoint), y = TTRavg, color = presenceTtreat, shape = presenceTtreat, fill = presenceTtreat)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.5) + 
+  geom_jitter(position = position_dodge(width = 0.75)) +
+  scale_y_continuous(name = "Average Time-to-Right (s)",
+                     breaks = c(seq(0, 20, 10), seq(20, 100, 20))) +
+  scale_x_discrete(name = "Exposure Time (Hours)",
+                   breaks = unique(modTTR$timepoint),
+                   labels = c(0, 4, 22, 28, 46, 94)) +
+  scale_color_manual(values = c(plotColors[1], plotColors[1],
+                                plotColors[2], plotColors[2]),
+                     labels = c("1.5ºC, CT or TT",
+                                "1.5ºC, CC",
+                                "5ºC, CT or TT",
+                                "5ºC, CC"),
+                     name = "") +
+  scale_fill_manual(values = c(plotColors[1], "NA",
+                               plotColors[2], "NA"),
+                    labels = c("1.5ºC, CT or TT",
+                               "1.5ºC, CC",
+                               "5ºC, CT or TT",
+                               "5ºC, CC"),
+                    name = "") +
+  scale_shape_manual(values = c(15, 15,
+                                19, 19),
+                     labels = c("1.5ºC, CT or TT",
+                                "1.5ºC, CC",
+                                "5ºC, CT or TT",
+                                "5ºC, CC"),
+                     name = "") +
+  ggtitle("B. Righting Response by Genotype") +
+  theme_classic(base_size = 15) + theme(strip.background = element_rect(color = "white"),
+                                        strip.text.y = element_blank(),
+                                        legend.position = c(0.14, 0.8)) #Select unique timepoint, treatment, and TTRavg data, and remove rows where TTRavg = NA. Plot average TTR for each crab in a boxplot. Do not show outliers with the OG boxplot, but add them in with geom_jitter. Assign colors and shapes to each treatment. Increase base font size.
+averageTTRMAGenotype
 ```
 
 ```{r}
@@ -1070,16 +1117,17 @@ failureToRightMA <- modTTR %>%
   ggplot(., aes(x = timepoint, y = count, fill = condition)) +
   geom_bar(position = "fill", stat = "identity") + 
   facet_wrap(~treatment, labeller = labeller(treatment = treatment_labels)) +
-  scale_x_continuous(name = "",
+  scale_x_continuous(name = "Exposure Time (Hours)",
                      breaks = c(0:5),
                      labels = c(0, 4, 22, 28, 46, 94)) +
   scale_y_continuous(name = "Proportion of Crabs") +
   scale_fill_manual(name = "",
                     values = c("grey70", plotColors[1]),
                     labels = c("Yes", "No")) +
-  ggtitle("B. Proportion of MA Crabs that Righted") +
+  ggtitle("C. Proportion Righted") +
   theme_classic(base_size = 15) + theme(strip.background = element_rect(colour = "white"), 
-                                        legend.position = "none")
+                                        legend.position = "right")
+failureToRightMA
 ```
 
 ```{r}
@@ -1098,18 +1146,19 @@ genotypeFailureMA <- modTTR %>%
   scale_x_continuous(name = "Exposure Time (Hours)",
                      breaks = c(0:5),
                      labels = c(0, 4, 22, 28, 46, 94)) +
-  scale_y_continuous(name = "Proportion of Crabs") +
+  scale_y_continuous(name = "") +
   scale_fill_manual(name = "",
                     values = c("grey70", plotColors[1]),
                     labels = c("Yes", "No")) +
-  ggtitle("C. Failure to Right by Genotype") +
+  ggtitle("D. Righting by Genotype") +
   theme_classic(base_size = 15) + theme(strip.background = element_rect(colour = "white"),
-                                        legend.position = "bottom")
+                                        legend.position = "right")
+genotypeFailureMA
 ```
 
 ```{r}
-averageTTRMA | (failureToRightMA / genotypeFailureMA)
-ggsave("figures/multipanel-MA-plot.pdf", height = 8.5, width = 11)
+averageTTRMA / averageTTRMAGenotype / (failureToRightMA | genotypeFailureMA  + plot_layout(guides = "collect"))
+ggsave("figures/multipanel-MA-plot.pdf", width = 8.5, height = 11)
 ```
 
 # Individual-level analysis
