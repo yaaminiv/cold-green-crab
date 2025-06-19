@@ -903,7 +903,6 @@ TTRmodelME_timepoint$contrasts #t = -5.093, p <.0001
 
 I'll look at full genotype only. Since there were no TT crabs tested, C is present in every crab, so I can't test the significance of the presence of the C allele! Testing for the presence of the T allele will just duplicate the full genotype contrast.
 
-
 ```{r}
 TTRfullGenotypeME <- lmer(log(TTRavg) ~ as.factor(timepoint) + 
                             as.factor(genotype) + 
@@ -937,6 +936,7 @@ TTRModelComparisonsME <- rbind(broom::tidy(anova(TTRnullSexME, TTRmodelMEDV)),
                                broom::tidy(anova(TTRnullCWME, TTRmodelMEDV)),
                                broom::tidy(anova(TTRnullWeightME, TTRmodelMEDV)),
                                broom::tidy(anova(TTRnullSwimmerME, TTRmodelMEDV)),
+                               broom::tidy(anova(TTRnullMetaME, TTRmodelMEDV)),
                                broom::tidy(anova(TTRnullTimepointME, TTRmodelTimepointME)),
                                broom::tidy(anova(TTRmodelTimepointME, TTRfullGenotypeME))) %>%
   mutate(., p.adj = p.adjust(p.value, method = "bonferroni")) #Create table for model comparison output. Adjust for multiple comparisons.
