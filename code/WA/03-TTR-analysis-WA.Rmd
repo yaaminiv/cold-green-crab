@@ -483,6 +483,148 @@ modTTR %>%
   write.csv("average-TTR-calculations.csv", quote = FALSE, row.names = FALSE)
 ```
 
+## Sensitivity test
+
+We sampled crabs throughout the experiment, so some crabs were removed from the study. I am going to repeat the modeling efforts using only the crabs that were alive throughout the experiment.
+
+```{r}
+modTTRSubset <- modTTR %>%
+  dplyr::select(., timepoint, crab.ID, TTRavg, treatment) %>%
+  group_by(., crab.ID) %>%
+  pivot_wider(., names_from = timepoint, values_from = TTRavg, names_prefix = "timepoint") %>%
+  mutate_all(~ifelse(is.nan(.), 91, .)) %>%
+  filter(., is.na(timepoint0) == FALSE) %>%
+  filter(., is.na(timepoint1) == FALSE) %>%
+  filter(., is.na(timepoint2) == FALSE) %>%
+  filter(., is.na(timepoint3) == FALSE) %>%
+  filter(., is.na(timepoint4) == FALSE) %>%
+  filter(., is.na(timepoint5) == FALSE) %>%
+  pivot_longer(., cols = timepoint0:timepoint5, names_to = "timepoint", values_to = "TTRavg") %>%
+  mutate(., timepoint = gsub(x = timepoint, pattern = "timepoint", replacement = "") %>% as.numeric) %>%
+  left_join(., y = modTTR, by = c("crab.ID", "timepoint", "treatment")) %>%
+  dplyr::select(., -c(date:tank, TTRavg.y:TTRSE)) %>%
+  dplyr::rename(., TTRavg = "TTRavg.x") %>%
+  mutate(., TTRavg = na_if(TTRavg, 91.00)) #Subset only crabs that have data from the all timepoints
+head(modTTRSubset) #Confirm formatting
+```
+
+```{r}
+modTTRSubset
+```
+
+### Demographic variables
+
+Will not be testing missing swimmer since no crabs were missing a swimmer leg.
+
+```{r}
+TTRSubsetDV <- lmer(log(TTRavg) ~ as.factor(sex) + integument.cont + carapace.width + weight + 
+                     (1|crab.ID), 
+                   data = modTTRSubset, REML = FALSE) #Run model with sex, integument color, carapace width, weight, and missing swimmer information as fixed effects, and individual as a random effect. Change the likelihood estimator (REML = FALSE) to compare models with LRT later. Use data without rows with NAs
+```
+
+```{r}
+TTRSubsetSex <- lmer(log(TTRavg) ~ integument.cont + carapace.width + weight + 
+                     (1|crab.ID), 
+                   data = modTTRSubset, REML = FALSE) #Run model without variable of interest to identify significance
+anova(TTRSubsetSex, TTRSubsetDV)
+```
+
+```{r}
+TTRSubsetIntegument <- lmer(log(TTRavg) ~ as.factor(sex) + carapace.width + weight + 
+                            (1|crab.ID), 
+                          data = modTTRSubset, REML = FALSE) #Run model without variable of interest to identify significance
+anova(TTRSubsetIntegument, TTRSubsetDV) #Integument color is not significant
+```
+
+```{r}
+TTRSubsetCW <- lmer(log(TTRavg) ~ as.factor(sex) + integument.cont + weight +
+                    (1|crab.ID), 
+                  data = modTTRSubset, REML = FALSE) #Run model without variable of interest to identify significance
+anova(TTRSubsetCW, TTRSubsetDV) #CW is not significant
+```
+
+```{r}
+TTRSubsetWeight <- lmer(log(TTRavg) ~ as.factor(sex) + integument.cont + carapace.width + 
+                        (1|crab.ID), 
+                      data = modTTRSubset, REML = FALSE) #Run model without variable of interest to identify significance
+anova(TTRSubsetWeight, TTRSubsetDV) #Weight is not significant
+```
+
+No demographic variables are significant for the subset.
+
+### Explanatory variables
+
+```{r}
+TTRSubsetEV <- lmer(log(TTRavg) ~ treatment + timepoint + treatment:timepoint + 
+                     (1|crab.ID), 
+                   data = modTTRSubset, REML = FALSE) #Run model with treatment, timepoint, and their interaction
+```
+
+```{r}
+TTRSubsetTreatment <- lmer(log(TTRavg) ~ timepoint + 
+                           (1|crab.ID), 
+                         data = modTTRSubset, REML = FALSE) #Run null model without treatment to identify significance of predictor
+anova(TTRSubsetTreatment, TTRSubsetEV) #Treatment is a significant predictor
+```
+
+```{r}
+TTRSubsetTimepoint <- lmer(log(TTRavg) ~ treatment +
+                           (1|crab.ID),
+                         data = modTTRSubset, REML = FALSE) #Run null model without timepoint to identify significance of predictor
+anova(TTRSubsetTimepoint, TTRSubsetEV) #Timepoint is a significant predictor
+```
+
+```{r}
+TTRSubsetInteraction <- lmer(log(TTRavg) ~ treatment + timepoint + 
+                             (1|crab.ID),
+                           data = modTTRSubset, REML = FALSE) #Run model without interaction to identify significance of predictor. The full model constructed does not include an interaction
+anova(TTRSubsetInteraction, TTRSubsetEV) #Interaction is a significant predictor
+```
+
+### Genotype variables
+
+```{r}
+TTRSubsetfullGenotype <- lmer(log(TTRavg) ~ treatment + timepoint + treatment:timepoint + 
+                          as.factor(genotype) + 
+                          (1|crab.ID),
+                        data = modTTRSubset, REML = FALSE) #Run model with genotype to identify significance of predictor
+anova(TTRSubsetEV, TTRSubsetfullGenotype) #No significant impact of genotype
+```
+
+I could only test the full genotype, since there were only CT and TT crabs left at the end.
+
+### Final model
+
+```{r}
+summary(TTRSubsetEV)
+```
+
+
+```{r}
+var.lmer <- c(0.002613, 0.538479) #Save variances of random effects as a new vector (crab ID, residual)
+percentvar.lmer <- (100*var.lmer)/sum(var.lmer) #Calculate percent variances
+percentvar.lmer[1] #Crab ID accounts for 0.4829123% of variance in the subset model
+```
+
+### Save model output
+
+```{r}
+TTRSubsetModelComparisons<- rbind(broom::tidy(anova(TTRSubsetSex, TTRSubsetDV)),
+                            broom::tidy(anova(TTRSubsetIntegument, TTRSubsetDV)),
+                            broom::tidy(anova(TTRSubsetCW, TTRSubsetDV)),
+                            broom::tidy(anova(TTRSubsetWeight, TTRSubsetDV)),
+                            broom::tidy(anova(TTRSubsetTreatment, TTRSubsetEV)),
+                            broom::tidy(anova(TTRSubsetTimepoint, TTRSubsetEV)),
+                            broom::tidy(anova(TTRSubsetInteraction, TTRSubsetEV)),
+                            broom::tidy(anova(TTRSubsetEV, TTRSubsetfullGenotype))) %>%
+  mutate(p.adj = p.adjust(p.value, method = "bonferroni")) #Create table for model comparison output. Adjust p-values for multiple comparisons
+TTRSubsetModelComparisons
+```
+
+```{r}
+write.csv(TTRSubsetModelComparisons, "ttr-subset-model-comparison-stat-output-WA.csv", quote = FALSE, row.names = FALSE) #Save model output
+```
+
 # Threshold analysis
 
 ## Define threshold
@@ -617,7 +759,7 @@ anova(TTRthreshModelRevised, TTRthreshpresenceT) #Compare models
 ## Final model
 
 ```{r}
-summary(TTRthreshModelEV)
+summary(TTRthreshModelRevised)
 ```
 
 ## Save model output
@@ -655,6 +797,171 @@ modTTR %>%
   group_by(., treatment, timepoint, presenceT, TTRthresh) %>%
   filter(., TTRthresh == 0) %>%
   summarize(., count = n())
+```
+
+## Sensitivity test
+
+```{r}
+modTTRSubset <- modTTRSubset %>%
+  mutate(., TTRthresh = case_when(!(is.na(trial.1 & trial.2 & trial.3) == FALSE) ~ 0,
+                                  is.na(trial.1 & trial.2 & trial.3) == FALSE ~ 1)) #Create a new column where 1 = righted within 90 seconds in all trials and 0 = failure to right within that threshold
+head(modTTRSubset) #Confirm modifications
+```
+
+### Demographic variables
+
+```{r}
+TTRthreshSubsetModelDV <- glmer(I(TTRthresh == 1) ~ as.factor(sex) + integument.cont + carapace.width + weight + 
+                            (1|crab.ID), 
+                          family = binomial(), 
+                          data = modTTRSubset) #Create a binomial model, where 1 = success of righting within the defined threshold
+```
+
+```{r}
+TTRthreshSubsetSex <- glmer(I(TTRthresh == 1) ~ integument.cont + carapace.width + weight +
+                        (1|crab.ID), 
+                      family = binomial(), 
+                      data = modTTRSubset)
+anova(TTRthreshSubsetSex, TTRthreshSubsetModelDV) #No significant influence of sex
+```
+
+```{r}
+TTRthreshSubsetIntegument <- glmer(I(TTRthresh == 1) ~ as.factor(sex) + carapace.width + weight +
+                               (1|crab.ID), 
+                             family = binomial(), 
+                             data = modTTRSubset) #Create a binomial model, where 1 = success of righting wihtin the defined threshold
+anova(TTRthreshSubsetIntegument, TTRthreshSubsetModelDV) #Integument color not significant
+```
+
+```{r}
+TTRthreshSubsetCW <- glmer(I(TTRthresh == 1) ~ as.factor(sex) + integument.cont + weight +
+                       (1|crab.ID), 
+                     family = binomial(), 
+                     data = modTTRSubset) #Create a binomial model, where 1 = success of righting wihtin the defined threshold
+anova(TTRthreshSubsetCW, TTRthreshSubsetModelDV) #CW not significant
+```
+
+```{r}
+TTRthreshSubsetModelWeight <- glmer(I(TTRthresh == 1) ~ as.factor(sex) + integument.cont + carapace.width +
+                                (1|crab.ID), 
+                              family = binomial(), 
+                              data = modTTRSubset) #Create a binomial model, where 1 = success of righting wihtin the defined threshold
+anova(TTRthreshSubsetModelWeight, TTRthreshSubsetModelDV) #Weight not significant
+```
+
+No demographic variables are significant.
+
+### Explanatory variables
+
+```{r}
+TTRthreshSubsetEV <- glmer(I(TTRthresh == 1) ~ treatment + timepoint + treatment:timepoint +
+                            (1|crab.ID), 
+                          family = binomial(), 
+                          data = modTTRSubset) #Create a binomial model, where 1 = success of righting within the defined threshold
+```
+
+```{r}
+TTRthreshSubsetTreatment <- glmer(I(TTRthresh == 1) ~ timepoint +
+                                  (1|crab.ID), 
+                                family = binomial(), 
+                                data = modTTRSubset) #Create null model without treatment
+anova(TTRthreshSubsetTreatment, TTRthreshSubsetEV) #Compare models
+```
+
+```{r}
+TTRthreshSubsetTimepoint <- glmer(I(TTRthresh == 1) ~ treatment +
+                                  (1|crab.ID), 
+                                family = binomial(), 
+                                data = modTTRSubset) #Create null model without timepoint
+anova(TTRthreshSubsetTimepoint, TTRthreshSubsetEV) #Compare models
+```
+
+```{r}
+TTRthreshSubsetInteraction <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
+                                    (1|crab.ID), 
+                                  family = binomial(), 
+                                  data = modTTRSubset) #Create null model without interaction
+anova(TTRthreshSubsetInteraction, TTRthreshSubsetEV) #Compare models
+```
+
+Unlike the full model, time is not a significant factor.
+
+### Genotype variables
+
+```{r}
+TTRthreshSubsetRevised <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
+                                 (1|crab.ID), 
+                               family = binomial(), 
+                               data = modTTRSubset) #Create a binomial model, where 1 = success of righting wihtin the defined threshold
+```
+
+```{r}
+TTRthreshSubsetGenotype <- glmer(I(TTRthresh == 1) ~ treatment + timepoint +
+                             as.factor(genotype) +
+                             (1|crab.ID), 
+                           family = binomial(), 
+                           data = modTTRSubset) #Create model with genotype
+anova(TTRthreshSubsetRevised, TTRthreshSubsetGenotype) #Compare models
+```
+
+### Save model output
+
+```{r}
+TTRthreshSubsetComparisons <- rbind(broom::tidy(anova(TTRthreshSubsetSex, TTRthreshSubsetModelDV)),
+                                   broom::tidy(anova(TTRthreshSubsetIntegument, TTRthreshSubsetModelDV)),
+                                   broom::tidy(anova(TTRthreshSubsetCW, TTRthreshSubsetModelDV)),
+                                   broom::tidy(anova(TTRthreshSubsetModelWeight, TTRthreshSubsetModelDV)),
+                                   broom::tidy(anova(TTRthreshSubsetTreatment, TTRthreshSubsetEV)),
+                                   broom::tidy(anova(TTRthreshSubsetTimepoint, TTRthreshSubsetEV)),
+                                   broom::tidy(anova(TTRthreshSubsetInteraction, TTRthreshSubsetEV)),
+                                   broom::tidy(anova(TTRthreshSubsetRevised, TTRthreshSubsetGenotype))) %>%
+  mutate(p.adj = p.adjust(p.value, method = "bonferroni")) #Create a table of model comparison output. Adjust p-values.
+TTRthreshSubsetComparisons
+```
+
+```{r}
+write.csv(TTRthreshSubsetComparisons, "ttr-binomial-subset-model-comparison-output-WA.csv", quote = FALSE, row.names = FALSE) #Save model comparison table
+```
+
+## Revised final model
+
+Since time was not significant in the sensitivity test, I will remove it from the final model.
+
+```{r}
+TTRthreshModelRevised2 <- glmer(I(TTRthresh == 1) ~ treatment +
+                                 (1|crab.ID), 
+                               family = binomial(), 
+                               data = modTTR) #Create a binomial model, where 1 = success of righting wihtin the defined threshold
+```
+
+```{r}
+TTRthreshModelRevisedNull <- glmer(I(TTRthresh == 1) ~ (1|crab.ID), 
+                               family = binomial(), 
+                               data = modTTR) #Create a binomial model, where 1 = success of righting wihtin the defined threshold
+anova(TTRthreshModelRevisedNull, TTRthreshModelRevised2) #Temperature still significant
+```
+
+## Save revised model output
+
+```{r}
+TTRthreshModelComparisons <- rbind(broom::tidy(anova(TTRthreshSex, TTRthreshModelDV)),
+                                   broom::tidy(anova(TTRthreshIntegument, TTRthreshModelDV)),
+                                   broom::tidy(anova(TTRthreshCW, TTRthreshModelDV)),
+                                   broom::tidy(anova(TTRthreshModelWeight, TTRthreshModelDV)),
+                                   broom::tidy(anova(TTRthreshModelSwimmer, TTRthreshModelDV)),
+                                   broom::tidy(anova(TTRthreshNullTreatment, TTRthreshModelEV)),
+                                   broom::tidy(anova(TTRthreshNullTimepoint, TTRthreshModelEV)),
+                                   broom::tidy(anova(TTRthreshNullInteraction, TTRthreshModelEV)),
+                                   broom::tidy(anova(TTRthreshModelRevised, TTRthreshGenotype)),
+                                   broom::tidy(anova(TTRthreshModelRevised, TTRthreshpresenceC)),
+                                   broom::tidy(anova(TTRthreshModelRevised, TTRthreshpresenceT)),
+                                   broom::tidy(anova(TTRthreshModelRevisedNull, TTRthreshModelRevised2))) %>%
+  mutate(p.adj = p.adjust(p.value, method = "bonferroni")) #Create a table of model comparison output. Adjust p-values.
+TTRthreshModelComparisons
+```
+
+```{r}
+write.csv(TTRthreshModelComparisons, "ttr-binomial-model-comparison-output-WA.csv", quote = FALSE, row.names = FALSE) #Save model comparison table
 ```
 
 # Plots
