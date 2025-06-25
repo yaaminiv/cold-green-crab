@@ -652,6 +652,19 @@ anova(TTRSubsetEV, TTRSubsetfullGenotype) #No significant impact of genotype
 
 I could only test the full genotype, since there were only CT and CC crabs left at the end!
 
+## Final model
+
+```{r}
+summary(TTRSubsetEV)
+```
+
+
+```{r}
+var.lmer <- c(0.06478, 0.46177) #Save variances of random effects as a new vector (crab ID, residual)
+percentvar.lmer <- (100*var.lmer)/sum(var.lmer) #Calculate percent variances
+percentvar.lmer[1] #Crab ID accounts for 12.30273% of variance in the subset model
+```
+
 ### Save model output
 
 ```{r}
