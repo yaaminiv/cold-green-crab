@@ -652,7 +652,7 @@ anova(TTRSubsetEV, TTRSubsetfullGenotype) #No significant impact of genotype
 
 I could only test the full genotype, since there were only CT and CC crabs left at the end!
 
-## Final model
+### Final model
 
 ```{r}
 summary(TTRSubsetEV)
@@ -872,10 +872,6 @@ modTTR %>%
 ```
 
 ## Sensitivity test
-
-```{r}
-modTTRSubset
-```
 
 ```{r}
 modTTRSubset <- modTTRSubset %>%
