@@ -1687,6 +1687,24 @@ ggsave("figures/time-to-right-average-individuals-genotype-patterns.pdf", height
 ### Save figures for multipanel plot
 
 ```{r}
+all1.5CMA <- left_join(modTTRQ10, modTTR, by = c("crab.ID", "treatment", "presenceT", "timepoint")) %>%
+  dplyr::select(., -c(date:trial.3, sex:TTRSE, genotype:presenceC)) %>%
+  filter(., treatment != "5C") %>%
+  ggplot(., mapping = aes(x = timepoint, y = TTRthresh, group = crab.ID)) +
+  geom_point(size = 2, color = plotColors[1]) + geom_line(lty = 3, color = plotColors[1]) +
+  facet_wrap(~crab.ID) +
+  scale_x_continuous(name = "",
+                     breaks = 1:5,
+                     labels = c(4, "", 28, "", 94)) +
+  scale_y_continuous(name = "Right?",
+                     breaks = c(0, 1),
+                     labels = c("No", "Yes")) +
+  ggtitle("A. MA Crabs at 1.5ºC") +
+  theme_classic(base_size = 12) + theme(strip.background = element_rect(colour = "white")) #Join TTR data with Q10 data to get individuals that were tracked throughout time. Remove superfluous columns and entries at 5ºC. Create point and line graph and wrap by crab ID.
+all1.5CMA
+```
+
+```{r}
 all5CMA <- left_join(modTTRQ10, modTTR, by = c("crab.ID", "treatment", "presenceT", "timepoint")) %>%
   dplyr::select(., -c(Q10:trial.3, sex:integument.cont, TTRSE:source)) %>%
   filter(., treatment != "0C") %>%
@@ -1695,31 +1713,12 @@ all5CMA <- left_join(modTTRQ10, modTTR, by = c("crab.ID", "treatment", "presence
   facet_wrap(~crab.ID, scales = "free_y") +
   scale_x_continuous(name = "Exposure Time (Hours)",
                      breaks = 1:5,
-                     labels = c(4, 22, 28, 46, 94)) +
+                     labels = c(4, "", 28, "", 94)) +
   scale_y_continuous(name = "Average Time-to-Right (s)") +
-  ggtitle("A. MA Crabs at 5ºC") +
-  theme_classic(base_size = 15) + theme(strip.background = element_rect(colour = "white")) #Join TTR data with Q10 data to get individuals that were tracked throughout time. Remove superfluous columns and entries at 5ºC. Create point and line graph and wrap by crab ID.
+  ggtitle("C. MA Crabs at 5ºC") +
+  theme_classic(base_size = 12) + theme(strip.background = element_rect(colour = "white")) #Join TTR data with Q10 data to get individuals that were tracked throughout time. Remove superfluous columns and entries at 5ºC. Create point and line graph and wrap by crab ID.
 all5CMA
 ```
 
-```{r}
-all1.5CMA <- left_join(modTTRQ10, modTTR, by = c("crab.ID", "treatment", "presenceT", "timepoint")) %>%
-  dplyr::select(., -c(date:trial.3, sex:TTRSE, genotype:presenceC)) %>%
-  filter(., treatment != "5C") %>%
-  ggplot(., mapping = aes(x = timepoint, y = TTRthresh, color = presenceT, group = crab.ID)) +
-  geom_point(size = 2) + geom_line(lty = 3) +
-  facet_wrap(~crab.ID) +
-  scale_x_continuous(name = "Exposure Time (Hours)",
-                     breaks = 1:5,
-                     labels = c(4, 22, 28, 46, 94)) +
-  scale_y_continuous(name = "Right?",
-                     breaks = c(0, 1),
-                     labels = c("No", "Yes")) +
-  scale_colour_manual(name = "Genotype",
-                      values = c("grey70", "grey10"),
-                      labels = c("CC", "CT")) +
-  ggtitle("A. MA Crabs at 1.5ºC") +
-  theme_classic(base_size = 15) + theme(strip.background = element_rect(colour = "white")) #Join TTR data with Q10 data to get individuals that were tracked throughout time. Remove superfluous columns and entries at 5ºC. Create point and line graph and wrap by crab ID.
-all1.5CMA
-```
+
 
