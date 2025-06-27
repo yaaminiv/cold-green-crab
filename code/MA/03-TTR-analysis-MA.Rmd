@@ -1446,7 +1446,7 @@ Since Q10 is usually used for rates, I will apply the Q10 approach to examine di
 
 ```{r}
 modTTRQ10 <- modTTR %>%
-  select(., timepoint, crab.ID, TTRavg, treatment, presenceT) %>%
+  dplyr::select(., timepoint, crab.ID, TTRavg, treatment, presenceT) %>%
   group_by(., crab.ID) %>%
   pivot_wider(., names_from = timepoint, values_from = TTRavg, names_prefix = "timepoint") %>%
   mutate_all(~ifelse(is.nan(.), 91, .)) %>%
@@ -1479,7 +1479,7 @@ modTTRQ10 <- modTTR %>%
                                  R1 = timepoint5, 
                                  T2 = 14.84, 
                                  T1 = temperature)) %>%
-  select(., crab.ID, treatment, presenceT,
+  dplyr::select(., crab.ID, treatment, presenceT,
          timepoint1_Q10, timepoint2_Q10, timepoint3_Q10, timepoint4_Q10, timepoint5_Q10) %>%
   pivot_longer(., cols = !c(crab.ID, treatment, presenceT), names_to = "timepoint", values_to = "Q10") %>%
   mutate(., timepoint = gsub(x = timepoint, pattern = "_Q10", replacement = "")) %>%
@@ -1572,7 +1572,22 @@ I tracked certain individuals throughout the course of the experiment, so I want
 
 ```{r}
 left_join(modTTRQ10, modTTR, by = c("crab.ID", "treatment", "presenceT", "timepoint")) %>%
-  select(., -c(date:trial.3, sex:TTRSE, genotype:presenceC)) %>%
+  dplyr::select(., -c(Q10:trial.3, sex:integument.cont, TTRSE:source)) %>%
+  filter(., treatment != "0C") %>%
+  ggplot(., mapping = aes(x = timepoint, y = TTRavg, group = crab.ID)) +
+  geom_point(size = 2, color = plotColors[2]) + geom_line(lty = 3, color = plotColors[2]) +
+  facet_wrap(~crab.ID, scales = "free_y") +
+  scale_x_continuous(name = "Exposure Time (Hours)",
+                     breaks = 1:5,
+                     labels = c(4, 22, 28, 46, 94)) +
+  scale_y_continuous(name = "Average Time-to-Right (s)") +
+  theme_classic(base_size = 15) + theme(strip.background = element_rect(colour = "white")) #Join TTR data with Q10 data to get individuals that were tracked throughout time. Remove superfluous columns and entries at 5ºC. Create point and line graph and wrap by crab ID.
+ggsave("figures/time-to-right-individuals-5C.pdf", height = 8.5, width = 11)
+```
+
+```{r}
+left_join(modTTRQ10, modTTR, by = c("crab.ID", "treatment", "presenceT", "timepoint")) %>%
+  dplyr::select(., -c(date:trial.3, sex:TTRSE, genotype:presenceC)) %>%
   filter(., treatment != "5C") %>%
   ggplot(., mapping = aes(x = timepoint, y = TTRthresh, color = presenceT, group = crab.ID)) +
   geom_point(size = 2) + geom_line(lty = 3) +
