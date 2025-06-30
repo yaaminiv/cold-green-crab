@@ -953,12 +953,15 @@ I only have one timepoint for the NH experiment (no 22 hour heat stress), so I d
 
 Since I'm using a GLM, I can put everything into the model and use stepwise backwards deletion to retain only significant variables.
 
+### Assess importance of parasites
+
 ```{r}
-TTRparasiteNHDV <- glm(log(TTRavg) ~ as.factor(sex) + integument.cont + carapace.width + weight + as.factor(missing.swimmer) + 
-                       meta_Intensity + acanth_Intensity, 
+TTRparasiteNHDV <- glm(log(TTRavg) ~ meta_Intensity + acanth_Intensity, 
                      data = modTTRNH) #Create model with all potential explanatory variables
 summary(TTRparasiteNHDV) #No demographic variable is significant
 ```
+
+### Assess importance of genotype
 
 ```{r}
 TTRfullGenotypeNH <- glm(log(TTRavg) ~ as.factor(genotype),
@@ -966,12 +969,27 @@ TTRfullGenotypeNH <- glm(log(TTRavg) ~ as.factor(genotype),
 summary(TTRfullGenotypeNH) #Genotype significantly impacts TTR
 ```
 
+### Save model output
+
+```{r}
+TTRmodelNHResults <- rbind(broom::tidy(TTRparasiteNHDV),
+      broom::tidy(TTRfullGenotypeNH)) %>%
+    mutate(., p.adj = p.adjust(p.value, method = "bonferroni")) #Create table for model comparison output. Adjust for multiple comparisons.
+TTRmodelNHResults
+```
+
+```{r}
+write.csv(TTRmodelNHResults, "ttr-model-comparison-stat-output-NH.csv", quote = FALSE, row.names = FALSE) #Save statistical output
+```
+
+### Conduct pairwise comparisons
+
 ```{r}
 TTRmodelNH_genotype <- emmeans(TTRfullGenotypeNH, pairwise~as.factor(genotype), adjust = "tukey") #Pairwise tukey test for genotype
 TTRmodelNH_genotype$contrasts #t = -3.651, p = 0.0029
 ```
 
-## Save Tukey Test output
+### Save Tukey Test output
 
 ```{r}
 rbind(broom::tidy(TTRmodelWA_timepoint$contrasts) %>%
@@ -985,7 +1003,7 @@ rbind(broom::tidy(TTRmodelWA_timepoint$contrasts) %>%
   write.csv(., "tukey-test-output.csv", quote = FALSE, row.names = FALSE)
 ```
 
-## Calculate average values
+### Calculate average values
 
 ```{r}
 rbind(modTTRWA %>%
