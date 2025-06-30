@@ -911,11 +911,6 @@ TTRfullGenotypeME <- lmer(log(TTRavg) ~ as.factor(timepoint) +
 anova(TTRmodelTimepointME, TTRfullGenotypeME) #Significant impact of genotype
 ```
 
-```{r}
-TTRmodelME_genotype <- emmeans(TTRfullGenotypeME, pairwise~as.factor(genotype), adjust = "tukey") #Pairwise tukey test for genotype
-TTRmodelME_genotype$contrasts #t = 2.408, p = 0.0219
-```
-
 ### Final model
 
 ```{r}
@@ -995,8 +990,6 @@ TTRmodelNH_genotype$contrasts #t = -3.651, p = 0.0029
 rbind(broom::tidy(TTRmodelWA_timepoint$contrasts) %>%
         mutate(., population = "WA"),
       broom::tidy(TTRmodelME_timepoint$contrasts) %>%
-        mutate(., population = "ME"),
-      broom::tidy(TTRmodelME_genotype$contrasts) %>%
         mutate(., population = "ME"),
       broom::tidy(TTRmodelNH_genotype$contrasts) %>%
         mutate(., population = "NH")) %>%
